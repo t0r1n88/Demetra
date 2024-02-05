@@ -5,6 +5,8 @@ from support_functions import *
 import pandas as pd
 import openpyxl
 import time
+from collections import Counter
+import re
 
 def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
     """
@@ -35,10 +37,6 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
 
         main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True)
 
-
-
-
-
     t = time.localtime()
     current_time = time.strftime('%H_%M_%S', t)
     # Сохраняем лист с ошибками
@@ -47,6 +45,56 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
     # Сохраянем лист со всеми данными
     main_wb = write_df_to_excel({'Общий список':main_df},write_index=False)
     main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
+
+    main_df.columns = list(map(str, list(main_df.columns)))
+
+    # Создаем файл excel в котороым будет находится отчет
+    wb = openpyxl.Workbook()
+
+    # Проверяем наличие возможных дубликатов ,котороые могут получиться если обрезать по 30 символов
+    lst_length_column = [column[:30] for column in main_df.columns]
+    check_dupl_length = [k for k, v in Counter(lst_length_column).items() if v > 1]
+
+    # проверяем наличие объединенных ячеек
+    check_merge = [column for column in main_df.columns if 'Unnamed' in column]
+    # если есть хоть один Unnamed то просто заменяем названия колонок на Колонка №цифра
+    if check_merge or check_dupl_length:
+        main_df.columns = [f'Колонка №{i}' for i in range(1, main_df.shape[1] + 1)]
+    # очищаем названия колонок от символов */\ []''
+    # Создаем регулярное выражение
+    pattern_symbols = re.compile(r"[/*'\[\]/\\]")
+    clean_main_df_columns = [re.sub(pattern_symbols, '', column) for column in main_df.columns]
+    main_df.columns = clean_main_df_columns
+
+    # Добавляем столбец для облегчения подсчета по категориям
+    main_df['Для подсчета'] = 1
+
+    # Создаем листы
+    for idx, name_column in enumerate(main_df.columns):
+        # Делаем короткое название не более 30 символов
+        wb.create_sheet(title=name_column[:30], index=idx)
+
+    for idx, name_column in enumerate(main_df.columns):
+        group_main_df = main_df.groupby([name_column]).agg({'Для подсчета': 'sum'})
+        group_main_df.columns = ['Количество']
+
+        # Сортируем по убыванию
+        group_main_df.sort_values(by=['Количество'], inplace=True, ascending=False)
+
+        for r in dataframe_to_rows(group_main_df, index=True, header=True):
+            if len(r) != 1:
+                wb[name_column[:30]].append(r)
+        wb[name_column[:30]].column_dimensions['A'].width = 50
+
+    # генерируем текущее время
+    t = time.localtime()
+    current_time = time.strftime('%H_%M_%S', t)
+    # Удаляем листы
+    del wb['Sheet']
+    del wb['Для подсчета']
+    # Сохраняем итоговый файл
+    wb.save(
+        f'{path_end_folder}/Отчет по всей таблице от {current_time}.xlsx')
 
 
 
