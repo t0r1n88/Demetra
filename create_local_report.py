@@ -1,6 +1,7 @@
 """
 Скрипт для обработки списка студентов на отделении и создания отчетности по нему
 """
+from support_functions import *
 import pandas as pd
 import openpyxl
 import time
@@ -18,6 +19,7 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
     temp_wb.close() # закрываем файл
     for name_sheet in lst_sheets:
         temp_df = pd.read_excel(data_file_local,sheet_name=name_sheet,dtype=str)
+        temp_df.dropna(how='all',inplace=True) # удаляем пустые строки
         temp_df.insert(0, '№ Группы', name_sheet) # вставляем колонку с именем листа
         if not example_columns:
             example_columns = list(temp_df.columns) # делаем эталонным первый лист файла
@@ -39,8 +41,13 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
 
     t = time.localtime()
     current_time = time.strftime('%H_%M_%S', t)
-    error_df.to_excel(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
-    main_df.to_excel(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
+    # Сохраняем лист с ошибками
+    error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
+    error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
+    # Сохраянем лист со всеми данными
+    main_wb = write_df_to_excel({'Общий список':main_df},write_index=False)
+    main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
+
 
 
 
@@ -59,6 +66,7 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
 
 if __name__== '__main__':
     main_data_file = 'data/Данные.xlsx'
-    main_result_folder = 'data'
+    main_result_folder = 'data/Результат'
 
     create_locac_report(main_data_file,main_result_folder)
+    print('Lindy Booth')
