@@ -69,8 +69,15 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
     # получаем текущее время
     t = time.localtime()
     current_time = time.strftime('%H_%M_%S', t)
+
+    # суммируем данные по листам
+    all_custom_report_df = custom_report_df.sum(axis=0)
+    all_custom_report_df = all_custom_report_df.drop('Лист').to_frame() # удаляем текстовую строку
+    all_custom_report_df = all_custom_report_df.reset_index()
+    all_custom_report_df.columns = ['Наименование параметра','Количство']
     # сохраняем файл с данными по выбранным колонкам
-    custom_report_wb = write_df_to_excel({'Свод':custom_report_df},write_index=False)
+
+    custom_report_wb = write_df_to_excel({'Общий свод':all_custom_report_df,'Свод по листам':custom_report_df},write_index=False)
     custom_report_wb = del_sheet(custom_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
     custom_report_wb.save(f'{path_end_folder}/Свод по выбранным колонкам от {current_time}.xlsx')
 
