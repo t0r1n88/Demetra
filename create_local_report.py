@@ -74,7 +74,7 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
     all_custom_report_df = custom_report_df.sum(axis=0)
     all_custom_report_df = all_custom_report_df.drop('Лист').to_frame() # удаляем текстовую строку
     all_custom_report_df = all_custom_report_df.reset_index()
-    all_custom_report_df.columns = ['Наименование параметра','Количство']
+    all_custom_report_df.columns = ['Наименование параметра','Количество']
     # сохраняем файл с данными по выбранным колонкам
 
     custom_report_wb = write_df_to_excel({'Общий свод':all_custom_report_df,'Свод по листам':custom_report_df},write_index=False)
