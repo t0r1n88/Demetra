@@ -34,7 +34,6 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
     lst_custom_name_columns = [f'{key}_{value}' for key,value in dct_params.items()] #
     custom_report_df = pd.DataFrame(columns=lst_custom_name_columns)
     custom_report_df.insert(0,'Лист',None)
-    print(custom_report_df)
 
     for name_sheet in lst_sheets:
         temp_df = pd.read_excel(data_file_local,sheet_name=name_sheet,dtype=str)
@@ -49,7 +48,6 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
             error_row = pd.DataFrame(columns=['Лист','Ошибка','Примечание'],data=[[name_sheet,','.join(diff_name_columns),
                                                                                    'Названия колонок указанного листа отличаются от названий колонок в первом листе. Исправьте отличия']])
             error_df = pd.concat([error_df,error_row],axis=0)
-            print(diff_name_columns)
             continue
 
         main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True)
@@ -66,12 +64,16 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         row_dct['Лист'] = name_sheet
         for key,value in dct_params.items():
             row_dct[f'{key}_{value}'] = temp_df[temp_df[key] == value].shape[0]
-        print(row_dct)
-
-
-
+        new_row = pd.DataFrame(row_dct,index=[0])
+        custom_report_df = pd.concat([custom_report_df,new_row],axis=0)
+    # получаем текущее время
     t = time.localtime()
     current_time = time.strftime('%H_%M_%S', t)
+    # сохраняем файл с данными по выбранным колонкам
+    custom_report_wb = write_df_to_excel({'Свод':custom_report_df},write_index=False)
+    custom_report_wb = del_sheet(custom_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+    custom_report_wb.save(f'{path_end_folder}/Свод по выбранным колонкам от {current_time}.xlsx')
+
     # Сохраняем лист с ошибками
     error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
     error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')

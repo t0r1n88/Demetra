@@ -36,9 +36,7 @@ def write_df_to_excel(dct_df:dict,write_index:bool)->openpyxl.Workbook:
             adjusted_width = (max_length + 2)
             wb[name_sheet].column_dimensions[column_name].width = adjusted_width
         count_index += 1
-    # удаляем лишний лист
-    if len(wb.sheetnames) >= 2 and 'Sheet1' in wb.sheetnames:
-        del wb['Sheet1']
+
     return wb
 
 
