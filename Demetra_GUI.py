@@ -1,6 +1,7 @@
 """
 Графический интерфейс для программы
 """
+from create_local_report import create_local_report
 import pandas as pd
 import openpyxl
 import os
@@ -118,6 +119,18 @@ def set_window_size(window):
 """
 Прикладные функции
 """
+"""
+Создание локального отчета
+"""
+def select_file_params_local_report():
+    """
+    Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
+    :return: Путь к файлу с данными
+    """
+    global name_file_params_local_report
+    # Получаем путь к файлу
+    name_file_params_local_report = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
 def select_file_data_local_report():
     """
     Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
@@ -141,9 +154,10 @@ def processing_local_report():
     Создание локальных отчетов
     :return:
     """
-    pass
-
-
+    try:
+        create_local_report(name_file_data_local_report,path_to_end_folder_local_report,name_file_params_local_report)
+    except NameError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,файл с данными, конечную папку')
 
 
 if __name__ == '__main__':
@@ -197,18 +211,23 @@ if __name__ == '__main__':
     frame_data_local_report.pack(padx=10, pady=10)
 
     # Создаем кнопку выбора файла с данными
-    btn_choose_file_local_report= Button(frame_data_local_report, text='1) Выберите файл', font=('Arial Bold', 14),
+    btn_choose_file_params_local_report= Button(frame_data_local_report, text='1) Выберите файл c параметрами', font=('Arial Bold', 14),
+                                       command=select_file_params_local_report)
+    btn_choose_file_params_local_report.pack(padx=10, pady=10)
+
+
+    btn_choose_file_local_report= Button(frame_data_local_report, text='2) Выберите файл', font=('Arial Bold', 14),
                                        command=select_file_data_local_report)
     btn_choose_file_local_report.pack(padx=10, pady=10)
 
     # Создаем кнопку выбора конечной папки
-    btn_choose_end_folder_local_report= Button(frame_data_local_report, text='2) Выберите конечную папку', font=('Arial Bold', 14),
+    btn_choose_end_folder_local_report= Button(frame_data_local_report, text='3) Выберите конечную папку', font=('Arial Bold', 14),
                                        command=select_end_folder_local_report)
     btn_choose_end_folder_local_report.pack(padx=10, pady=10)
 
     # Создаем кнопку генерации отчетов
 
-    btn_generate_local_report = Button(tab_create_local_report,text='3) Создать отчеты', font=('Arial Bold', 14),command=processing_local_report)
+    btn_generate_local_report = Button(tab_create_local_report,text='4) Создать отчеты', font=('Arial Bold', 14),command=processing_local_report)
     btn_generate_local_report.pack(padx=10, pady=10)
 
 

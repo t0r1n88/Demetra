@@ -111,6 +111,9 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
 
     # Добавляем столбец для облегчения подсчета по категориям
     main_df['Для подсчета'] = 1
+    # заполняем наны не заполнено
+    main_df.fillna('Не заполнено',inplace=True)
+
 
     # Создаем листы
     for idx, name_column in enumerate(main_df.columns):
