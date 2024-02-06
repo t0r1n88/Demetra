@@ -44,6 +44,7 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
     error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
     # Сохраянем лист со всеми данными
     main_wb = write_df_to_excel({'Общий список':main_df},write_index=False)
+    main_wb = del_sheet(main_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
     main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
 
     main_df.columns = list(map(str, list(main_df.columns)))
@@ -90,8 +91,8 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
     t = time.localtime()
     current_time = time.strftime('%H_%M_%S', t)
     # Удаляем листы
-    del wb['Sheet']
-    del wb['Для подсчета']
+    wb = del_sheet(wb,['Sheet','Sheet1','Для подсчета'])
+
     # Сохраняем итоговый файл
     wb.save(
         f'{path_end_folder}/Отчет по всей таблице от {current_time}.xlsx')
@@ -113,7 +114,7 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
 
 
 if __name__== '__main__':
-    main_data_file = 'data/Данные.xlsx'
+    main_data_file = 'data/Тестовая таблица 1.xlsx'
     main_result_folder = 'data/Результат'
 
     create_locac_report(main_data_file,main_result_folder)
