@@ -8,7 +8,17 @@ import time
 from collections import Counter
 import re
 
-def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
+def prepare_file_params(params_file:str)->dict:
+    """
+    Функция для подготовки словаря с параметрами, преобразуюет первую колонку в ключи а вторую колонку в значения
+    :param params_file: путь к файлу с параметрами в формате xlsx
+    :return: словарь с параметрами
+    """
+    df =pd.read_excel(params_file,usecols='A:B',dtype=str)
+    df.dropna(inplace=True) # удаляем все строки где есть нан
+    temp_dct = dict(zip(df.iloc[:,0],df.iloc[:,1])) # создаем словарь с параметрами
+    return temp_dct
+def create_local_report(data_file_local:str, path_end_folder:str, params_report:str) ->None:
     """
     Функция для генерации отчетов на основе файла с данными групп
     """
@@ -19,6 +29,13 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
     lst_sheets = temp_wb.sheetnames
     print(lst_sheets)
     temp_wb.close() # закрываем файл
+    # словарь для основных параметров по которым нужно построить отчет
+    dct_params = prepare_file_params(params_report) # получаем значения по которым нужно подсчитать данные
+    lst_custom_name_columns = [f'{key}_{value}' for key,value in dct_params.items()] #
+    custom_report_df = pd.DataFrame(columns=lst_custom_name_columns)
+    custom_report_df.insert(0,'Лист',None)
+    print(custom_report_df)
+
     for name_sheet in lst_sheets:
         temp_df = pd.read_excel(data_file_local,sheet_name=name_sheet,dtype=str)
         temp_df.dropna(how='all',inplace=True) # удаляем пустые строки
@@ -36,6 +53,22 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
             continue
 
         main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True)
+
+        # Подсчитываем основные показатели для каждой группы
+        # проверяем наличие колонок в датафрейме
+        diff_custom_name_columns = set(dct_params.keys()).difference(set(temp_df.columns))
+        if len(diff_custom_name_columns) != 0:
+            error_row = pd.DataFrame(columns=['Лист','Ошибка','Примечание'],data=[[name_sheet,','.join(diff_custom_name_columns),
+                                                                                   'Не найдены названия колонок в листе']])
+            error_df = pd.concat([error_df,error_row],axis=0)
+            continue
+        row_dct = {f'{key}_{value}':0 for key,value in dct_params.items()} # создаем словарь для создания строки датафрейма
+        row_dct['Лист'] = name_sheet
+        for key,value in dct_params.items():
+            row_dct[f'{key}_{value}'] = temp_df[temp_df[key] == value].shape[0]
+        print(row_dct)
+
+
 
     t = time.localtime()
     current_time = time.strftime('%H_%M_%S', t)
@@ -92,23 +125,10 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
     current_time = time.strftime('%H_%M_%S', t)
     # Удаляем листы
     wb = del_sheet(wb,['Sheet','Sheet1','Для подсчета'])
-
     # Сохраняем итоговый файл
-    wb.save(
-        f'{path_end_folder}/Отчет по всей таблице от {current_time}.xlsx')
+    wb.save(f'{path_end_folder}/Отчет по всей таблице от {current_time}.xlsx')
 
-
-
-
-
-
-
-
-
-
-
-
-
+    main_df.to_excel('data/ghf.xlsx')
 
 
 
@@ -116,6 +136,7 @@ def create_locac_report(data_file_local:str, path_end_folder:str) ->None:
 if __name__== '__main__':
     main_data_file = 'data/Тестовая таблица 1.xlsx'
     main_result_folder = 'data/Результат'
+    main_params_file = 'data/Параметры отчета.xlsx'
 
-    create_locac_report(main_data_file,main_result_folder)
+    create_local_report(main_data_file, main_result_folder,main_params_file)
     print('Lindy Booth')
