@@ -5,8 +5,7 @@ from support_functions import *
 import pandas as pd
 import openpyxl
 import time
-from collections import Counter
-import re
+
 
 def create_social_report(data_file_social:str, path_end_folder:str)->None:
     """

@@ -1,15 +1,14 @@
 """
 Графический интерфейс для программы
 """
-from create_local_report import create_local_report
+from create_local_report import create_local_report # создание отчета по выбранным пользователем параметрам
+from create_social_passport import create_social_report # создание отчета по социальному состоянию
 import pandas as pd
-import openpyxl
 import os
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import ttk
-import datetime
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 warnings.simplefilter(action='ignore', category=DeprecationWarning)
@@ -18,8 +17,6 @@ pd.options.mode.chained_assignment = None
 import sys
 import locale
 import logging
-# import tempfile
-# import re
 logging.basicConfig(
     level=logging.WARNING,
     filename="error.log",
@@ -160,6 +157,43 @@ def processing_local_report():
         messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,файл с данными, конечную папку')
 
 
+"""
+Создание социального отчета по контингенту БРИТ
+"""
+
+def select_file_data_social_report():
+    """
+    Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
+    :return: Путь к файлу с данными
+    """
+    global name_file_data_social_report
+    # Получаем путь к файлу
+    name_file_data_social_report = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
+def select_end_folder_social_report():
+    """
+    Функция для выбора папки куда будут генерироваться файлы
+    :return:
+    """
+    global path_to_end_folder_social_report
+    path_to_end_folder_social_report = filedialog.askdirectory()
+
+def processing_social_report():
+    """
+    Создание отчета по социальным показателям БРИТ
+    :return:
+    """
+    try:
+        create_social_report(name_file_data_social_report,path_to_end_folder_social_report)
+    except NameError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,файл с данными, конечную папку')
+
+
+
+
+
+
 if __name__ == '__main__':
     window = Tk()
     window.title('Деметра Отчеты социальный паспорт студента ver 1.0')
@@ -185,17 +219,59 @@ if __name__ == '__main__':
     tab_control = ttk.Notebook(canvas)
 
     """
-    Создаем вкладку для предварительной обработки списка
+       Создаем вкладку для создания социального паспорта БРИТ
+       """
+    tab_create_social_report = ttk.Frame(tab_control)
+    tab_control.add(tab_create_social_report, text='Социальный паспорт')
+
+    create_social_report_frame_description = LabelFrame(tab_create_social_report)
+    create_social_report_frame_description.pack()
+
+    lbl_hello_create_social_report = Label(create_social_report_frame_description,
+                                           text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
+                                                'Создание отчета по социальному статусу контингента'
+                                           , width=60)
+    lbl_hello_create_social_report.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+
+    # Картинка
+    path_to_img_create_social_report = resource_path('logo.png')
+    img_create_social_report = PhotoImage(file=path_to_img_create_social_report)
+    Label(create_social_report_frame_description,
+          image=img_create_social_report, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_social_report = LabelFrame(tab_create_social_report, text='Подготовка')
+    frame_data_social_report.pack(padx=10, pady=10)
+
+    btn_choose_file_social_report = Button(frame_data_social_report, text='1) Выберите файл', font=('Arial Bold', 14),
+                                           command=select_file_data_social_report)
+    btn_choose_file_social_report.pack(padx=10, pady=10)
+
+    # Создаем кнопку выбора конечной папки
+    btn_choose_end_folder_social_report = Button(frame_data_social_report, text='2) Выберите конечную папку',
+                                                 font=('Arial Bold', 14),
+                                                 command=select_end_folder_social_report)
+    btn_choose_end_folder_social_report.pack(padx=10, pady=10)
+
+    # Создаем кнопку генерации отчетов
+
+    btn_generate_social_report = Button(tab_create_social_report, text='3) Создать отчеты', font=('Arial Bold', 14),
+                                        command=processing_social_report)
+    btn_generate_social_report.pack(padx=10, pady=10)
+
+    """
+    Создаем вкладку для создания управляемых  по социальному контингенту БРИТ
     """
     tab_create_local_report= ttk.Frame(tab_control)
-    tab_control.add(tab_create_local_report, text='Отчеты соцпедагога')
+    tab_control.add(tab_create_local_report, text='Настраиваемый отчет')
 
     create_local_report_frame_description = LabelFrame(tab_create_local_report)
     create_local_report_frame_description.pack()
 
     lbl_hello_create_local_report = Label(create_local_report_frame_description,
                                   text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
-                                       'Создание отчетов соцпедагога'
+                                       'Создание настраиваемых отчетов для соцпедагога'
                                        ,width=60)
     lbl_hello_create_local_report.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
 
