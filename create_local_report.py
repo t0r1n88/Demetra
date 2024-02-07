@@ -146,7 +146,7 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
 
 
 if __name__== '__main__':
-    main_data_file = 'data/Тестовая таблица 1.xlsx'
+    main_data_file = 'data/Тестовая таблица ver 2.xlsx'
     main_result_folder = 'data/Результат'
     main_params_file = 'data/Параметры отчета.xlsx'
 
