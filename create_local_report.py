@@ -16,7 +16,13 @@ def prepare_file_params(params_file:str)->dict:
     """
     df =pd.read_excel(params_file,usecols='A:B',dtype=str)
     df.dropna(inplace=True) # удаляем все строки где есть нан
-    temp_dct = dict(zip(df.iloc[:,0],df.iloc[:,1])) # создаем словарь с параметрами
+    print(df)
+    lst_unique_name_column = df.iloc[:,0].unique() # получаем уникальные значения колонок в виде списка
+    temp_dct = {key:{} for key in lst_unique_name_column} # создаем словарь верхнего уровня для хранения сгенерированных названий колонок
+    # перебираем датафрейм и получаем
+    for row in df.itertuples():
+        # заполняем словарь
+        temp_dct[row[1]][f'{row[1]}_{row[2]}'] = row[2]
     return temp_dct
 def create_local_report(data_file_local:str, path_end_folder:str, params_report:str) ->None:
     """
@@ -27,12 +33,15 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
     example_columns = None # эталонные колонки
     temp_wb = openpyxl.load_workbook(data_file_local,read_only=True) # открываем файл для того чтобы узнать какие листы в нем есть
     lst_sheets = temp_wb.sheetnames
-    print(lst_sheets)
     temp_wb.close() # закрываем файл
     # словарь для основных параметров по которым нужно построить отчет
     dct_params = prepare_file_params(params_report) # получаем значения по которым нужно подсчитать данные
-    lst_custom_name_columns = [f'{key}_{value}' for key,value in dct_params.items()] #
-    custom_report_df = pd.DataFrame(columns=lst_custom_name_columns)
+    lst_generate_name_columns = []  # создаем список для хранения значений сгенерированных колонок
+    for key, value in dct_params.items():
+        for name_gen_column in value.keys():
+            lst_generate_name_columns.append(name_gen_column)
+    # lst_custom_name_columns = [f'{key}_{value}' for key,value in dct_params.items()] #
+    custom_report_df = pd.DataFrame(columns=lst_generate_name_columns)
     custom_report_df.insert(0,'Лист',None)
 
     for name_sheet in lst_sheets:
@@ -60,10 +69,13 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
                                                                                    'Не найдены названия колонок в листе']])
             error_df = pd.concat([error_df,error_row],axis=0)
             continue
-        row_dct = {f'{key}_{value}':0 for key,value in dct_params.items()} # создаем словарь для создания строки датафрейма
-        row_dct['Лист'] = name_sheet
-        for key,value in dct_params.items():
-            row_dct[f'{key}_{value}'] = temp_df[temp_df[key] == value].shape[0]
+        print(dct_params)
+
+        row_dct = {key:0 for key in lst_generate_name_columns} # создаем словарь для хранения данных
+        row_dct['Лист'] = name_sheet # добавляем колонки для листа
+        for name_column,dct_value_column in dct_params.items():
+            for key,value in dct_value_column.items():
+                row_dct[key] = temp_df[temp_df[name_column] == value].shape[0]
         new_row = pd.DataFrame(row_dct,index=[0])
         custom_report_df = pd.concat([custom_report_df,new_row],axis=0)
     # получаем текущее время

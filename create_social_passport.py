@@ -116,17 +116,13 @@ def create_social_report(data_file_social:str, path_end_folder:str)->None:
             new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
             soc_df = pd.concat([soc_df, new_part_df], axis=0)
 
-    print(soc_df)
     # Сохраянем лист со всеми данными
     soc_wb = write_df_to_excel({'Социальный паспорт': soc_df}, write_index=False)
     soc_wb = del_sheet(soc_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
     soc_wb.save(f'{path_end_folder}/Социальный паспорт от {current_time}.xlsx')
-
-
-
-
-
-
+    # Сохраняем лист с ошибками
+    error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
+    error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
 
 
 
