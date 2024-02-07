@@ -55,7 +55,7 @@ def create_social_report(data_file_social:str, path_end_folder:str)->None:
     type_counting = 'not free'
     # type_counting = 'free'
     # Вариант с заданным порядком
-    if type_counting == 'free':
+    if type_counting == 'not free':
         soc_df = pd.DataFrame(columns=['Показатель','Значение']) # датафрейм для сбора данных отчета
         soc_df.loc[len(soc_df)] = ['Количество учебных групп',quantity_sheets] # добавляем количество учебных групп
 
