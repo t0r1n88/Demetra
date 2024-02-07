@@ -17,7 +17,7 @@ def create_social_report(data_file_social:str, path_end_folder:str)->None:
     example_columns = None # эталонные колонки
     temp_wb = openpyxl.load_workbook(data_file_social,read_only=True) # открываем файл для того чтобы узнать какие листы в нем есть
     lst_sheets = temp_wb.sheetnames
-    print(lst_sheets)
+    quantity_sheets = len(temp_wb.sheetnames) # считаем количество групп
     temp_wb.close() # закрываем файл
 
     for name_sheet in lst_sheets:
@@ -37,10 +37,7 @@ def create_social_report(data_file_social:str, path_end_folder:str)->None:
 
         main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True)
 
-
-
-
-
+    main_df.fillna('Нет статуса', inplace=True) # заполняем пустые ячейки
     # генерируем текущее время
     t = time.localtime()
     current_time = time.strftime('%H_%M_%S', t)
@@ -49,6 +46,33 @@ def create_social_report(data_file_social:str, path_end_folder:str)->None:
     main_wb = write_df_to_excel({'Общий список':main_df},write_index=False)
     main_wb = del_sheet(main_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
     main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
+
+
+
+    soc_df = pd.DataFrame(columns=['N','Показатель','Значение']) # датафрейм для сбора данных отчета
+    soc_df.loc[len(soc_df)] = ['1','Количество учебных групп',quantity_sheets] # добавляем количество учебных групп
+
+
+    # считаем количество студентов
+    quantity_study_student = main_df[main_df['Статус_учёба'] == 'Обучается'].shape[0] # со статусом Обучается
+    quantity_except_deducted = main_df[~main_df['Статус_учёба'].isin(['Нет статуса','Отчислен'])].shape[0] # все студенты кроме отчисленных
+    soc_df.loc[len(soc_df)] = ['2','Количество студентов (контингент)',f'{quantity_study_student}({quantity_except_deducted})'] # добавляем количество студентов
+
+    # Создаем словарь для управления порядокм подсчета
+    dct_params = {'Статус_Национальность':['Русский','Бурят','КМН','Прочие','Нет статуса'],'Статус_Мат_положение':['Выше ПМ','Ниже ПМ']}
+
+    # обрабатываем нужные колонки и упорядочиваем в правильном порядке
+    for key,value in dct_params.items():
+        pass
+
+
+
+
+
+
+
+
+    print(soc_df)
 
 
 
