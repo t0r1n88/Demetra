@@ -165,6 +165,12 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
         # Сохраняем лист с ошибками
         error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
         error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
+        # проверяем на наличие ошибок
+        if error_df.shape[0] != 0:
+            count_error = len(error_df['Лист'].unique())
+            messagebox.showinfo('Деметра Отчеты социальный паспорт студента',
+                                f'Количество необработанных листов {count_error}\n'
+                                f'Проверьте файл Ошибки в файле')
     except FileNotFoundError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Перенесите файлы, конечную папку с которой вы работете в корень диска. Проблема может быть\n '

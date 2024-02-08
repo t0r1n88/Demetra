@@ -48,7 +48,6 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         for key, value in dct_params.items():
             for name_gen_column in value.keys():
                 lst_generate_name_columns.append(name_gen_column)
-        # lst_custom_name_columns = [f'{key}_{value}' for key,value in dct_params.items()] #
         custom_report_df = pd.DataFrame(columns=lst_generate_name_columns)
         custom_report_df.insert(0,'Лист',None)
 
@@ -160,6 +159,11 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         wb = del_sheet(wb,['Sheet','Sheet1','Для подсчета'])
         # Сохраняем итоговый файл
         wb.save(f'{path_end_folder}/Отчет по всей таблице от {current_time}.xlsx')
+        if error_df.shape[0] != 0:
+            count_error = len(error_df['Лист'].unique())
+            messagebox.showinfo('Деметра Отчеты социальный паспорт студента',
+                                f'Количество необработанных листов {count_error}\n'
+                                f'Проверьте файл Ошибки в файле')
     except FileNotFoundError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Перенесите файлы, конечную папку с которой вы работете в корень диска. Проблема может быть\n '
