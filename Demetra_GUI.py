@@ -278,7 +278,7 @@ def processing_preparation_file():
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты социальный паспорт студента ver 1.0')
+    window.title('Деметра Отчеты  ver 1.0')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -304,14 +304,14 @@ if __name__ == '__main__':
        Создаем вкладку для создания социального паспорта БРИТ
        """
     tab_create_social_report = ttk.Frame(tab_control)
-    tab_control.add(tab_create_social_report, text='Социальный паспорт')
+    tab_control.add(tab_create_social_report, text='Социальный паспорт БРИТ')
 
     create_social_report_frame_description = LabelFrame(tab_create_social_report)
     create_social_report_frame_description.pack()
 
     lbl_hello_create_social_report = Label(create_social_report_frame_description,
                                            text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
-                                                'Создание отчета по социальному статусу контингента'
+                                                'Создание отчета по социальному статусу контингента БРИТ'
                                            , width=60)
     lbl_hello_create_social_report.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
 
@@ -343,7 +343,7 @@ if __name__ == '__main__':
     btn_generate_social_report.pack(padx=10, pady=10)
 
     """
-    Создаем вкладку для создания управляемых  по социальному контингенту БРИТ
+    Создаем вкладку для создания настраиваемых отчетов по любым таблицам
     """
     tab_create_local_report= ttk.Frame(tab_control)
     tab_control.add(tab_create_local_report, text='Настраиваемый отчет')
@@ -353,7 +353,7 @@ if __name__ == '__main__':
 
     lbl_hello_create_local_report = Label(create_local_report_frame_description,
                                   text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
-                                       'Создание настраиваемых отчетов для соцпедагога'
+                                       'Создание настраиваемых отчетов'
                                        ,width=60)
     lbl_hello_create_local_report.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
 

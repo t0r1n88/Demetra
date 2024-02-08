@@ -6,6 +6,12 @@ import pandas as pd
 import openpyxl
 import time
 
+class NotColumn(Exception):
+    """
+    Исключение для обработки случая когда отсутствуют нужные колонки
+    """
+    pass
+
 
 def create_social_report(data_file_social:str, path_end_folder:str)->None:
     """
@@ -25,6 +31,14 @@ def create_social_report(data_file_social:str, path_end_folder:str)->None:
             temp_df.dropna(how='all',inplace=True) # удаляем пустые строки
             temp_df.insert(0, '№ Группы', name_sheet) # вставляем колонку с именем листа
             if not example_columns:
+
+                name_columns_set = {'Статус_учёба','Статус_Национальность','Статус_Мат_положение','Статус_Соц_положение',
+                                    'Статус_Состав_семьи','Статус_Уровень_здоровья','Статус_Сиротство','Статус_Родители_образование',
+                                    'Статус_Родители_деятельность','Статус_Место_жительства','Статус_Студенческая_семья',
+                                    'Статус_Профилактика','Статус_Спорт_доп','Статус_Творчество_доп','Статус_Волонтерство','Статус_Клуб'}
+                diff_first_sheet = name_columns_set.difference(set(temp_df.columns))
+                if len(diff_first_sheet) !=0:
+                    raise NotColumn
                 example_columns = list(temp_df.columns) # делаем эталонным первый лист файла
                 main_df = pd.DataFrame(columns=example_columns)
             # проверяем на соответствие колонкам первого листа
@@ -129,6 +143,11 @@ def create_social_report(data_file_social:str, path_end_folder:str)->None:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Перенесите файлы, конечную папку с которой вы работете в корень диска. Проблема может быть\n '
                              f'в слишком длинном пути к обрабатываемым файлам или конечной папке.')
+    except NotColumn:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Проверьте названия колонок в первом листе файла с данными, для работы программы\n'
+                             f' требуются колонки: {";".join(diff_first_sheet)}'
+                             )
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
 
