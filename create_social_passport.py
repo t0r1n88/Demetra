@@ -15,7 +15,7 @@ class NotColumn(Exception):
     pass
 
 
-def create_social_report(data_file_social:str, path_end_folder:str)->None:
+def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expelled:int)->None:
     """
     Функция для генерации отчета по социальному статусу студентов БРИТ
     """
@@ -27,30 +27,34 @@ def create_social_report(data_file_social:str, path_end_folder:str)->None:
         lst_sheets = temp_wb.sheetnames
         quantity_sheets = len(temp_wb.sheetnames) # считаем количество групп
         temp_wb.close() # закрываем файл
-
+        # обязательные колонки
+        name_columns_set = {'Статус_учёба', 'Статус_Национальность', 'Статус_Мат_положение', 'Статус_Соц_положение',
+                            'Статус_Состав_семьи', 'Статус_Уровень_здоровья', 'Статус_Сиротство',
+                            'Статус_Родители_образование',
+                            'Статус_Родители_деятельность', 'Статус_Место_жительства', 'Статус_Студенческая_семья',
+                            'Статус_Профилактика', 'Статус_Спорт_доп', 'Статус_Творчество_доп',
+                            'Статус_Волонтерство', 'Статус_Клуб'}
         for name_sheet in lst_sheets:
             temp_df = pd.read_excel(data_file_social,sheet_name=name_sheet,dtype=str)
             temp_df.dropna(how='all',inplace=True) # удаляем пустые строки
             temp_df.insert(0, '№ Группы', name_sheet) # вставляем колонку с именем листа
             if not example_columns:
-
-                name_columns_set = {'Статус_учёба','Статус_Национальность','Статус_Мат_положение','Статус_Соц_положение',
-                                    'Статус_Состав_семьи','Статус_Уровень_здоровья','Статус_Сиротство','Статус_Родители_образование',
-                                    'Статус_Родители_деятельность','Статус_Место_жительства','Статус_Студенческая_семья',
-                                    'Статус_Профилактика','Статус_Спорт_доп','Статус_Творчество_доп','Статус_Волонтерство','Статус_Клуб'}
-                diff_first_sheet = name_columns_set.difference(set(temp_df.columns))
-                if len(diff_first_sheet) !=0:
-                    raise NotColumn
                 example_columns = list(temp_df.columns) # делаем эталонным первый лист файла
                 main_df = pd.DataFrame(columns=example_columns)
+                # проверяем наличие колонок
+                diff_first_sheet = name_columns_set.difference(set(temp_df.columns))
+                if len(diff_first_sheet) != 0:
+                    raise NotColumn
+
             # проверяем на соответствие колонкам первого листа
-            diff_name_columns = set(temp_df.columns).difference(set(example_columns))
-            if len(diff_name_columns) !=0:
+            if not set(example_columns).issubset(set(temp_df.columns)):
+                diff_name_columns = set(example_columns).difference(set(temp_df.columns))
                 error_row = pd.DataFrame(columns=['Лист','Ошибка','Примечание'],data=[[name_sheet,','.join(diff_name_columns),
                                                                                        'Названия колонок указанного листа отличаются от названий колонок в первом листе. Исправьте отличия']])
                 error_df = pd.concat([error_df,error_row],axis=0)
                 continue
-
+            if checkbox_expelled == 0:
+                temp_df = temp_df[temp_df['Статус_учёба'] != 'Отчислен']
             main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True)
 
         main_df.fillna('Нет статуса', inplace=True) # заполняем пустые ячейки
@@ -124,7 +128,6 @@ def create_social_report(data_file_social:str, path_end_folder:str)->None:
         soc_df.loc[len(soc_df)] = ['Количество студентов (контингент)',f'{quantity_study_student}({quantity_except_deducted})'] # добавляем количество студентов
 
         # Создаем словарь для управления порядокм подсчета
-        # dct_params = {'Статус_Национальность':['Русский','Бурят','КМН','Прочие','Нет статуса'],'Статус_Мат_положение':['Выше ПМ','Ниже ПМ']}
         dct_params = {'Национальный состав':{'Статус_Национальность':['Русский','Бурят','КМН','Прочие','Нет статуса']},
                       'Материальное положение':{'Статус_Мат_положение':['Выше ПМ','Ниже ПМ','Нет статуса']},
                       'Социальное положение':{'Статус_Соц_положение':['Благополучное','СОП','Нет статуса']},
@@ -141,6 +144,7 @@ def create_social_report(data_file_social:str, path_end_folder:str)->None:
                       'Волонтерство': {'Статус_Волонтерство': ['да','Нет статуса',]},
                       'Клубы патриотические, военно-спортивные и другие': {'Статус_Клуб': ['патриотический','военно-спортивный','прочие','Нет статуса']}
                       }
+
 
         # обрабатываем нужные колонки и упорядочиваем в правильном порядке
         for indicator,dct_value in dct_params.items():
@@ -177,8 +181,10 @@ def create_social_report(data_file_social:str, path_end_folder:str)->None:
 if __name__ == '__main__':
     main_data_file = 'data/Тестовая таблица ver 2.xlsx'
     main_end_folder = 'data/Результат'
+    main_checkbox_expelled = 0
+    # main_checkbox_expelled = 1
 
-    create_social_report(main_data_file,main_end_folder)
+    create_social_report(main_data_file,main_end_folder,main_checkbox_expelled)
 
     print('Lindy Booth !!!')
 

@@ -154,7 +154,8 @@ def processing_local_report():
     :return:
     """
     try:
-        create_local_report(name_file_data_local_report,path_to_end_folder_local_report,name_file_params_local_report)
+        checkbox_expelled = group_rb_expelled_local_report.get()
+        create_local_report(name_file_data_local_report,path_to_end_folder_local_report,name_file_params_local_report,checkbox_expelled)
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,файл с данными, конечную папку')
 
@@ -187,7 +188,8 @@ def processing_social_report():
     :return:
     """
     try:
-        create_social_report(name_file_data_social_report,path_to_end_folder_social_report)
+        checkbox_expelled = group_rb_expelled_social_report.get()
+        create_social_report(name_file_data_social_report,path_to_end_folder_social_report,checkbox_expelled)
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,файл с данными, конечную папку')
 
@@ -330,15 +332,30 @@ if __name__ == '__main__':
                                            command=select_file_data_social_report)
     btn_choose_file_social_report.pack(padx=10, pady=10)
 
+
+    # Переключатель:вариант слияния файлов
+    # Создаем переключатель
+    group_rb_expelled_social_report = IntVar()
+    # Создаем фрейм для размещения переключателей(pack и грид не используются в одном контейнере)
+    frame_rb_social_report = LabelFrame(frame_data_social_report, text='2) Выберите вариант подсчета')
+    frame_rb_social_report.pack(padx=10, pady=10)
+    #
+    Radiobutton(frame_rb_social_report, text='А) Подсчет без отчисленных', variable=group_rb_expelled_social_report,
+                value=0).pack()
+    Radiobutton(frame_rb_social_report, text='Б) Подсчет с отчисленными', variable=group_rb_expelled_social_report,
+                value=1).pack()
+
+
+
     # Создаем кнопку выбора конечной папки
-    btn_choose_end_folder_social_report = Button(frame_data_social_report, text='2) Выберите конечную папку',
+    btn_choose_end_folder_social_report = Button(frame_data_social_report, text='3) Выберите конечную папку',
                                                  font=('Arial Bold', 14),
                                                  command=select_end_folder_social_report)
     btn_choose_end_folder_social_report.pack(padx=10, pady=10)
 
     # Создаем кнопку генерации отчетов
 
-    btn_generate_social_report = Button(tab_create_social_report, text='3) Создать отчеты', font=('Arial Bold', 14),
+    btn_generate_social_report = Button(tab_create_social_report, text='4) Создать отчеты', font=('Arial Bold', 14),
                                         command=processing_social_report)
     btn_generate_social_report.pack(padx=10, pady=10)
 
@@ -378,14 +395,28 @@ if __name__ == '__main__':
                                        command=select_file_data_local_report)
     btn_choose_file_local_report.pack(padx=10, pady=10)
 
+
+    # Переключатель:вариант слияния файлов
+    # Создаем переключатель
+    group_rb_expelled_local_report = IntVar()
+    # Создаем фрейм для размещения переключателей(pack и грид не используются в одном контейнере)
+    frame_rb_local_report = LabelFrame(frame_data_local_report, text='3) Выберите вариант подсчета')
+    frame_rb_local_report.pack(padx=10, pady=10)
+    #
+    Radiobutton(frame_rb_local_report, text='А) Подсчет без отчисленных', variable=group_rb_expelled_local_report,
+                value=0).pack()
+    Radiobutton(frame_rb_local_report, text='Б) Подсчет с отчисленными', variable=group_rb_expelled_local_report,
+                value=1).pack()
+
+
     # Создаем кнопку выбора конечной папки
-    btn_choose_end_folder_local_report= Button(frame_data_local_report, text='3) Выберите конечную папку', font=('Arial Bold', 14),
+    btn_choose_end_folder_local_report= Button(frame_data_local_report, text='4) Выберите конечную папку', font=('Arial Bold', 14),
                                        command=select_end_folder_local_report)
     btn_choose_end_folder_local_report.pack(padx=10, pady=10)
 
     # Создаем кнопку генерации отчетов
 
-    btn_generate_local_report = Button(tab_create_local_report,text='4) Создать отчеты', font=('Arial Bold', 14),command=processing_local_report)
+    btn_generate_local_report = Button(tab_create_local_report,text='5) Создать отчеты', font=('Arial Bold', 14),command=processing_local_report)
     btn_generate_local_report.pack(padx=10, pady=10)
 
 

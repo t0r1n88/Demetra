@@ -8,6 +8,14 @@ import time
 from collections import Counter
 import re
 
+class NotStatusEdu(Exception):
+    """
+    Исключение для проверки наличия колонки Статус_учёба
+    """
+    pass
+
+
+
 def prepare_file_params(params_file:str)->dict:
     """
     Функция для подготовки словаря с параметрами, преобразуюет первую колонку в ключи а вторую колонку в значения
@@ -23,7 +31,7 @@ def prepare_file_params(params_file:str)->dict:
         # заполняем словарь
         temp_dct[row[1]][f'{row[1]}_{row[2]}'] = row[2]
     return temp_dct
-def create_local_report(data_file_local:str, path_end_folder:str, params_report:str) ->None:
+def create_local_report(data_file_local:str, path_end_folder:str, params_report:str,checkbox_expelled:int) ->None:
     """
     Функция для генерации отчетов на основе файла с данными групп
     """
@@ -49,16 +57,19 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
             temp_df.dropna(how='all',inplace=True) # удаляем пустые строки
             temp_df.insert(0, '№ Группы', name_sheet) # вставляем колонку с именем листа
             if not example_columns:
+                if 'Статус_учёба' not in temp_df.columns:
+                    raise NotStatusEdu
                 example_columns = list(temp_df.columns) # делаем эталонным первый лист файла
                 main_df = pd.DataFrame(columns=example_columns)
             # проверяем на соответствие колонкам первого листа
-            diff_name_columns = set(temp_df.columns).difference(set(example_columns))
-            if len(diff_name_columns) !=0:
+            if not set(example_columns).issubset(set(temp_df.columns)):
+                diff_name_columns = set(example_columns).difference(set(temp_df.columns))
                 error_row = pd.DataFrame(columns=['Лист','Ошибка','Примечание'],data=[[name_sheet,','.join(diff_name_columns),
                                                                                        'Названия колонок указанного листа отличаются от названий колонок в первом листе. Исправьте отличия']])
                 error_df = pd.concat([error_df,error_row],axis=0)
                 continue
-
+            if checkbox_expelled == 0:
+                temp_df = temp_df[temp_df['Статус_учёба'] != 'Отчислен']
             main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True)
 
             # Подсчитываем основные показатели для каждой группы
@@ -161,6 +172,7 @@ if __name__== '__main__':
     main_data_file = 'data/Тестовая таблица ver 2.xlsx'
     main_result_folder = 'data/Результат'
     main_params_file = 'data/Параметры отчета.xlsx'
-
-    create_local_report(main_data_file, main_result_folder,main_params_file)
+    main_checkbox_expelled = 0
+    # main_checkbox_expelled = 1
+    create_local_report(main_data_file, main_result_folder,main_params_file,main_checkbox_expelled)
     print('Lindy Booth')
