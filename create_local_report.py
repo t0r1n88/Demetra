@@ -46,6 +46,7 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         example_columns = None # эталонные колонки
         temp_wb = openpyxl.load_workbook(data_file_local,read_only=True) # открываем файл для того чтобы узнать какие листы в нем есть
         lst_sheets = temp_wb.sheetnames
+        lst_sheets = [name_sheet for name_sheet in lst_sheets if name_sheet != 'Данные для выпадающих списков']
         temp_wb.close() # закрываем файл
         # словарь для основных параметров по которым нужно построить отчет
         dct_params = prepare_file_params(params_report) # получаем значения по которым нужно подсчитать данные

@@ -29,9 +29,7 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
         example_columns = None # эталонные колонки
         temp_wb = openpyxl.load_workbook(data_file_social,read_only=True) # открываем файл для того чтобы узнать какие листы в нем есть
         lst_sheets = temp_wb.sheetnames
-        print(lst_sheets)
         lst_sheets = [name_sheet for name_sheet in lst_sheets if name_sheet !='Данные для выпадающих списков']
-        print(lst_sheets)
         quantity_sheets = len(temp_wb.sheetnames) # считаем количество групп
         temp_wb.close() # закрываем файл
         # обязательные колонки
