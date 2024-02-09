@@ -7,6 +7,11 @@ import openpyxl
 import time
 from collections import Counter
 import re
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
+warnings.simplefilter(action='ignore', category=DeprecationWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
+pd.options.mode.chained_assignment = None
 
 class NotStatusEdu(Exception):
     """

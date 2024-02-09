@@ -7,7 +7,11 @@ import openpyxl
 import time
 from collections import Counter
 import re
-
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
+warnings.simplefilter(action='ignore', category=DeprecationWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
+pd.options.mode.chained_assignment = None
 class NotColumn(Exception):
     """
     Исключение для обработки случая когда отсутствуют нужные колонки
@@ -25,6 +29,9 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
         example_columns = None # эталонные колонки
         temp_wb = openpyxl.load_workbook(data_file_social,read_only=True) # открываем файл для того чтобы узнать какие листы в нем есть
         lst_sheets = temp_wb.sheetnames
+        print(lst_sheets)
+        lst_sheets = [name_sheet for name_sheet in lst_sheets if name_sheet !='Данные для выпадающих списков']
+        print(lst_sheets)
         quantity_sheets = len(temp_wb.sheetnames) # считаем количество групп
         temp_wb.close() # закрываем файл
         # обязательные колонки
@@ -194,6 +201,7 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
 if __name__ == '__main__':
     main_data_file = 'data/Тестовая таблица ver 2.xlsx'
     main_data_file = 'data/Пример файла 05_02.xlsx'
+    main_data_file = 'data/Пример файла.xlsx'
     main_end_folder = 'data/Результат'
     main_checkbox_expelled = 0
     # main_checkbox_expelled = 1
