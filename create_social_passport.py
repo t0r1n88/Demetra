@@ -37,7 +37,11 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
         for name_sheet in lst_sheets:
             temp_df = pd.read_excel(data_file_social,sheet_name=name_sheet,dtype=str)
             temp_df.dropna(how='all',inplace=True) # удаляем пустые строки
-            temp_df.insert(0, '№ Группы', name_sheet) # вставляем колонку с именем листа
+            # проверяем наличие колонки № Группы
+            if '№ Группы' in temp_df.columns:
+                temp_df.insert(0, '№ Группы_новый', name_sheet)  # вставляем колонку с именем листа
+            else:
+                temp_df.insert(0, '№ Группы', name_sheet) # вставляем колонку с именем листа
             if not example_columns:
                 example_columns = list(temp_df.columns) # делаем эталонным первый лист файла
                 main_df = pd.DataFrame(columns=example_columns)

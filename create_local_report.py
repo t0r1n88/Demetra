@@ -54,7 +54,10 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         for name_sheet in lst_sheets:
             temp_df = pd.read_excel(data_file_local,sheet_name=name_sheet,dtype=str)
             temp_df.dropna(how='all',inplace=True) # удаляем пустые строки
-            temp_df.insert(0, '№ Группы', name_sheet) # вставляем колонку с именем листа
+            if '№ Группы' in temp_df.columns:
+                temp_df.insert(0, '№ Группы_новый', name_sheet)  # вставляем колонку с именем листа
+            else:
+                temp_df.insert(0, '№ Группы', name_sheet)  # вставляем колонку с именем листа
             if not example_columns:
                 if 'Статус_учёба' not in temp_df.columns:
                     raise NotStatusEdu
