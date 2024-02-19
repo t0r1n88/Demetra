@@ -47,6 +47,7 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         temp_wb = openpyxl.load_workbook(data_file_local,read_only=True) # открываем файл для того чтобы узнать какие листы в нем есть
         lst_sheets = temp_wb.sheetnames
         lst_sheets = [name_sheet for name_sheet in lst_sheets if name_sheet != 'Данные для выпадающих списков']
+        quantity_sheets = len(temp_wb.sheetnames)  # считаем количество групп
         temp_wb.close() # закрываем файл
         # словарь для основных параметров по которым нужно построить отчет
         dct_params = prepare_file_params(params_report) # получаем значения по которым нужно подсчитать данные
@@ -161,13 +162,41 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
                     wb[name_column[:30]].append(r)
             wb[name_column[:30]].column_dimensions['A'].width = 50
 
-        # генерируем текущее время
-        t = time.localtime()
-        current_time = time.strftime('%H_%M_%S', t)
+
         # Удаляем листы
         wb = del_sheet(wb,['Sheet','Sheet1','Для подсчета'])
         # Сохраняем итоговый файл
         wb.save(f'{path_end_folder}/Отчет по всей таблице от {current_time}.xlsx')
+
+        # Создаем Свод по статусам
+        # Собираем колонки содержащие слово статус
+        lst_status = [name_column for name_column in main_df.columns if 'Статус_' in name_column]
+
+        status_df = main_df[lst_status] # оставляем датафрейм с данными статусов
+        # Создаем датафрейм с данными по статусам
+        soc_df = pd.DataFrame(columns=['Показатель','Значение']) # датафрейм для сбора данных отчета
+        soc_df.loc[len(soc_df)] = ['Количество учебных групп',quantity_sheets] # добавляем количество учебных групп
+        # считаем количество студентов
+        quantity_study_student = main_df[main_df['Статус_учёба'] == 'Обучается'].shape[0]  # со статусом Обучается
+        quantity_except_deducted = main_df[~main_df['Статус_учёба'].isin(['Нет статуса', 'Отчислен'])].shape[
+            0]  # все студенты кроме отчисленных и у которых нет статуса
+        soc_df.loc[len(soc_df)] = ['Количество студентов (контингент)',
+                                   f'Обучается - {quantity_study_student}, Всего - {quantity_except_deducted}']  # добавляем количество студентов
+
+        for name_column in lst_status:
+            temp_counts = main_df[name_column].value_counts().sort_index()  # делаем подсчет
+            new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
+                                       data=[[name_column, None]])  # создаем строку с заголовком
+            new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
+            new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
+            new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
+            soc_df = pd.concat([soc_df, new_part_df], axis=0)
+
+        soc_wb = write_df_to_excel({'Свод по статусам':soc_df},write_index=False)
+        soc_wb = del_sheet(soc_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        soc_wb.save(f'{path_end_folder}/Свод по статусам от {current_time}.xlsx')
+
+
         if error_df.shape[0] != 0:
             count_error = len(error_df['Лист'].unique())
             messagebox.showinfo('Деметра Отчеты социальный паспорт студента',
@@ -182,7 +211,7 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
 
 
 if __name__== '__main__':
-    main_data_file = 'data/Тестовая таблица ver 2.xlsx'
+    main_data_file = 'data/Пример файла.xlsx'
     main_result_folder = 'data/Результат'
     main_params_file = 'data/Параметры отчета.xlsx'
     main_checkbox_expelled = 0
