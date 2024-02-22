@@ -47,7 +47,7 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         temp_wb = openpyxl.load_workbook(data_file_local,read_only=True) # открываем файл для того чтобы узнать какие листы в нем есть
         lst_sheets = temp_wb.sheetnames
         lst_sheets = [name_sheet for name_sheet in lst_sheets if name_sheet != 'Данные для выпадающих списков']
-        quantity_sheets = len(temp_wb.sheetnames)  # считаем количество групп
+        quantity_sheets = len(lst_sheets)  # считаем количество групп
         temp_wb.close() # закрываем файл
         # словарь для основных параметров по которым нужно построить отчет
         dct_params = prepare_file_params(params_report) # получаем значения по которым нужно подсчитать данные
@@ -172,7 +172,6 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         # Собираем колонки содержащие слово статус
         lst_status = [name_column for name_column in main_df.columns if 'Статус_' in name_column]
 
-        status_df = main_df[lst_status] # оставляем датафрейм с данными статусов
         # Создаем датафрейм с данными по статусам
         soc_df = pd.DataFrame(columns=['Показатель','Значение']) # датафрейм для сбора данных отчета
         soc_df.loc[len(soc_df)] = ['Количество учебных групп',quantity_sheets] # добавляем количество учебных групп
@@ -181,7 +180,7 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         quantity_except_deducted = main_df[~main_df['Статус_учёба'].isin(['Нет статуса', 'Отчислен'])].shape[
             0]  # все студенты кроме отчисленных и у которых нет статуса
         soc_df.loc[len(soc_df)] = ['Количество студентов (контингент)',
-                                   f'Обучается - {quantity_study_student}, Всего - {quantity_except_deducted}']  # добавляем количество студентов
+                                   f'Обучается - {quantity_study_student}, Всего - {quantity_except_deducted} (включая академ.)']  # добавляем количество студентов
 
         for name_column in lst_status:
             temp_counts = main_df[name_column].value_counts().sort_index()  # делаем подсчет
@@ -211,7 +210,7 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
 
 
 if __name__== '__main__':
-    main_data_file = 'data/Пример файла.xlsx'
+    main_data_file = 'data/Таблица для заполнения.xlsx'
     main_result_folder = 'data/Результат'
     main_params_file = 'data/Параметры отчета.xlsx'
     main_checkbox_expelled = 0
