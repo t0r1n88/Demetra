@@ -4,6 +4,7 @@
 from support_functions import *
 import pandas as pd
 import openpyxl
+from copy import copy
 import time
 from collections import Counter
 import re
@@ -40,12 +41,11 @@ def merge_table(etalon_file:str, folder_update_file:str, result_folder:str)->Non
         if not file.startswith('~$') and file.endswith('.xlsx'):
             name_file = file.split('.xlsx')[0]
             print(name_file)
-            temp_wb = openpyxl.load_workbook(f'{folder_update_file}/{file}',read_only=True) # открываем в режиме для чтения
+            temp_wb = openpyxl.load_workbook(f'{folder_update_file}/{file}') # открываем
             lst_sheets_temp_wb = temp_wb.sheetnames # получаем список листов в файле
-            temp_wb.close() # закрываем файл
             for name_sheet in lst_sheets_temp_wb:
-                if name_sheet != 'Данные для выпадающих списков':
-                    temp_df = pd.read_excel(f'{folder_update_file}/{file}',sheet_name=name_sheet)
+                if name_sheet != 'Данные для выпадающих списков': # отбрасываем лист с даннными выпадающих списков
+                    temp_df = pd.read_excel(f'{folder_update_file}/{file}',sheet_name=name_sheet) # получаем колонки которые есть на листе
                     diff_cols = set(temp_df.columns).difference(etalon_cols)
                     if len(diff_cols) != 0:
                         temp_error_df = pd.DataFrame(data=[[f'{name_file}', f'{name_sheet}', f'{";".join(diff_cols)}',
@@ -53,20 +53,40 @@ def merge_table(etalon_file:str, folder_update_file:str, result_folder:str)->Non
                                                      columns=['Название файла','Название листа', 'Значение ошибки',
                                                               'Описание ошибки'])
                         error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+                        continue # не обрабатываем лист где найдены ошибки
+                    target_sheet = wb.create_sheet(name_sheet) # Создаем лист в итоговом файле
+                    for row in temp_wb[name_sheet].iter_rows(): # копируем данные
+                        for cell in row:
+                            new_cell = target_sheet.cell(row=cell.row, column=cell.column, value=cell.value)
+                            if cell.has_style:
+                                new_cell.font = copy(cell.font)
+                                new_cell.border = copy(cell.border)
+                                new_cell.fill = copy(cell.fill)
+                                new_cell.number_format = copy(cell.number_format)
+                                new_cell.alignment = copy(cell.alignment)
+                                new_cell.protection = copy(cell.protection)
 
+
+
+
+    del wb[main_sheet] # Удаляем эталонный лист
     t = time.localtime()  # получаем текущее время
     current_time = time.strftime('%H_%M_%S', t)
 
-    # Создаем документ
-    wb = openpyxl.Workbook()
-    for r in dataframe_to_rows(error_df, index=False, header=True):
-        wb['Sheet'].append(r)
 
-    wb['Sheet'].column_dimensions['A'].width = 50
-    wb['Sheet'].column_dimensions['B'].width = 40
-    wb['Sheet'].column_dimensions['C'].width = 50
-    wb.save(f'{result_folder}/ОШИБКИ Сбор данных групп от {current_time}.xlsx')
-    wb.close()
+    wb.save(f'{result_folder}/Cвод за месяц от {current_time}.xlsx')
+
+
+    # Создаем документ
+    error_wb = openpyxl.Workbook()
+    for r in dataframe_to_rows(error_df, index=False, header=True):
+        error_wb['Sheet'].append(r)
+
+    error_wb['Sheet'].column_dimensions['A'].width = 50
+    error_wb['Sheet'].column_dimensions['B'].width = 40
+    error_wb['Sheet'].column_dimensions['C'].width = 50
+    error_wb.save(f'{result_folder}/ОШИБКИ Сбор данных групп от {current_time}.xlsx')
+    error_wb.close()
 
 
 
