@@ -72,9 +72,10 @@ def merge_table(etalon_file:str, folder_update_file:str, result_folder:str)->Non
     del wb[main_sheet] # Удаляем эталонный лист
     t = time.localtime()  # получаем текущее время
     current_time = time.strftime('%H_%M_%S', t)
+    current_date = time.strftime('%d_%m_%Y', t)
 
 
-    wb.save(f'{result_folder}/Cвод за месяц от {current_time}.xlsx')
+    wb.save(f'{result_folder}/Cвод за месяц от {current_date}.xlsx')
 
 
     # Создаем документ
