@@ -306,7 +306,7 @@ if __name__ == '__main__':
        Создаем вкладку для создания социального паспорта БРИТ
        """
     tab_create_social_report = ttk.Frame(tab_control)
-    tab_control.add(tab_create_social_report, text='Социальный паспорт БРИТ')
+    tab_control.add(tab_create_social_report, text='Стандартный отчет')
 
     create_social_report_frame_description = LabelFrame(tab_create_social_report)
     create_social_report_frame_description.pack()
