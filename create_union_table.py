@@ -23,13 +23,13 @@ def merge_table(etalon_file:str, folder_update_file:str, result_folder:str)->Non
     :param folder_update_file: папка в которой лежат файлы для обновления
     :param result_folder: папка в которой будет находится итоговый файл
     """
+    set_used_sheets = set() # множество для хранения названий уже существующих листов
     wb = openpyxl.load_workbook(etalon_file) # загружаем эталонный файл
-    print(wb.sheetnames)
     main_sheet = wb.sheetnames[0] # получаем название первого листа с которым и будем сравнивать новые файлы
     main_df = pd.read_excel(etalon_file,sheet_name=main_sheet) # загружаем датафрейм чтобы получить эталонные колонки
     etalon_cols = set(main_df.columns) # эталонные колонки
     error_df = pd.DataFrame(columns=['Название файла','Название листа','Значение ошибки','Описание ошибки'])  # датафрейм для ошибок
-    for file in os.listdir(folder_update_file):
+    for idx, file in enumerate(os.listdir(folder_update_file)):
         if not file.startswith('~$') and not file.endswith('.xlsx'):
             name_file = file.split('.xls')[0]
             temp_error_df = pd.DataFrame(data=[[f'{name_file}','', '',
@@ -54,7 +54,12 @@ def merge_table(etalon_file:str, folder_update_file:str, result_folder:str)->Non
                                                               'Описание ошибки'])
                         error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
                         continue # не обрабатываем лист где найдены ошибки
-                    target_sheet = wb.create_sheet(name_sheet) # Создаем лист в итоговом файле
+                    if name_sheet not in set_used_sheets:
+                        target_sheet = wb.create_sheet(name_sheet) # Создаем лист в итоговом файле
+                    else:
+                        target_sheet = wb.create_sheet(f'{name_sheet}_{idx}')  # Создаем лист в итоговом файле
+
+
                     for row in temp_wb[name_sheet].iter_rows(): # копируем данные
                         for cell in row:
                             new_cell = target_sheet.cell(row=cell.row, column=cell.column, value=cell.value)
@@ -65,6 +70,7 @@ def merge_table(etalon_file:str, folder_update_file:str, result_folder:str)->Non
                                 new_cell.number_format = copy(cell.number_format)
                                 new_cell.alignment = copy(cell.alignment)
                                 new_cell.protection = copy(cell.protection)
+                    set_used_sheets.add(name_sheet)  # добавляем в использованные имена листов
 
 
 
@@ -75,7 +81,7 @@ def merge_table(etalon_file:str, folder_update_file:str, result_folder:str)->Non
     current_date = time.strftime('%d_%m_%Y', t)
 
 
-    wb.save(f'{result_folder}/Cвод за месяц от {current_date}.xlsx')
+    wb.save(f'{result_folder}/Cвод от {current_date}.xlsx')
 
 
     # Создаем документ
