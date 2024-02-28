@@ -3,6 +3,7 @@
 """
 from create_local_report import create_local_report # создание отчета по выбранным пользователем параметрам
 from create_social_passport import create_social_report # создание отчета по социальному состоянию
+from create_union_table import merge_table # соединие таблиц
 from preparation_list import prepare_list # подготовка персональных данных
 from split_table import split_table # разделение таблицы
 import pandas as pd
@@ -192,6 +193,51 @@ def processing_social_report():
         create_social_report(name_file_data_social_report,path_to_end_folder_social_report,checkbox_expelled)
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,файл с данными, конечную папку')
+
+"""
+Функции для соединения таблиц
+"""
+def select_file_etalon_merge_report():
+    """
+    Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
+    :return: Путь к файлу с данными
+    """
+    global name_file_etalon_merge_report
+    # Получаем путь к файлу
+    name_file_etalon_merge_report = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
+def select_data_folder_merge_report():
+    """
+    Функция для выбора папки куда будут генерироваться файлы
+    :return:
+    """
+    global path_to_data_folder_merge_report
+    path_to_data_folder_merge_report = filedialog.askdirectory()
+
+def select_end_folder_merge_report():
+    """
+    Функция для выбора папки куда будут генерироваться файлы
+    :return:
+    """
+    global path_to_end_folder_merge_report
+    path_to_end_folder_merge_report = filedialog.askdirectory()
+
+
+def processing_merge_report():
+    """
+    Создание общей таблицы из нескольких файлов. При этом листы файлов копируются в общую таблицу сохраняя
+    форматирование и данные
+    :return: файл xlsx
+    """
+    try:
+        merge_table(name_file_etalon_merge_report, path_to_data_folder_merge_report, path_to_end_folder_merge_report)
+    except NameError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,файл с данными, конечную папку')
+
+
+
+
 
 
 """
@@ -418,6 +464,56 @@ if __name__ == '__main__':
 
     btn_generate_local_report = Button(tab_create_local_report,text='5) Создать отчеты', font=('Arial Bold', 14),command=processing_local_report)
     btn_generate_local_report.pack(padx=10, pady=10)
+
+    """
+    Создаем вкладку для слияния файлов таблиц
+    """
+    tab_create_merge_report = ttk.Frame(tab_control)
+    tab_control.add(tab_create_merge_report, text='Соединить файлы для отчета')
+
+    create_merge_report_frame_description = LabelFrame(tab_create_merge_report)
+    create_merge_report_frame_description.pack()
+
+    lbl_hello_create_merge_report = Label(create_merge_report_frame_description,
+                                          text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
+                                               'Слияние файлов в общий файл, каждый лист из исходого файла\n'
+                                               'будет скопирован на отдельный лист общего файла'
+                                          , width=60)
+    lbl_hello_create_merge_report.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+
+    # Картинка
+    path_to_img_create_merge_report = resource_path('logo.png')
+    img_create_merge_report = PhotoImage(file=path_to_img_create_merge_report)
+    Label(create_merge_report_frame_description,
+          image=img_create_merge_report, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_merge_report = LabelFrame(tab_create_merge_report, text='Подготовка')
+    frame_data_merge_report.pack(padx=10, pady=10)
+
+    # Создаем кнопку выбора файла с данными
+    btn_choose_file_etalon_merge_report = Button(frame_data_merge_report, text='1) Выберите эталонный файл',
+                                                 font=('Arial Bold', 14),
+                                                 command=select_file_etalon_merge_report)
+    btn_choose_file_etalon_merge_report.pack(padx=10, pady=10)
+
+    btn_choose_file_merge_report = Button(frame_data_merge_report, text='2) Выберите папку с исходными файлами', font=('Arial Bold', 14),
+                                          command=select_data_folder_merge_report)
+    btn_choose_file_merge_report.pack(padx=10, pady=10)
+
+
+    # Создаем кнопку выбора конечной папки
+    btn_choose_end_folder_merge_report = Button(frame_data_merge_report, text='3) Выберите конечную папку',
+                                                font=('Arial Bold', 14),
+                                                command=select_end_folder_merge_report)
+    btn_choose_end_folder_merge_report.pack(padx=10, pady=10)
+
+    # Создаем кнопку генерации отчетов
+
+    btn_generate_merge_report = Button(tab_create_merge_report, text='4) Соединить таблицы', font=('Arial Bold', 14),
+                                       command=processing_merge_report)
+    btn_generate_merge_report.pack(padx=10, pady=10)
 
 
     """

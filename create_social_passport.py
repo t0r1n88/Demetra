@@ -128,7 +128,7 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
         # Удаляем листы
         wb = del_sheet(wb,['Sheet','Sheet1','Для подсчета'])
         # Сохраняем итоговый файл
-        wb.save(f'{path_end_folder}/Отчет по всей таблице от {current_time}.xlsx')
+        wb.save(f'{path_end_folder}/Свод по каждой колонке таблицы от {current_time}.xlsx')
 
 
         # Создаем Свод по статусам

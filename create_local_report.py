@@ -168,7 +168,7 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         # Удаляем листы
         wb = del_sheet(wb,['Sheet','Sheet1','Для подсчета'])
         # Сохраняем итоговый файл
-        wb.save(f'{path_end_folder}/Отчет по всей таблице от {current_time}.xlsx')
+        wb.save(f'{path_end_folder}/Свод по каждой колонке таблицы от {current_time}.xlsx')
 
         # Создаем Свод по статусам
         # Собираем колонки содержащие слово статус
@@ -210,7 +210,10 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
 
         soc_wb.save(f'{path_end_folder}/Свод по статусам от {current_time}.xlsx')
 
-
+        # Сохраняем лист с ошибками
+        error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
+        error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
+        print(error_df['Лист'])
         if error_df.shape[0] != 0:
             count_error = len(error_df['Лист'].unique())
             messagebox.showinfo('Деметра Отчеты социальный паспорт студента',
