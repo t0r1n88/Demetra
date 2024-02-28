@@ -4,6 +4,7 @@
 from support_functions import *
 import pandas as pd
 import openpyxl
+from openpyxl.styles import Font, PatternFill
 import time
 from collections import Counter
 import re
@@ -145,16 +146,28 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
                                    f'Обучается - {quantity_study_student}, Всего - {quantity_except_deducted} (включая академ.)']  # добавляем количество студентов
 
         for name_column in lst_status:
-            temp_counts = main_df[name_column].value_counts().sort_index()  # делаем подсчет
+            temp_counts = main_df[name_column].value_counts()  # делаем подсчет
             new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
                                        data=[[name_column, None]])  # создаем строку с заголовком
             new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
             new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
+            new_value_df.sort_values(by='Показатель',inplace=True)
             new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
             soc_df = pd.concat([soc_df, new_part_df], axis=0)
 
         soc_wb = write_df_to_excel({'Свод по статусам':soc_df},write_index=False)
         soc_wb = del_sheet(soc_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+
+        column_number = 0 # номер колонки в которой ищем слово Статус_
+        # Создаем  стиль шрифта и заливки
+        font = Font(color='FF000000')  # Черный цвет
+        fill = PatternFill(fill_type='solid', fgColor='ffa500')  # Оранжевый цвет
+        for row in soc_wb['Свод по статусам'].iter_rows(min_row=1, max_row=soc_wb['Свод по статусам'].max_row,
+                                                        min_col=column_number, max_col=column_number):  # Перебираем строки
+            if 'Статус_' in str(row[column_number].value): # делаем ячейку строковой и проверяем наличие слова Статус_
+                for cell in row: # применяем стиль если условие сработало
+                    cell.font = font
+                    cell.fill = fill
         soc_wb.save(f'{path_end_folder}/Свод по статусам от {current_time}.xlsx')
 
         # Сохраняем лист с ошибками
@@ -182,6 +195,7 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
 if __name__ == '__main__':
     main_data_file = 'data/Тестовая таблица ver 2.xlsx'
     main_data_file = 'data/Таблица для проверки.xlsx'
+    main_data_file = 'data/Cвод от 28_02_2024.xlsx'
 
     main_end_folder = 'data/Результат'
     main_checkbox_expelled = 0
