@@ -67,7 +67,7 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
             else:
                 temp_df.insert(0, '№ Группы', name_sheet)  # вставляем колонку с именем листа
             if not example_columns:
-                if 'Статус_учёба' not in temp_df.columns:
+                if 'Статус_Учёба' not in temp_df.columns:
                     raise NotStatusEdu
                 example_columns = list(temp_df.columns) # делаем эталонным первый лист файла
                 main_df = pd.DataFrame(columns=example_columns)
@@ -178,8 +178,8 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         soc_df = pd.DataFrame(columns=['Показатель','Значение']) # датафрейм для сбора данных отчета
         soc_df.loc[len(soc_df)] = ['Количество учебных групп',quantity_sheets] # добавляем количество учебных групп
         # считаем количество студентов
-        quantity_study_student = main_df[main_df['Статус_учёба'] == 'Обучается'].shape[0]  # со статусом Обучается
-        quantity_except_deducted = main_df[~main_df['Статус_учёба'].isin(['Нет статуса', 'Отчислен'])].shape[
+        quantity_study_student = main_df[main_df['Статус_Учёба'] == 'Обучается'].shape[0]  # со статусом Обучается
+        quantity_except_deducted = main_df[~main_df['Статус_Учёба'].isin(['Нет статуса', 'Отчислен'])].shape[
             0]  # все студенты кроме отчисленных и у которых нет статуса
         soc_df.loc[len(soc_df)] = ['Количество студентов (контингент)',
                                    f'Обучается - {quantity_study_student}, Всего - {quantity_except_deducted} (включая академ.)']  # добавляем количество студентов
@@ -213,7 +213,6 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         # Сохраняем лист с ошибками
         error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
         error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
-        print(error_df['Лист'])
         if error_df.shape[0] != 0:
             count_error = len(error_df['Лист'].unique())
             messagebox.showinfo('Деметра Отчеты социальный паспорт студента',
@@ -223,6 +222,10 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Перенесите файлы, конечную папку с которой вы работете в корень диска. Проблема может быть\n '
                              f'в слишком длинном пути к обрабатываемым файлам или конечной папке.')
+    except NotStatusEdu:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Отсутствует колонка Статус_Учёба, добавьте колонку с таким названием в файл'
+                             )
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
 
