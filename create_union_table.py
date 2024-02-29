@@ -105,7 +105,7 @@ def merge_table(etalon_file:str, folder_update_file:str, result_folder:str)->Non
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
 
 if __name__=='__main__':
-    main_etalon_file = 'data/Таблица для заполнения социального паспорта студентов.xlsx'
+    main_etalon_file = 'data/Эталон.xlsx'
     main_folder_update = 'data/27.02'
     main_folder_result = 'data/Результат'
     merge_table(main_etalon_file,main_folder_update,main_folder_result)

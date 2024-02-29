@@ -79,7 +79,7 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
                 error_df = pd.concat([error_df,error_row],axis=0)
                 continue
             if checkbox_expelled == 0:
-                temp_df = temp_df[temp_df['Статус_учёба'] != 'Отчислен']
+                temp_df = temp_df[temp_df['Статус_Учёба'] != 'Отчислен']
             main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True)
 
             # Подсчитываем основные показатели для каждой группы
