@@ -19,6 +19,41 @@ class NotColumn(Exception):
     """
     pass
 
+def create_value_str(df:pd.DataFrame,name_column:str,target_name_column:str,dct_str:dict)->pd.DataFrame:
+    """
+    Функция для формирования строки нужного формата с использованием переменных
+    :param df:датафрейм
+    :param name_column:название колонки для значений которой нужно произвести подсчет
+    :param target_name_column: название колонки по которой будет производится подсчет
+    :param dct_str:словарь с параметрами
+    :return:датафрейм
+    """
+    temp_counts = df[name_column].value_counts()  # делаем подсчет
+    new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
+                               data=[[name_column, None]])  # создаем строку с заголовком
+    new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
+    new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
+    new_value_df.sort_values(by='Показатель', inplace=True)
+    for idx,row in enumerate(new_value_df.iterrows()):
+        name_op = row[1].values[0] # получаем название ОП
+        temp_df = df[df[name_column] == name_op] # отфильтровываем по названию ОП
+        quantity_study_student = temp_df[temp_df[target_name_column] == dct_str['Обучается']].shape[0]  # со статусом Обучается
+        quantity_academ_student = temp_df[temp_df[target_name_column].str.contains(dct_str['Академ'])].shape[
+            0]
+        quantity_not_status_student = temp_df[temp_df[target_name_column].str.contains(dct_str['Не указан статус'])].shape[
+            0]
+        quantity_except_deducted = temp_df[~temp_df[target_name_column].str.contains('Отчислен')].shape[
+            0]
+        out_str = f'Обучается - {quantity_study_student}, Академ - {quantity_academ_student},' \
+                  f' Не указан статус - {quantity_not_status_student}, Всего {quantity_except_deducted} (включая академ. и без статуса)'
+        new_value_df.iloc[idx,1] = out_str # присваиваем значение
+
+    return new_value_df
+
+
+
+
+
 
 def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expelled:int)->None:
     """
@@ -34,7 +69,7 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
         quantity_sheets = len(lst_sheets) # считаем количество групп
         temp_wb.close() # закрываем файл
         # обязательные колонки
-        name_columns_set = {'Статус_Бюджет','Статус_Общежитие','Статус_Учёба','Статус_Всеобуч', 'Статус_Национальность', 'Статус_Соц_стипендия', 'Статус_Соц_положение_семьи',
+        name_columns_set = {'Статус_ОП','Статус_Бюджет','Статус_Общежитие','Статус_Учёба','Статус_Всеобуч', 'Статус_Национальность', 'Статус_Соц_стипендия', 'Статус_Соц_положение_семьи',
                             'Статус_Питание',
                             'Статус_Состав_семьи', 'Статус_Уровень_здоровья', 'Статус_Сиротство',
                             'Статус_Отец_образование','Статус_Мать_образование','Статус_Опекун_Образование',
@@ -140,18 +175,31 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
         soc_df.loc[len(soc_df)] = ['Количество учебных групп',quantity_sheets] # добавляем количество учебных групп
         # считаем количество студентов
         quantity_study_student = main_df[main_df['Статус_Учёба'] == 'Обучается'].shape[0]  # со статусом Обучается
-        quantity_except_deducted = main_df[~main_df['Статус_Учёба'].isin(['Нет статуса', 'Отчислен'])].shape[
-            0]  # все студенты кроме отчисленных и у которых нет статуса
+        quantity_academ_student = main_df[main_df['Статус_Учёба'].str.contains('Академический отпуск')].shape[
+            0]
+        quantity_not_status_student = main_df[main_df['Статус_Учёба'].str.contains('Нет статуса')].shape[
+            0]
+        quantity_except_deducted = main_df[~main_df['Статус_Учёба'].str.contains('Отчислен')].shape[
+            0]  # все студенты кроме отчисленных
         soc_df.loc[len(soc_df)] = ['Количество студентов (контингент)',
-                                   f'Обучается - {quantity_study_student}, Всего - {quantity_except_deducted} (включая академ.)']  # добавляем количество студентов
+                                   f'Обучается - {quantity_study_student}, Академ - {quantity_academ_student}, Не указан статус - {quantity_not_status_student}, Всего {quantity_except_deducted} (включая академ. и без статуса)']  # добавляем количество студентов
 
         for name_column in lst_status:
-            temp_counts = main_df[name_column].value_counts()  # делаем подсчет
-            new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
-                                       data=[[name_column, None]])  # создаем строку с заголовком
-            new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
-            new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
-            new_value_df.sort_values(by='Показатель',inplace=True)
+            if name_column == 'Статус_ОП':
+                new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
+                                           data=[[name_column, None]])  # создаем строку с заголовком
+                # создаем строки с описанием
+                new_value_df = create_value_str(main_df, name_column,'Статус_Учёба',
+                                                {'Обучается': 'Обучается', 'Академ': 'Академический отпуск',
+                                                 'Не указан статус': 'Нет статуса'})
+            else:
+
+                temp_counts = main_df[name_column].value_counts()  # делаем подсчет
+                new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
+                                           data=[[name_column, None]])  # создаем строку с заголовком
+                new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
+                new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
+                new_value_df.sort_values(by='Показатель',inplace=True)
             new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
             soc_df = pd.concat([soc_df, new_part_df], axis=0)
 
@@ -193,9 +241,7 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
 
 
 if __name__ == '__main__':
-    main_data_file = 'data/Тестовая таблица ver 2.xlsx'
-    main_data_file = 'data/Таблица для проверки.xlsx'
-    main_data_file = 'data/Cвод от 28_02_2024.xlsx'
+    main_data_file = 'data/Общий файл.xlsx'
 
     main_end_folder = 'data/Результат'
     main_checkbox_expelled = 0
