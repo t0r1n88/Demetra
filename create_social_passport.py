@@ -29,8 +29,6 @@ def create_value_str(df:pd.DataFrame,name_column:str,target_name_column:str,dct_
     :return:датафрейм
     """
     temp_counts = df[name_column].value_counts()  # делаем подсчет
-    new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
-                               data=[[name_column, None]])  # создаем строку с заголовком
     new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
     new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
     new_value_df.sort_values(by='Показатель', inplace=True)
@@ -50,15 +48,7 @@ def create_value_str(df:pd.DataFrame,name_column:str,target_name_column:str,dct_
 
     return new_value_df
 
-
-
-def create_report_brit(df:pd.DataFrame)->None:
-    """
-    Функция для создания отчета по стандарту БРИТ
-    :param df: копия общего датафрейма
-    """
-
-    def count_value(group: pd.Series, target_value: str):
+def count_value(group: pd.Series, target_value: str):
         """
         Функция для группировки по конкретному значению
         Возвращает количество значений target_value в группе
@@ -67,9 +57,14 @@ def create_report_brit(df:pd.DataFrame)->None:
         count_group = group.str.contains(target_value)
         return sum(count_group)
 
+def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
+    """
+    Функция для создания отчета по стандарту БРИТ
+    :param df: копия общего датафрейма
+    :param path_end_folder: куда сохранять результаты
+    """
     dct_name_sheet = dict()  # словарь где ключ это названия листа а значение датафрейм на основе которого был произведен подсчет
 
-    df = pd.read_excel('data/Общий файл.xlsx', dtype=str)
     df.fillna('Нет статуса', inplace=True)  # заполняем Наны
     group_main_df = pd.DataFrame(index=list(df['Файл'].unique()))
     group_main_df.index.name = 'Файл'
@@ -87,7 +82,6 @@ def create_report_brit(df:pd.DataFrame)->None:
     group_main_df = group_main_df.join(orphans_group_df)  # добавляем в свод
     group_main_df.rename(columns={'Статус_Сиротство': 'Дети-сироты'}, inplace=True)
 
-    group_main_df
 
     # Создаем датафрейм с сиротами
     invalid_df = df[df['Статус_Уровень_здоровья'].isin(['Инвалид детства', 'Инвалид 1,2,3, группы'])]
@@ -97,12 +91,9 @@ def create_report_brit(df:pd.DataFrame)->None:
     group_main_df = group_main_df.join(invalid_group_df)  # добавляем в свод
     group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Инвалиды'}, inplace=True)
 
-    group_main_df
 
     # Создаем датафрейм с получателями социальной стипендии
-    print(df.shape)
     soc_benefit_df = df[df['Статус_Соц_стипендия'].isin(['да'])]
-    print(soc_benefit_df.shape)
     dct_name_sheet['Соц. стипендия Все'] = soc_benefit_df  # добавляем в словарь
 
     # получаем малоимущих
@@ -131,9 +122,7 @@ def create_report_brit(df:pd.DataFrame)->None:
     group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Соц. стипендия инвалиды'}, inplace=True)
 
     # Создаем датафрейм с получателями бесплатного питания
-    print(df.shape)
     eating_df = df[df['Статус_Питание'].isin(['получает компенсацию за питание', 'питается в БРИТ'])]
-    print(eating_df.shape)
     dct_name_sheet['Питание все'] = eating_df  # добавляем в словарь
 
     # получаем малоимущих
@@ -168,9 +157,7 @@ def create_report_brit(df:pd.DataFrame)->None:
     group_main_df.rename(columns={'Статус_Родитель_СВО': 'Питание СВО'}, inplace=True)
 
     # Создаем датафрейм с проживающими в общежитии
-    print(df.shape)
     dormitory_df = df[df['Статус_Общежитие'].isin(['да'])]
-    print(dormitory_df.shape)
     dct_name_sheet['Общежитие все'] = dormitory_df  # добавляем в словарь
     dormitory_group_df = dormitory_df.groupby(by=['Файл']).agg({'Статус_Общежитие': 'count'})
     group_main_df = group_main_df.join(dormitory_group_df)  # добавляем в свод
@@ -348,6 +335,17 @@ def create_report_brit(df:pd.DataFrame)->None:
     sum_row = group_accounting_main_df.sum(axis=0)  # суммируем колонки
     group_accounting_main_df.loc['Итого'] = sum_row  # добавляем суммирующую колонку
 
+    # получаем текущее время
+    t = time.localtime()
+    current_time = time.strftime('%H_%M_%S', t)
+    # Создаем файл для самого отчета
+    report_wb = write_df_to_excel({'Социальный паспорт': group_main_df,'Сироты':group_orphans_main_df,'Учет':group_accounting_main_df}, write_index=True)
+    report_wb = del_sheet(report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+    report_wb.save(f'{path_end_folder}/Отчет по стандарту БРИТ от {current_time}.xlsx')
+
+
+
+
 
 
 def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expelled:int)->None:
@@ -413,7 +411,7 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
         main_df.columns = list(map(str, list(main_df.columns)))
 
         # генерируем отчет по стандарту БРИТ
-        create_report_brit(main_df)
+        create_report_brit(main_df,path_end_folder)
 
         # Создаем файл excel в котороым будет находится отчет
         wb = openpyxl.Workbook()
