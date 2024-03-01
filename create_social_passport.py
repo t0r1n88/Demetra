@@ -67,7 +67,6 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
 
     df.fillna('Нет статуса', inplace=True)  # заполняем Наны
     group_main_df = pd.DataFrame(index=list(df['Файл'].unique()))
-    group_main_df.index.name = 'Файл'
 
     # Отбрасываем на всякий случай отчисленных
     df = df[df['Статус_Учёба'] != 'Отчислен']
@@ -343,6 +342,11 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     report_wb = write_df_to_excel({'Социальный паспорт': group_main_df,'Сироты':group_orphans_main_df,'Учет':group_accounting_main_df}, write_index=True)
     report_wb = del_sheet(report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
     report_wb.save(f'{path_end_folder}/Отчет по стандарту БРИТ от {current_time}.xlsx')
+
+    # Сохраняем списки
+    lst_report_wb = write_df_to_excel(dct_name_sheet, write_index=False)
+    lst_report_wb = del_sheet(lst_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+    lst_report_wb.save(f'{path_end_folder}/Списки для отчета по стандарту БРИТ от {current_time}.xlsx')
 
 
 
