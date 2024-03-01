@@ -47,7 +47,7 @@ def merge_table(etalon_file:str, folder_update_file:str, result_folder:str)->Non
                 for name_sheet in lst_sheets_temp_wb:
                     if name_sheet != 'Данные для выпадающих списков': # отбрасываем лист с даннными выпадающих списков
                         temp_df = pd.read_excel(f'{folder_update_file}/{file}',sheet_name=name_sheet) # получаем колонки которые есть на листе
-                        diff_cols = set(temp_df.columns).difference(etalon_cols)
+                        diff_cols = etalon_cols.difference(set(temp_df.columns))
                         if len(diff_cols) != 0:
                             temp_error_df = pd.DataFrame(data=[[f'{name_file}', f'{name_sheet}', f'{";".join(diff_cols)}',
                                                                 'В файле на указанном листе найдены лишние или отличающиеся колонки по сравнению с эталоном. ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
@@ -101,6 +101,10 @@ def merge_table(etalon_file:str, folder_update_file:str, result_folder:str)->Non
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Перенесите файлы, конечную папку с которой вы работете в корень диска. Проблема может быть\n '
                              f'в слишком длинном пути к обрабатываемым файлам или конечной папке.')
+    except PermissionError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Закройте  открытые файлы в формате xlsx созданные программой '
+                             )
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
 

@@ -8,6 +8,7 @@ from openpyxl.styles import Font, PatternFill
 import time
 from collections import Counter
 import re
+import os
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 warnings.simplefilter(action='ignore', category=DeprecationWarning)
@@ -353,19 +354,12 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
 
 
 
-def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expelled:int)->None:
+def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,checkbox_expelled:int)->None:
     """
     Функция для генерации отчета по социальному статусу студентов БРИТ
     """
     try:
-        main_df  = None # Базовый датафрейм , на основе первого лист
-        error_df = pd.DataFrame(columns=['Лист','Ошибка','Примечание']) # датафрейм для ошибок
-        example_columns = None # эталонные колонки
-        temp_wb = openpyxl.load_workbook(data_file_social,read_only=True) # открываем файл для того чтобы узнать какие листы в нем есть
-        lst_sheets = temp_wb.sheetnames
-        lst_sheets = [name_sheet for name_sheet in lst_sheets if name_sheet !='Данные для выпадающих списков']
-        quantity_sheets = len(lst_sheets) # считаем количество групп
-        temp_wb.close() # закрываем файл
+        set_used_sheets = set() # множество для хранения названий уже существующих листов
         # обязательные колонки
         name_columns_set = {'Статус_ОП','Статус_Бюджет','Статус_Общежитие','Статус_Учёба','Статус_Всеобуч', 'Статус_Национальность', 'Статус_Соц_стипендия', 'Статус_Соц_положение_семьи',
                             'Статус_Питание',
@@ -376,32 +370,72 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
                             'Статус_Воинский_учет','Статус_Родитель_СВО','Статус_Участник_СВО',
                             'Статус_ПДН','Статус_КДН','Статус_Нарк_учет','Статус_Внутр_учет','Статус_Спорт', 'Статус_Творчество',
                             'Статус_Волонтерство', 'Статус_Клуб', 'Статус_Самовольный_уход','Статус_Выпуск'}
-        for name_sheet in lst_sheets:
-            temp_df = pd.read_excel(data_file_social,sheet_name=name_sheet,dtype=str)
-            temp_df.dropna(how='all',inplace=True) # удаляем пустые строки
-            # проверяем наличие колонки № Группы
-            if '№ Группы' in temp_df.columns:
-                temp_df.insert(0, '№ Группы_новый', name_sheet)  # вставляем колонку с именем листа
-            else:
-                temp_df.insert(0, '№ Группы', name_sheet) # вставляем колонку с именем листа
-            if not example_columns:
-                example_columns = list(temp_df.columns) # делаем эталонным первый лист файла
-                main_df = pd.DataFrame(columns=example_columns)
-                # проверяем наличие колонок
-                diff_first_sheet = name_columns_set.difference(set(temp_df.columns))
-                if len(diff_first_sheet) != 0:
-                    raise NotColumn
+        error_df = pd.DataFrame(
+            columns=['Название файла', 'Название листа', 'Значение ошибки', 'Описание ошибки'])  # датафрейм для ошибок
+        wb = openpyxl.load_workbook(etalon_file) # загружаем эталонный файл
+        quantity_sheets = 0  # считаем количество групп
+        main_sheet = wb.sheetnames[0] # получаем название первого листа с которым и будем сравнивать новые файлы
+        main_df = pd.read_excel(etalon_file,sheet_name=main_sheet,nrows=0) # загружаем датафрейм чтобы получить эталонные колонки
+        # Проверяем на обязательные колонки
+        always_cols = name_columns_set.difference(set(main_df.columns))
+        if len(always_cols) != 0:
+            raise NotColumn
+        etalon_cols = set(main_df.columns) # эталонные колонки
 
-            # проверяем на соответствие колонкам первого листа
-            if not set(example_columns).issubset(set(temp_df.columns)):
-                diff_name_columns = set(example_columns).difference(set(temp_df.columns))
-                error_row = pd.DataFrame(columns=['Лист','Ошибка','Примечание'],data=[[name_sheet,','.join(diff_name_columns),
-                                                                                       'Названия колонок указанного листа отличаются от названий колонок в первом листе. Исправьте отличия']])
-                error_df = pd.concat([error_df,error_row],axis=0)
+        for idx, file in enumerate(os.listdir(data_folder)):
+            if not file.startswith('~$') and not file.endswith('.xlsx'):
+                name_file = file.split('.xls')[0]
+                temp_error_df = pd.DataFrame(data=[[f'{name_file}','', '',
+                                                    'Расширение файла НЕ XLSX! Программа обрабатывает только XLSX ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
+                                             columns=['Название файла', 'Строка или колонка с ошибкой',
+                                                      'Описание ошибки'])
+                error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
                 continue
-            if checkbox_expelled == 0:
-                temp_df = temp_df[temp_df['Статус_Учёба'] != 'Отчислен']
-            main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True)
+            if not file.startswith('~$') and file.endswith('.xlsx'):
+                name_file = file.split('.xlsx')[0]
+                print(f'Файл: {name_file}')
+                temp_wb = openpyxl.load_workbook(f'{data_folder}/{file}') # открываем
+                lst_sheets_temp_wb = temp_wb.sheetnames # получаем список листов в файле
+                for name_sheet in lst_sheets_temp_wb:
+                    if name_sheet != 'Данные для выпадающих списков': # отбрасываем лист с даннными выпадающих списков
+                        temp_df = pd.read_excel(f'{data_folder}/{file}',sheet_name=name_sheet) # получаем колонки которые есть на листе
+                        # Проверяем на обязательные колонки
+                        always_cols = name_columns_set.difference(set(temp_df.columns))
+                        if len(always_cols) != 0:
+                            temp_error_df = pd.DataFrame(
+                                data=[[f'{name_file}', f'{name_sheet}', f'{";".join(always_cols)}',
+                                       'В файле на указанном листе не найдены указанные обязательные колонки. ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
+                                columns=['Название файла', 'Название листа', 'Значение ошибки',
+                                         'Описание ошибки'])
+                            error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+                            continue  # не обрабатываем лист где найдены ошибки
+                        # проверяем на соответствие эталонному файлу
+                        diff_cols = etalon_cols.difference(set(temp_df.columns))
+                        if len(diff_cols) != 0:
+                            temp_error_df = pd.DataFrame(
+                                data=[[f'{name_file}', f'{name_sheet}', f'{";".join(diff_cols)}',
+                                       'В файле на указанном листе найдены лишние или отличающиеся колонки по сравнению с эталоном. ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
+                                columns=['Название файла', 'Название листа', 'Значение ошибки',
+                                         'Описание ошибки'])
+                            error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+                            continue  # не обрабатываем лист где найдены ошибки
+
+                        temp_df.dropna(how='all', inplace=True)  # удаляем пустые строки
+                        # проверяем наличие колонок Файл и № Группы
+                        if 'Файл' not in temp_df.columns:
+                            temp_df.insert(0, 'Файл', name_file)
+
+                        if '№ Группы' in temp_df.columns:
+                            temp_df.insert(0, '№ Группы_новый', name_sheet)  # вставляем колонку с именем листа
+                        else:
+                            temp_df.insert(0, '№ Группы', name_sheet) # вставляем колонку с именем листа
+
+                        if checkbox_expelled == 0:
+                            temp_df = temp_df[temp_df['Статус_Учёба'] != 'Отчислен'] # отбрасываем отчисленных если поставлен чекбокс
+
+                        main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True) # добавляем в общий файл
+                        quantity_sheets +=1
+
 
         main_df.fillna('Нет статуса', inplace=True) # заполняем пустые ячейки
         # генерируем текущее время
@@ -524,7 +558,7 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
         error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
         # проверяем на наличие ошибок
         if error_df.shape[0] != 0:
-            count_error = len(error_df['Лист'].unique())
+            count_error = len(error_df['Название листа'].unique())
             messagebox.showinfo('Деметра Отчеты социальный паспорт студента',
                                 f'Количество необработанных листов {count_error}\n'
                                 f'Проверьте файл Ошибки в файле')
@@ -534,21 +568,21 @@ def create_social_report(data_file_social:str, path_end_folder:str,checkbox_expe
                              f'в слишком длинном пути к обрабатываемым файлам или конечной папке.')
     except NotColumn:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
-                             f'Проверьте названия колонок в первом листе файла с данными, для работы программы\n'
-                             f' требуются колонки: {";".join(diff_first_sheet)}'
+                             f'Проверьте названия колонок в первом листе эталонного файла, для работы программы\n'
+                             f' требуются колонки: {";".join(always_cols)}'
                              )
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
 
 
 if __name__ == '__main__':
-    main_data_file = 'data/Общий файл.xlsx'
-
+    main_etalon_file = 'data/Эталон.xlsx'
+    main_data_folder = 'data/01.03'
     main_end_folder = 'data/Результат'
     main_checkbox_expelled = 0
     # main_checkbox_expelled = 1
 
-    create_social_report(main_data_file,main_end_folder,main_checkbox_expelled)
+    create_social_report(main_etalon_file,main_data_folder,main_end_folder,main_checkbox_expelled)
 
     print('Lindy Booth !!!')
 
