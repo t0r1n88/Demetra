@@ -338,6 +338,7 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     # получаем текущее время
     t = time.localtime()
     current_time = time.strftime('%H_%M_%S', t)
+
     # Создаем файл для самого отчета
     report_wb = write_df_to_excel({'Социальный паспорт': group_main_df,'Сироты':group_orphans_main_df,'Учет':group_accounting_main_df}, write_index=True)
     report_wb = del_sheet(report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
