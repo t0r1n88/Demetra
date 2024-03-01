@@ -340,7 +340,7 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     current_time = time.strftime('%H_%M_%S', t)
 
     # Создаем файл для самого отчета
-    report_wb = write_df_to_excel({'Социальный паспорт': group_main_df,'Сироты':group_orphans_main_df,'Учет':group_accounting_main_df}, write_index=True)
+    report_wb = write_df_to_excel_report_brit({'Социальный паспорт': group_main_df,'Сироты':group_orphans_main_df,'Учет':group_accounting_main_df}, write_index=True)
     report_wb = del_sheet(report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
     report_wb.save(f'{path_end_folder}/Отчет по стандарту БРИТ от {current_time}.xlsx')
 
@@ -436,8 +436,13 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
                         main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True) # добавляем в общий файл
                         quantity_sheets +=1
 
+        main_df.rename(columns={'№ Группы':'Для переноса','Файл':'файл для переноса'},inplace=True) # переименовываем группу чтобы перенести ее в начало таблицы
+        main_df.insert(0,'Файл',main_df['файл для переноса'])
+        main_df.insert(1,'№ Группы',main_df['Для переноса'])
+        main_df.drop(columns=['Для переноса','файл для переноса'],inplace=True)
 
         main_df.fillna('Нет статуса', inplace=True) # заполняем пустые ячейки
+
         # генерируем текущее время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
