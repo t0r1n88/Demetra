@@ -21,6 +21,12 @@ class NotColumn(Exception):
     """
     pass
 
+class NotCustomColumn(Exception):
+    """
+    Исключение для обработки случая когда отсутствуют колонки указанные в параметрах
+    """
+    pass
+
 def create_value_str(df:pd.DataFrame,name_column:str,target_name_column:str,dct_str:dict)->pd.DataFrame:
     """
     Функция для формирования строки нужного формата с использованием переменных
@@ -51,7 +57,7 @@ def create_value_str(df:pd.DataFrame,name_column:str,target_name_column:str,dct_
     return new_value_df
 
 
-def prepare_file_params(params_file:str)->dict:
+def prepare_file_params(params_file:str):
     """
     Функция для подготовки словаря с параметрами, преобразуюет первую колонку в ключи а вторую колонку в значения
     :param params_file: путь к файлу с параметрами в формате xlsx
@@ -65,7 +71,27 @@ def prepare_file_params(params_file:str)->dict:
     for row in df.itertuples():
         # заполняем словарь
         temp_dct[row[1]][f'{row[1]}_{row[2]}'] = row[2]
-    return temp_dct
+    return temp_dct,lst_unique_name_column,df
+
+
+def create_for_custom_report(df:pd.DataFrame,params_df:pd.DataFrame)->openpyxl.Workbook:
+    """
+    Функция для создания файла в котором в виде списков будут находиться данные использованные для создания настраиваемого отчета
+    :param df: основной датафрейм
+    :param params_df: датафрейм с параметрами
+    :return:
+    """
+    dct_df = dict() # словарь в котором будут храниться датафреймы
+
+    for idx,row in enumerate(params_df.iterrows()):
+        name_column = row[1]
+        value_column = row[2]
+
+
+
+
+
+
 def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, params_report:str,checkbox_expelled:int) ->None:
     """
     Функция для генерации отчетов на основе файла с данными групп
@@ -85,7 +111,13 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
             raise NotColumn
         etalon_cols = set(main_df.columns) # эталонные колонки
         # словарь для основных параметров по которым нужно построить отчет
-        dct_params = prepare_file_params(params_report) # получаем значения по которым нужно подсчитать данные
+        # список уникальных названий колонок для проверки эталонного файла
+        # датарфейм с параметрами, нужен для создания списков
+        dct_params,lst_unique_params,params_df= prepare_file_params(params_report) # получаем значения по которым нужно подсчитать данные и уникальные названия колонок
+        # проверяем наличие колонок из файла параметров в эталонном файле
+        custom_always_cols = set(lst_unique_params).difference(set(main_df.columns))
+        if len(custom_always_cols) !=0:
+            raise NotCustomColumn
         lst_generate_name_columns = []  # создаем список для хранения значений сгенерированных колонок
         for key, value in dct_params.items():
             for name_gen_column in value.keys():
@@ -155,10 +187,14 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         # получаем текущее время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
+        # Создаем списки на основе которых мы создаем настраиваемый отчет
+        create_for_custom_report(main_df,params_df)
 
         # суммируем данные по листам
+
         all_custom_report_df = custom_report_df.sum(axis=0)
-        all_custom_report_df = all_custom_report_df.drop('Лист').to_frame() # удаляем текстовую строку
+        all_custom_report_df = all_custom_report_df.drop(['Файл','Лист']).to_frame() # удаляем текстовую строку
+
         all_custom_report_df = all_custom_report_df.reset_index()
         all_custom_report_df.columns = ['Наименование параметра','Количество']
         # сохраняем файл с данными по выбранным колонкам
@@ -259,15 +295,6 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
                 new_value_df.sort_values(by='Показатель',inplace=True)
             new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
             soc_df = pd.concat([soc_df, new_part_df], axis=0)
-        # for name_column in lst_status:
-        #     temp_counts = main_df[name_column].value_counts()  # делаем подсчет
-        #     new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
-        #                                data=[[name_column, None]])  # создаем строку с заголовком
-        #     new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
-        #     new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
-        #     new_value_df.sort_values(by='Показатель',inplace=True)
-        #     new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
-        #     soc_df = pd.concat([soc_df, new_part_df], axis=0)
 
         soc_wb = write_df_to_excel({'Свод по статусам':soc_df},write_index=False)
         soc_wb = del_sheet(soc_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
@@ -302,6 +329,11 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Проверьте названия колонок в первом листе эталонного файла, для работы программы\n'
                              f' требуются колонки: {";".join(always_cols)}'
+                             )
+    except NotCustomColumn:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'В эталонном файле отсутствуют колонки указанные в файле с параметрами отчета,\n'
+                             f' не найдены колонки: {";".join(custom_always_cols)}'
                              )
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
