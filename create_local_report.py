@@ -203,7 +203,7 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         current_time = time.strftime('%H_%M_%S', t)
         # Создаем списки на основе которых мы создаем настраиваемый отчет
         lst_custom_wb = create_for_custom_report(main_df,params_df)
-        lst_custom_wb.save(f'{path_end_folder}/Списки для настраиваемого отчета от {current_time}.xlsx')
+        lst_custom_wb.save(f'{path_end_folder}/Списки для свода по выбранным колонкам от {current_time}.xlsx')
 
         # суммируем данные по листам
 
