@@ -81,11 +81,25 @@ def create_for_custom_report(df:pd.DataFrame,params_df:pd.DataFrame)->openpyxl.W
     :param params_df: датафрейм с параметрами
     :return:
     """
+    used_name = set() # множество для использованных названий листов
     dct_df = dict() # словарь в котором будут храниться датафреймы
+    for idx,row in enumerate(params_df.itertuples()):
+        name_column = row[1] # название колонки
+        value_column = row[2] # значение которое нужно подсчитать
+        temp_df = df[df[name_column] == value_column]
+        name_sheet = f'{name_column}'[:30] # для того чтобы не было слишком длинного названия
+        if name_sheet not in used_name:
+            dct_df[name_sheet]= temp_df
+            used_name.add(name_sheet)
+        else:
+            dct_df[f'{name_sheet}_{idx}'] = temp_df
+            used_name.add(f'{name_sheet}_{idx}')
 
-    for idx,row in enumerate(params_df.iterrows()):
-        name_column = row[1]
-        value_column = row[2]
+
+    lst_custom_wb = write_df_to_excel(dct_df, write_index=False)
+    lst_custom_wb = del_sheet(lst_custom_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+    return lst_custom_wb
+
 
 
 
@@ -188,7 +202,8 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
         # Создаем списки на основе которых мы создаем настраиваемый отчет
-        create_for_custom_report(main_df,params_df)
+        lst_custom_wb = create_for_custom_report(main_df,params_df)
+        lst_custom_wb.save(f'{path_end_folder}/Списки для настраиваемого отчета от {current_time}.xlsx')
 
         # суммируем данные по листам
 
