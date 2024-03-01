@@ -14,9 +14,9 @@ warnings.simplefilter(action='ignore', category=DeprecationWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 pd.options.mode.chained_assignment = None
 
-class NotStatusEdu(Exception):
+class NotColumn(Exception):
     """
-    Исключение для проверки наличия колонки Статус_учёба
+    Исключение для обработки случая когда отсутствуют нужные колонки
     """
     pass
 
@@ -65,19 +65,24 @@ def prepare_file_params(params_file:str)->dict:
         # заполняем словарь
         temp_dct[row[1]][f'{row[1]}_{row[2]}'] = row[2]
     return temp_dct
-def create_local_report(data_file_local:str, path_end_folder:str, params_report:str,checkbox_expelled:int) ->None:
+def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, params_report:str,checkbox_expelled:int) ->None:
     """
     Функция для генерации отчетов на основе файла с данными групп
     """
     try:
-        main_df  = None # Базовый датафрейм , на основе первого лист
-        error_df = pd.DataFrame(columns=['Лист','Ошибка','Примечание']) # датафрейм для ошибок
-        example_columns = None # эталонные колонки
-        temp_wb = openpyxl.load_workbook(data_file_local,read_only=True) # открываем файл для того чтобы узнать какие листы в нем есть
-        lst_sheets = temp_wb.sheetnames
-        lst_sheets = [name_sheet for name_sheet in lst_sheets if name_sheet != 'Данные для выпадающих списков']
-        quantity_sheets = len(lst_sheets)  # считаем количество групп
-        temp_wb.close() # закрываем файл
+        # обязательные колонки
+        name_columns_set = {'Статус_ОП','Статус_Учёба'}
+        error_df = pd.DataFrame(
+            columns=['Название файла', 'Название листа', 'Значение ошибки', 'Описание ошибки'])  # датафрейм для ошибок
+        wb = openpyxl.load_workbook(etalon_file) # загружаем эталонный файл
+        quantity_sheets = 0  # считаем количество групп
+        main_sheet = wb.sheetnames[0] # получаем название первого листа с которым и будем сравнивать новые файлы
+        main_df = pd.read_excel(etalon_file,sheet_name=main_sheet,nrows=0) # загружаем датафрейм чтобы получить эталонные колонки
+        # Проверяем на обязательные колонки
+        always_cols = name_columns_set.difference(set(main_df.columns))
+        if len(always_cols) != 0:
+            raise NotColumn
+        etalon_cols = set(main_df.columns) # эталонные колонки
         # словарь для основных параметров по которым нужно построить отчет
         dct_params = prepare_file_params(params_report) # получаем значения по которым нужно подсчитать данные
         lst_generate_name_columns = []  # создаем список для хранения значений сгенерированных колонок
@@ -272,20 +277,21 @@ def create_local_report(data_file_local:str, path_end_folder:str, params_report:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Перенесите файлы, конечную папку с которой вы работете в корень диска. Проблема может быть\n '
                              f'в слишком длинном пути к обрабатываемым файлам или конечной папке.')
-    except NotStatusEdu:
+    except NotColumn:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
-                             f'Отсутствует колонка Статус_Учёба, добавьте колонку с таким названием в файл'
+                             f'Проверьте названия колонок в первом листе эталонного файла, для работы программы\n'
+                             f' требуются колонки: {";".join(always_cols)}'
                              )
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
 
 
 if __name__== '__main__':
-    main_data_file = 'data/Таблица для заполнения.xlsx'
-    main_data_file = 'data/Общий файл.xlsx'
+    main_etalon_file = 'data/Эталон.xlsx'
+    main_data_folder = 'data/01.03'
     main_result_folder = 'data/Результат'
     main_params_file = 'data/Параметры отчета.xlsx'
     main_checkbox_expelled = 0
     # main_checkbox_expelled = 1
-    create_local_report(main_data_file, main_result_folder,main_params_file,main_checkbox_expelled)
+    create_local_report(main_etalon_file,main_data_folder, main_result_folder,main_params_file,main_checkbox_expelled)
     print('Lindy Booth')
