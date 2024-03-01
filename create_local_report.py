@@ -8,6 +8,7 @@ from openpyxl.styles import Font, PatternFill
 import time
 from collections import Counter
 import re
+import os
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 warnings.simplefilter(action='ignore', category=DeprecationWarning)
@@ -90,48 +91,67 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
             for name_gen_column in value.keys():
                 lst_generate_name_columns.append(name_gen_column)
         custom_report_df = pd.DataFrame(columns=lst_generate_name_columns)
-        custom_report_df.insert(0,'Лист',None)
+        custom_report_df.insert(0,'Файл',None)
+        custom_report_df.insert(1,'Лист',None)
 
-        for name_sheet in lst_sheets:
-            temp_df = pd.read_excel(data_file_local,sheet_name=name_sheet,dtype=str)
-            temp_df.dropna(how='all',inplace=True) # удаляем пустые строки
-            if '№ Группы' in temp_df.columns:
-                temp_df.insert(0, '№ Группы_новый', name_sheet)  # вставляем колонку с именем листа
-            else:
-                temp_df.insert(0, '№ Группы', name_sheet)  # вставляем колонку с именем листа
-            if not example_columns:
-                if 'Статус_Учёба' not in temp_df.columns:
-                    raise NotStatusEdu
-                example_columns = list(temp_df.columns) # делаем эталонным первый лист файла
-                main_df = pd.DataFrame(columns=example_columns)
-            # проверяем на соответствие колонкам первого листа
-            if not set(example_columns).issubset(set(temp_df.columns)):
-                diff_name_columns = set(example_columns).difference(set(temp_df.columns))
-                error_row = pd.DataFrame(columns=['Лист','Ошибка','Примечание'],data=[[name_sheet,','.join(diff_name_columns),
-                                                                                       'Названия колонок указанного листа отличаются от названий колонок в первом листе. Исправьте отличия']])
-                error_df = pd.concat([error_df,error_row],axis=0)
+        for idx, file in enumerate(os.listdir(data_folder)):
+            if not file.startswith('~$') and not file.endswith('.xlsx'):
+                name_file = file.split('.xls')[0]
+                temp_error_df = pd.DataFrame(data=[[f'{name_file}','', '',
+                                                    'Расширение файла НЕ XLSX! Программа обрабатывает только XLSX ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
+                                             columns=['Название файла', 'Строка или колонка с ошибкой',
+                                                      'Описание ошибки'])
+                error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
                 continue
-            if checkbox_expelled == 0:
-                temp_df = temp_df[temp_df['Статус_Учёба'] != 'Отчислен']
-            main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True)
+            if not file.startswith('~$') and file.endswith('.xlsx'):
+                name_file = file.split('.xlsx')[0]
+                print(f'Файл: {name_file}')
+                temp_wb = openpyxl.load_workbook(f'{data_folder}/{file}') # открываем
+                lst_sheets_temp_wb = temp_wb.sheetnames # получаем список листов в файле
+                for name_sheet in lst_sheets_temp_wb:
+                    if name_sheet != 'Данные для выпадающих списков': # отбрасываем лист с даннными выпадающих списков
+                        temp_df = pd.read_excel(f'{data_folder}/{file}',sheet_name=name_sheet) # получаем колонки которые есть на листе
+                        # проверяем на соответствие эталонному файлу
+                        diff_cols = etalon_cols.difference(set(temp_df.columns))
+                        if len(diff_cols) != 0:
+                            temp_error_df = pd.DataFrame(
+                                data=[[f'{name_file}', f'{name_sheet}', f'{";".join(diff_cols)}',
+                                       'В файле на указанном листе найдены лишние или отличающиеся колонки по сравнению с эталоном. ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
+                                columns=['Название файла', 'Название листа', 'Значение ошибки',
+                                         'Описание ошибки'])
+                            error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+                            continue  # не обрабатываем лист где найдены ошибки
+                        if 'Файл' not in temp_df.columns:
+                            temp_df.insert(0, 'Файл', name_file)
 
-            # Подсчитываем основные показатели для каждой группы
-            # проверяем наличие колонок в датафрейме
-            diff_custom_name_columns = set(dct_params.keys()).difference(set(temp_df.columns))
-            if len(diff_custom_name_columns) != 0:
-                error_row = pd.DataFrame(columns=['Лист','Ошибка','Примечание'],data=[[name_sheet,','.join(diff_custom_name_columns),
-                                                                                       'Не найдены названия колонок в листе']])
-                error_df = pd.concat([error_df,error_row],axis=0)
-                continue
+                        if '№ Группы' in temp_df.columns:
+                            temp_df.insert(0, '№ Группы_новый', name_sheet)  # вставляем колонку с именем листа
+                        else:
+                            temp_df.insert(0, '№ Группы', name_sheet) # вставляем колонку с именем листа
 
-            row_dct = {key:0 for key in lst_generate_name_columns} # создаем словарь для хранения данных
-            row_dct['Лист'] = name_sheet # добавляем колонки для листа
-            for name_column,dct_value_column in dct_params.items():
-                for key,value in dct_value_column.items():
-                    row_dct[key] = temp_df[temp_df[name_column] == value].shape[0]
-            new_row = pd.DataFrame(row_dct,index=[0])
-            custom_report_df = pd.concat([custom_report_df,new_row],axis=0)
-        main_df.fillna('Нет статуса', inplace=True)  # заполняем пустые ячейки
+                        if checkbox_expelled == 0:
+                            temp_df = temp_df[temp_df['Статус_Учёба'] != 'Отчислен'] # отбрасываем отчисленных если поставлен чекбокс
+
+                        main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True) # добавляем в общий файл
+                        row_dct = {key:0 for key in lst_generate_name_columns} # создаем словарь для хранения данных
+                        row_dct['Файл'] =name_file
+                        row_dct['Лист'] = name_sheet # добавляем колонки для листа
+                        for name_column,dct_value_column in dct_params.items():
+                            for key,value in dct_value_column.items():
+                                row_dct[key] = temp_df[temp_df[name_column] == value].shape[0]
+                        new_row = pd.DataFrame(row_dct,index=[0])
+                        custom_report_df = pd.concat([custom_report_df,new_row],axis=0)
+
+
+
+                        quantity_sheets += 1
+        main_df.rename(columns={'№ Группы':'Для переноса','Файл':'файл для переноса'},inplace=True) # переименовываем группу чтобы перенести ее в начало таблицы
+        main_df.insert(0,'Файл',main_df['файл для переноса'])
+        main_df.insert(1,'№ Группы',main_df['Для переноса'])
+        main_df.drop(columns=['Для переноса','файл для переноса'],inplace=True)
+
+        main_df.fillna('Нет статуса', inplace=True) # заполняем пустые ячейки
+
         # получаем текущее время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
@@ -269,10 +289,11 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
         error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
         if error_df.shape[0] != 0:
-            count_error = len(error_df['Лист'].unique())
+            count_error = len(error_df['Название листа'].unique())
             messagebox.showinfo('Деметра Отчеты социальный паспорт студента',
                                 f'Количество необработанных листов {count_error}\n'
                                 f'Проверьте файл Ошибки в файле')
+
     except FileNotFoundError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Перенесите файлы, конечную папку с которой вы работете в корень диска. Проблема может быть\n '
