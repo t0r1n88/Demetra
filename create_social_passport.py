@@ -59,6 +59,17 @@ def count_value(group: pd.Series, target_value: str):
         count_group = group.str.contains(target_value)
         return sum(count_group)
 
+def convert_number(value):
+    """
+    Функция для конвертации в float значений колонок содержащих в названии Подсчет_
+    :param value: значение
+    :return: число в формате float
+    """
+    try:
+        return float(value)
+    except:
+        return 0
+
 def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     """
     Функция для создания отчета по стандарту БРИТ
@@ -350,7 +361,14 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     lst_report_wb = del_sheet(lst_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
     lst_report_wb.save(f'{path_end_folder}/Списки для отчета по стандарту БРИТ от {current_time}.xlsx')
 
-
+def create_counting_columns_report(main_df:pd.DataFrame,svod_df:pd.DataFrame,lst_counting_columns:list)->pd.DataFrame:
+    """
+    Функция для обработки колонок с количественными данными и добавления результата в сводный датафрейм
+    :param main_df: основной датафрейм
+    :param svod_df: датафрейм с сводными данными
+    :param lst_counting_columns:
+    :return:
+    """
 
 
 
@@ -455,7 +473,10 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
         main_df.columns = list(map(str, list(main_df.columns)))
 
         # генерируем отчет по стандарту БРИТ
-        create_report_brit(main_df,path_end_folder)
+        create_report_brit(main_df.copy(),path_end_folder)
+
+
+
 
         # Создаем файл excel в котороым будет находится отчет
         wb = openpyxl.Workbook()
@@ -506,9 +527,8 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
 
 
         # Создаем Свод по статусам
-        # Собираем колонки содержащие слово статус
-        lst_status = [name_column for name_column in main_df.columns if 'Статус_' in name_column]
-
+        # Собираем колонки содержащие слово Статус_ и Подсчет_
+        lst_status = [name_column for name_column in main_df.columns if 'Статус_' in name_column or 'Подсчет_' in name_column]
         # Создаем датафрейм с данными по статусам
         soc_df = pd.DataFrame(columns=['Показатель','Значение']) # датафрейм для сбора данных отчета
         soc_df.loc[len(soc_df)] = ['Количество учебных групп',quantity_sheets] # добавляем количество учебных групп
@@ -531,8 +551,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
                 new_value_df = create_value_str(main_df, name_column,'Статус_Учёба',
                                                 {'Обучается': 'Обучается', 'Академ': 'Академический отпуск',
                                                  'Не указан статус': 'Нет статуса'})
-            else:
-
+            elif 'Статус_' in name_column:
                 temp_counts = main_df[name_column].value_counts()  # делаем подсчет
                 new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
                                            data=[[name_column, None]])  # создаем строку с заголовком
@@ -540,6 +559,17 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
                 new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
                 new_value_df['Показатель'] = new_value_df['Показатель'].astype(str)
                 new_value_df.sort_values(by='Показатель',inplace=True)
+            elif 'Подсчет' in name_column:
+                new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
+                                           data=[[name_column, None]])  # создаем строку с заголовком
+                main_df[name_column] = main_df[name_column].apply(convert_number)
+                temp_desccribe = main_df[name_column].describe()
+                sum_column = main_df[name_column].sum()
+                _dct_describe = temp_desccribe.to_dict()
+                dct_describe = {'Среднее':round(_dct_describe['mean'],2),'Сумма': round(sum_column,2),'Медиана':_dct_describe['50%'],
+                                'Минимум':_dct_describe['min'],'Максимум':_dct_describe['max'],'Количество':_dct_describe['count'],}
+                new_value_df = pd.DataFrame(list(dct_describe.items()),columns=['Показатель', 'Значение'])
+
             new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
             soc_df = pd.concat([soc_df, new_part_df], axis=0)
 
@@ -552,7 +582,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
         fill = PatternFill(fill_type='solid', fgColor='ffa500')  # Оранжевый цвет
         for row in soc_wb['Свод по статусам'].iter_rows(min_row=1, max_row=soc_wb['Свод по статусам'].max_row,
                                                         min_col=column_number, max_col=column_number):  # Перебираем строки
-            if 'Статус_' in str(row[column_number].value): # делаем ячейку строковой и проверяем наличие слова Статус_
+            if 'Статус_' in str(row[column_number].value) or 'Подсчет_' in str(row[column_number].value): # делаем ячейку строковой и проверяем наличие слова Статус_
                 for cell in row: # применяем стиль если условие сработало
                     cell.font = font
                     cell.fill = fill
