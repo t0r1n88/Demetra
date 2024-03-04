@@ -485,9 +485,8 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
             wb.create_sheet(title=name_column[:30], index=idx)
 
         for idx, name_column in enumerate(main_df.columns):
-            group_main_df = main_df.groupby([name_column]).agg({'Для подсчета': 'sum'})
+            group_main_df = main_df.astype({name_column:str}).groupby([name_column]).agg({'Для подсчета': 'sum'})
             group_main_df.columns = ['Количество']
-
             # Сортируем по убыванию
             group_main_df.sort_values(by=['Количество'], inplace=True, ascending=False)
 
@@ -581,7 +580,9 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
 
 if __name__ == '__main__':
     main_etalon_file = 'data/Эталон.xlsx'
+    main_etalon_file = 'data/Эталон подсчет.xlsx'
     main_data_folder = 'data/01.03'
+    main_data_folder = 'data/Подсчет'
     main_end_folder = 'data/Результат'
     main_checkbox_expelled = 0
     # main_checkbox_expelled = 1
