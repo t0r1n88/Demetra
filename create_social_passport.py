@@ -32,6 +32,7 @@ def create_value_str(df:pd.DataFrame,name_column:str,target_name_column:str,dct_
     temp_counts = df[name_column].value_counts()  # делаем подсчет
     new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
     new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
+    new_value_df['Показатель'] = new_value_df['Показатель'].astype(str)
     new_value_df.sort_values(by='Показатель', inplace=True)
     for idx,row in enumerate(new_value_df.iterrows()):
         name_op = row[1].values[0] # получаем название ОП
@@ -537,6 +538,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
                                            data=[[name_column, None]])  # создаем строку с заголовком
                 new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
                 new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
+                new_value_df['Показатель'] = new_value_df['Показатель'].astype(str)
                 new_value_df.sort_values(by='Показатель',inplace=True)
             new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
             soc_df = pd.concat([soc_df, new_part_df], axis=0)
