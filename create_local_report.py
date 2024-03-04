@@ -27,6 +27,19 @@ class NotCustomColumn(Exception):
     """
     pass
 
+def convert_number(value):
+    """
+    Функция для конвертации в float значений колонок содержащих в названии Подсчет_
+    :param value: значение
+    :return: число в формате float
+    """
+    try:
+        return float(value)
+    except:
+        return 0
+
+
+
 def create_value_str(df:pd.DataFrame,name_column:str,target_name_column:str,dct_str:dict)->pd.DataFrame:
     """
     Функция для формирования строки нужного формата с использованием переменных
@@ -257,7 +270,7 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
             wb.create_sheet(title=name_column[:30], index=idx)
 
         for idx, name_column in enumerate(main_df.columns):
-            group_main_df = main_df.groupby([name_column]).agg({'Для подсчета': 'sum'})
+            group_main_df = main_df.astype({name_column:str}).groupby([name_column]).agg({'Для подсчета': 'sum'})
             group_main_df.columns = ['Количество']
 
             # Сортируем по убыванию
@@ -275,8 +288,8 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         wb.save(f'{path_end_folder}/Свод по каждой колонке таблицы от {current_time}.xlsx')
 
         # Создаем Свод по статусам
-        # Собираем колонки содержащие слово статус
-        lst_status = [name_column for name_column in main_df.columns if 'Статус_' in name_column]
+        # Собираем колонки содержащие слово Статус_ и Подсчет_
+        lst_status = [name_column for name_column in main_df.columns if 'Статус_' in name_column or 'Подсчет_' in name_column]
 
         # Создаем датафрейм с данными по статусам
         soc_df = pd.DataFrame(columns=['Показатель','Значение']) # датафрейм для сбора данных отчета
@@ -300,14 +313,24 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
                 new_value_df = create_value_str(main_df, name_column,'Статус_Учёба',
                                                 {'Обучается': 'Обучается', 'Академ': 'Академический отпуск',
                                                  'Не указан статус': 'Нет статуса'})
-            else:
-
+            elif 'Статус_' in name_column:
                 temp_counts = main_df[name_column].value_counts()  # делаем подсчет
                 new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
                                            data=[[name_column, None]])  # создаем строку с заголовком
                 new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
                 new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
+                new_value_df['Показатель'] = new_value_df['Показатель'].astype(str)
                 new_value_df.sort_values(by='Показатель',inplace=True)
+            elif 'Подсчет' in name_column:
+                new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
+                                           data=[[name_column, None]])  # создаем строку с заголовком
+                main_df[name_column] = main_df[name_column].apply(convert_number)
+                temp_desccribe = main_df[name_column].describe()
+                sum_column = main_df[name_column].sum()
+                _dct_describe = temp_desccribe.to_dict()
+                dct_describe = {'Среднее':round(_dct_describe['mean'],2),'Сумма': round(sum_column,2),'Медиана':_dct_describe['50%'],
+                                'Минимум':_dct_describe['min'],'Максимум':_dct_describe['max'],'Количество':_dct_describe['count'],}
+                new_value_df = pd.DataFrame(list(dct_describe.items()),columns=['Показатель', 'Значение'])
             new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
             soc_df = pd.concat([soc_df, new_part_df], axis=0)
 
@@ -320,7 +343,7 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         fill = PatternFill(fill_type='solid', fgColor='ffa500')  # Оранжевый цвет
         for row in soc_wb['Свод по статусам'].iter_rows(min_row=1, max_row=soc_wb['Свод по статусам'].max_row,
                                                         min_col=column_number, max_col=column_number):  # Перебираем строки
-            if 'Статус_' in str(row[column_number].value): # делаем ячейку строковой и проверяем наличие слова Статус_
+            if 'Статус_' in str(row[column_number].value) or 'Подсчет_' in str(row[column_number].value): # делаем ячейку строковой и проверяем наличие слова Статус_
                 for cell in row: # применяем стиль если условие сработало
                     cell.font = font
                     cell.fill = fill
@@ -356,7 +379,9 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
 
 if __name__== '__main__':
     main_etalon_file = 'data/Эталон.xlsx'
+    main_etalon_file = 'data/Эталон подсчет.xlsx'
     main_data_folder = 'data/01.03'
+    main_data_folder = 'data/Подсчет'
     main_result_folder = 'data/Результат'
     main_params_file = 'data/Параметры отчета.xlsx'
     main_checkbox_expelled = 0
