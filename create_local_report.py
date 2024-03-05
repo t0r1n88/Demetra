@@ -28,6 +28,12 @@ class NotCustomColumn(Exception):
     """
     pass
 
+class NotGoodSheet(Exception):
+    """
+    Исключение для случая когда ни один лист не подхожит под эталон
+    """
+    pass
+
 def convert_number(value):
     """
     Функция для конвертации в float значений колонок содержащих в названии Подсчет_
@@ -35,7 +41,6 @@ def convert_number(value):
     :return: число в формате float
     """
     try:
-        print(value)
         return float(value)
     except:
         return 0
@@ -204,6 +209,16 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
 
 
                         quantity_sheets += 1
+        # получаем текущее время
+        t = time.localtime()
+        current_time = time.strftime('%H_%M_%S', t)
+
+        # Сохраняем лист с ошибками
+        error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
+        error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
+        if len(main_df) == 0:
+            raise NotGoodSheet
+
         main_df.rename(columns={'Группа':'Для переноса','Файл':'файл для переноса'},inplace=True) # переименовываем группу чтобы перенести ее в начало таблицы
         main_df.insert(0,'Файл',main_df['файл для переноса'])
         main_df.insert(1,'Группа',main_df['Для переноса'])
@@ -211,9 +226,7 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
 
         main_df.fillna('Нет статуса', inplace=True) # заполняем пустые ячейки
 
-        # получаем текущее время
-        t = time.localtime()
-        current_time = time.strftime('%H_%M_%S', t)
+
         # Создаем списки на основе которых мы создаем настраиваемый отчет
         lst_custom_wb = create_for_custom_report(main_df,params_df)
         lst_custom_wb.save(f'{path_end_folder}/Списки для свода по выбранным колонкам от {current_time}.xlsx')
@@ -241,18 +254,21 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         # Создаем файл в котором будут сводные данные по колонкам с Подсчетом
         dct_counting_df = dict() # словарь в котором будут храниться датафреймы созданные для каждой колонки
         lst_counting_name_columns = [name_column for name_column in main_df.columns if 'Подсчет_' in name_column]
-        # if len(lst_counting_name_columns) != 0:
-        #     counting_df = main_df.copy() # создаем копию основного датафрейма чтобы спокойно преобразовывать данные
-        #     counting_df[lst_counting_name_columns] = counting_df[lst_counting_name_columns].astype(str)
-        #     counting_df[lst_counting_name_columns] = counting_df[lst_counting_name_columns].apply(lambda x:str.replace('.', ',',x))
-        #     counting_df[lst_counting_name_columns] = counting_df[lst_counting_name_columns].apply(convert_number)
-        #     for name_counting_column in lst_counting_name_columns:
-        #         print(counting_df[name_counting_column])
-        #         print(pd.pivot_table(main_df,index=['Файл','Группа'],
-        #                              values=[name_counting_column],
-        #                              aggfunc=[np.mean,np.sum,np.median,np.min,np.max,len])
-        #
-        #               )
+        if len(lst_counting_name_columns) != 0:
+            for name_counting_column in lst_counting_name_columns:
+                main_df[name_counting_column] = main_df[name_counting_column].apply(convert_number)
+                temp_svod_df = (pd.pivot_table(main_df,index=['Файл','Группа'],
+                                     values=[name_counting_column],
+                                     aggfunc=[np.mean,np.sum,np.median,np.min,np.max,len]))
+                temp_svod_df=temp_svod_df.reset_index() # убираем мультииндекс
+                temp_svod_df = temp_svod_df.droplevel(axis=1,level=0) # убираем мультиколонки
+                temp_svod_df.columns = ['Файл','Группа','Среднее','Сумма','Медиана','Минимум','Максимум','Количество']
+                dct_counting_df[name_counting_column] = temp_svod_df # сохраняем в словарь
+
+            # Сохраняем
+            counting_report_wb = write_df_to_excel(dct_counting_df, write_index=False)
+            counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+            counting_report_wb.save(f'{path_end_folder}/Свод по колонкам Подсчета от {current_time}.xlsx')
 
 
 
@@ -366,12 +382,6 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         # Сохраняем итоговый файл
         wb.save(f'{path_end_folder}/Свод по каждой колонке таблицы от {current_time}.xlsx')
 
-
-
-
-        # Сохраняем лист с ошибками
-        error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
-        error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
         if error_df.shape[0] != 0:
             count_error = len(error_df['Название листа'].unique())
             messagebox.showinfo('Деметра Отчеты социальный паспорт студента',
@@ -391,6 +401,11 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'В эталонном файле отсутствуют колонки указанные в файле с параметрами отчета,\n'
                              f' не найдены колонки: {";".join(custom_always_cols)}'
+                             )
+    except NotGoodSheet:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Заголовки ни одного листа не соответствуют эталонному файлу,\n'
+                             f'Откройте файл с ошибками и устраните проблему'
                              )
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
