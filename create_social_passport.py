@@ -511,10 +511,6 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
             counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
             counting_report_wb.save(f'{path_end_folder}/Свод по колонкам Подсчета от {current_time}.xlsx')
 
-
-
-
-
         # Создаем Свод по статусам
         # Собираем колонки содержащие слово Статус_ и Подсчет_
         lst_status = [name_column for name_column in main_df.columns if 'Статус_' in name_column or 'Подсчет_' in name_column]
@@ -645,9 +641,9 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
 
 if __name__ == '__main__':
     main_etalon_file = 'data/Эталон.xlsx'
-    main_etalon_file = 'data/Эталон подсчет.xlsx'
+    # main_etalon_file = 'data/Эталон подсчет.xlsx'
     main_data_folder = 'data/01.03'
-    main_data_folder = 'data/Подсчет'
+    # main_data_folder = 'data/Подсчет'
     main_end_folder = 'data/Результат'
     main_checkbox_expelled = 0
     # main_checkbox_expelled = 1
