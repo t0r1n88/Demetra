@@ -439,14 +439,12 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
                             continue  # не обрабатываем лист где найдены ошибки
 
                         temp_df.dropna(how='all', inplace=True)  # удаляем пустые строки
-                        # проверяем наличие колонок Файл и № Группы
+                        # проверяем наличие колонок Файл и Группа
                         if 'Файл' not in temp_df.columns:
                             temp_df.insert(0, 'Файл', name_file)
 
-                        if '№ Группы' in temp_df.columns:
-                            temp_df.insert(0, '№ Группы_новый', name_sheet)  # вставляем колонку с именем листа
-                        else:
-                            temp_df.insert(0, '№ Группы', name_sheet) # вставляем колонку с именем листа
+                        if 'Группа' not in temp_df.columns:
+                            temp_df.insert(0, 'Группа', name_sheet) # вставляем колонку с именем листа
 
                         if checkbox_expelled == 0:
                             temp_df = temp_df[temp_df['Статус_Учёба'] != 'Отчислен'] # отбрасываем отчисленных если поставлен чекбокс
@@ -454,9 +452,9 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
                         main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True) # добавляем в общий файл
                         quantity_sheets +=1
 
-        main_df.rename(columns={'№ Группы':'Для переноса','Файл':'файл для переноса'},inplace=True) # переименовываем группу чтобы перенести ее в начало таблицы
+        main_df.rename(columns={'Группа':'Для переноса','Файл':'файл для переноса'},inplace=True) # переименовываем группу чтобы перенести ее в начало таблицы
         main_df.insert(0,'Файл',main_df['файл для переноса'])
-        main_df.insert(1,'№ Группы',main_df['Для переноса'])
+        main_df.insert(1,'Группа',main_df['Для переноса'])
         main_df.drop(columns=['Для переноса','файл для переноса'],inplace=True)
 
         main_df.fillna('Нет статуса', inplace=True) # заполняем пустые ячейки
@@ -478,52 +476,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
 
 
 
-        # Создаем файл excel в котороым будет находится отчет
-        wb = openpyxl.Workbook()
 
-        # Проверяем наличие возможных дубликатов ,котороые могут получиться если обрезать по 30 символов
-        lst_length_column = [column[:30] for column in main_df.columns]
-        check_dupl_length = [k for k, v in Counter(lst_length_column).items() if v > 1]
-
-        # проверяем наличие объединенных ячеек
-        check_merge = [column for column in main_df.columns if 'Unnamed' in column]
-        # если есть хоть один Unnamed то просто заменяем названия колонок на Колонка №цифра
-        if check_merge or check_dupl_length:
-            main_df.columns = [f'Колонка №{i}' for i in range(1, main_df.shape[1] + 1)]
-        # очищаем названия колонок от символов */\ []''
-        # Создаем регулярное выражение
-        pattern_symbols = re.compile(r"[/*'\[\]/\\]")
-        clean_main_df_columns = [re.sub(pattern_symbols, '', column) for column in main_df.columns]
-        main_df.columns = clean_main_df_columns
-
-        # Добавляем столбец для облегчения подсчета по категориям
-        main_df['Для подсчета'] = 1
-        # заполняем наны не заполнено
-        main_df.fillna('Не заполнено',inplace=True)
-
-        # Создаем листы
-        for idx, name_column in enumerate(main_df.columns):
-            # Делаем короткое название не более 30 символов
-            wb.create_sheet(title=name_column[:30], index=idx)
-
-        for idx, name_column in enumerate(main_df.columns):
-            group_main_df = main_df.astype({name_column:str}).groupby([name_column]).agg({'Для подсчета': 'sum'})
-            group_main_df.columns = ['Количество']
-            # Сортируем по убыванию
-            group_main_df.sort_values(by=['Количество'], inplace=True, ascending=False)
-
-            for r in dataframe_to_rows(group_main_df, index=True, header=True):
-                if len(r) != 1:
-                    wb[name_column[:30]].append(r)
-            wb[name_column[:30]].column_dimensions['A'].width = 50
-
-        # генерируем текущее время
-        t = time.localtime()
-        current_time = time.strftime('%H_%M_%S', t)
-        # Удаляем листы
-        wb = del_sheet(wb,['Sheet','Sheet1','Для подсчета'])
-        # Сохраняем итоговый файл
-        wb.save(f'{path_end_folder}/Свод по каждой колонке таблицы от {current_time}.xlsx')
 
 
         # Создаем Свод по статусам
@@ -588,6 +541,51 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
                     cell.fill = fill
         soc_wb.save(f'{path_end_folder}/Свод по статусам от {current_time}.xlsx')
 
+        # Создаем файл excel в котороым будет находится отчет
+        wb = openpyxl.Workbook()
+
+        # Проверяем наличие возможных дубликатов ,котороые могут получиться если обрезать по 30 символов
+        lst_length_column = [column[:30] for column in main_df.columns]
+        check_dupl_length = [k for k, v in Counter(lst_length_column).items() if v > 1]
+
+        # проверяем наличие объединенных ячеек
+        check_merge = [column for column in main_df.columns if 'Unnamed' in column]
+        # если есть хоть один Unnamed то просто заменяем названия колонок на Колонка №цифра
+        if check_merge or check_dupl_length:
+            main_df.columns = [f'Колонка №{i}' for i in range(1, main_df.shape[1] + 1)]
+        # очищаем названия колонок от символов */\ []''
+        # Создаем регулярное выражение
+        pattern_symbols = re.compile(r"[/*'\[\]/\\]")
+        clean_main_df_columns = [re.sub(pattern_symbols, '', column) for column in main_df.columns]
+        main_df.columns = clean_main_df_columns
+
+        # Добавляем столбец для облегчения подсчета по категориям
+        main_df['Для подсчета'] = 1
+
+        # Создаем листы
+        for idx, name_column in enumerate(main_df.columns):
+            # Делаем короткое название не более 30 символов
+            wb.create_sheet(title=name_column[:30], index=idx)
+
+        for idx, name_column in enumerate(main_df.columns):
+            group_main_df = main_df.astype({name_column:str}).groupby([name_column]).agg({'Для подсчета': 'sum'})
+            group_main_df.columns = ['Количество']
+            # Сортируем по убыванию
+            group_main_df.sort_values(by=['Количество'], inplace=True, ascending=False)
+
+            for r in dataframe_to_rows(group_main_df, index=True, header=True):
+                if len(r) != 1:
+                    wb[name_column[:30]].append(r)
+            wb[name_column[:30]].column_dimensions['A'].width = 50
+
+        # Удаляем листы
+        wb = del_sheet(wb,['Sheet','Sheet1','Для подсчета'])
+        # Сохраняем итоговый файл
+        wb.save(f'{path_end_folder}/Свод по каждой колонке таблицы от {current_time}.xlsx')
+
+
+
+
         # Сохраняем лист с ошибками
         error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
         error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
@@ -612,9 +610,9 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
 
 if __name__ == '__main__':
     main_etalon_file = 'data/Эталон.xlsx'
-    main_etalon_file = 'data/Эталон подсчет.xlsx'
+    # main_etalon_file = 'data/Эталон подсчет.xlsx'
     main_data_folder = 'data/01.03'
-    main_data_folder = 'data/Подсчет'
+    # main_data_folder = 'data/Подсчет'
     main_end_folder = 'data/Результат'
     main_checkbox_expelled = 0
     # main_checkbox_expelled = 1
