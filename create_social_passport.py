@@ -369,17 +369,6 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     lst_report_wb = del_sheet(lst_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
     lst_report_wb.save(f'{path_end_folder}/Списки для отчета по стандарту БРИТ от {current_time}.xlsx')
 
-def create_counting_columns_report(main_df:pd.DataFrame,svod_df:pd.DataFrame,lst_counting_columns:list)->pd.DataFrame:
-    """
-    Функция для обработки колонок с количественными данными и добавления результата в сводный датафрейм
-    :param main_df: основной датафрейм
-    :param svod_df: датафрейм с сводными данными
-    :param lst_counting_columns:
-    :return:
-    """
-
-
-
 
 def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,checkbox_expelled:int)->None:
     """
