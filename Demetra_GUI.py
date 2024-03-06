@@ -29,6 +29,14 @@ logging.basicConfig(
     datefmt='%H:%M:%S',
 )
 
+class SameFolder(Exception):
+    """
+    Исключение для обработки случая когда выбраны одинаковые папки
+    """
+    pass
+
+
+
 """
 Системные функции
 """
@@ -122,6 +130,16 @@ def set_window_size(window):
 """
 Создание локального отчета
 """
+def select_file_etalon_local_report():
+    """
+    Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
+    :return: Путь к файлу с данными
+    """
+    global name_file_etalon_local_report
+    # Получаем путь к файлу
+    name_file_etalon_local_report = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
 def select_file_params_local_report():
     """
     Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
@@ -131,14 +149,13 @@ def select_file_params_local_report():
     # Получаем путь к файлу
     name_file_params_local_report = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
 
-def select_file_data_local_report():
+def select_folder_data_local_report():
     """
-    Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
-    :return: Путь к файлу с данными
+    Функция для выбора папки куда будут генерироваться файлы
+    :return:
     """
-    global name_file_data_local_report
-    # Получаем путь к файлу
-    name_file_data_local_report = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    global path_folder_local_report
+    path_folder_local_report = filedialog.askdirectory()
 
 
 def select_end_folder_local_report():
@@ -155,10 +172,15 @@ def processing_local_report():
     :return:
     """
     try:
+        if path_folder_local_report == path_to_end_folder_local_report:
+            raise SameFolder
         checkbox_expelled = group_rb_expelled_local_report.get()
-        create_local_report(name_file_data_local_report,path_to_end_folder_local_report,name_file_params_local_report,checkbox_expelled)
+        create_local_report(name_file_etalon_local_report,path_folder_local_report,path_to_end_folder_local_report,name_file_params_local_report,checkbox_expelled)
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,файл с данными, конечную папку')
+    except SameFolder:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите разные папки в качестве исходной и конечной')
+
 
 
 """
@@ -197,10 +219,14 @@ def processing_social_report():
     :return:
     """
     try:
+        if path_folder_social_report == path_to_end_folder_social_report:
+            raise SameFolder
         checkbox_expelled = group_rb_expelled_social_report.get()
         create_social_report(name_file_etalon_social_report,path_folder_social_report,path_to_end_folder_social_report,checkbox_expelled)
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,папку с данными, конечную папку')
+    except SameFolder:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите разные папки в качестве исходной и конечной')
 
 """
 Функции для соединения таблиц
@@ -382,11 +408,11 @@ if __name__ == '__main__':
     frame_data_social_report = LabelFrame(tab_create_social_report, text='Подготовка')
     frame_data_social_report.pack(padx=10, pady=10)
 
-    # Создаем кнопку выбора файла с данными
-    btn_choose_file_social_report = Button(frame_data_social_report, text='1) Выберите эталонный файл',
+    # Создаем кнопку выбора эталонного файла
+    btn_choose_file_etalon_social_report = Button(frame_data_social_report, text='1) Выберите эталонный файл',
                                                  font=('Arial Bold', 14),
                                                  command=select_file_etalon_social_report)
-    btn_choose_file_social_report.pack(padx=10, pady=10)
+    btn_choose_file_etalon_social_report.pack(padx=10, pady=10)
 
     btn_choose_folder_social_report = Button(frame_data_social_report, text='2) Выберите папку с исходными файлами',
                                           font=('Arial Bold', 14),
@@ -446,22 +472,29 @@ if __name__ == '__main__':
     frame_data_local_report = LabelFrame(tab_create_local_report, text='Подготовка')
     frame_data_local_report.pack(padx=10, pady=10)
 
-    # Создаем кнопку выбора файла с данными
-    btn_choose_file_params_local_report= Button(frame_data_local_report, text='1) Выберите файл c параметрами', font=('Arial Bold', 14),
+    # Создаем кнопку выбора эталонного файла
+    btn_choose_file_etalon_local_report = Button(frame_data_local_report, text='1) Выберите эталонный файл',
+                                                 font=('Arial Bold', 14),
+                                                 command=select_file_etalon_local_report)
+    btn_choose_file_etalon_local_report.pack(padx=10, pady=10)
+
+
+    # Создаем кнопку выбора файла с параметрами
+    btn_choose_file_params_local_report= Button(frame_data_local_report, text='2) Выберите файл c параметрами', font=('Arial Bold', 14),
                                        command=select_file_params_local_report)
     btn_choose_file_params_local_report.pack(padx=10, pady=10)
 
 
-    btn_choose_file_local_report= Button(frame_data_local_report, text='2) Выберите файл', font=('Arial Bold', 14),
-                                       command=select_file_data_local_report)
-    btn_choose_file_local_report.pack(padx=10, pady=10)
+    btn_choose_folder_data_local_report= Button(frame_data_local_report, text='3) Выберите папку с исходными файлами', font=('Arial Bold', 14),
+                                       command=select_folder_data_local_report)
+    btn_choose_folder_data_local_report.pack(padx=10, pady=10)
 
 
     # Переключатель:вариант слияния файлов
     # Создаем переключатель
     group_rb_expelled_local_report = IntVar()
     # Создаем фрейм для размещения переключателей(pack и грид не используются в одном контейнере)
-    frame_rb_local_report = LabelFrame(frame_data_local_report, text='3) Выберите вариант подсчета')
+    frame_rb_local_report = LabelFrame(frame_data_local_report, text='4) Выберите вариант подсчета')
     frame_rb_local_report.pack(padx=10, pady=10)
     #
     Radiobutton(frame_rb_local_report, text='А) Подсчет без отчисленных', variable=group_rb_expelled_local_report,
@@ -471,13 +504,13 @@ if __name__ == '__main__':
 
 
     # Создаем кнопку выбора конечной папки
-    btn_choose_end_folder_local_report= Button(frame_data_local_report, text='4) Выберите конечную папку', font=('Arial Bold', 14),
+    btn_choose_end_folder_local_report= Button(frame_data_local_report, text='5) Выберите конечную папку', font=('Arial Bold', 14),
                                        command=select_end_folder_local_report)
     btn_choose_end_folder_local_report.pack(padx=10, pady=10)
 
     # Создаем кнопку генерации отчетов
 
-    btn_generate_local_report = Button(tab_create_local_report,text='5) Создать отчеты', font=('Arial Bold', 14),command=processing_local_report)
+    btn_generate_local_report = Button(tab_create_local_report,text='6) Создать отчеты', font=('Arial Bold', 14),command=processing_local_report)
     btn_generate_local_report.pack(padx=10, pady=10)
 
     """
