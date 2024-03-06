@@ -103,7 +103,7 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     group_main_df.rename(columns={'Статус_Сиротство': 'Дети-сироты'}, inplace=True)
 
 
-    # Создаем датафрейм с сиротами
+    # Создаем датафрейм с инвалидами
     invalid_df = df[df['Статус_Уровень_здоровья'].isin(['Инвалид детства', 'Инвалид 1,2,3, группы'])]
 
     dct_name_sheet['Инвалиды'] = invalid_df  # добавляем в словарь
@@ -142,7 +142,7 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Соц. стипендия инвалиды'}, inplace=True)
 
     # Создаем датафрейм с получателями бесплатного питания
-    eating_df = df[df['Статус_Питание'].isin(['получает компенсацию за питание', 'питается в БРИТ'])]
+    eating_df = df[df['Статус_Питание'].isin(['получает компенсацию за питание', 'питается в БРИТ','получает компенсацию за питание + питается в БРИТ'])]
     dct_name_sheet['Питание все'] = eating_df  # добавляем в словарь
 
     # получаем малоимущих
@@ -195,7 +195,7 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
         ['гособеспечение + постинтернатное сопровождение',
          'дети-сироты, находящиеся на полном государственном обеспечении',
          'дети-сироты, находящиеся под опекой'])]
-    dct_name_sheet['Питание сироты'] = orphans_dormitory_df
+    dct_name_sheet['Общежитие сироты'] = orphans_dormitory_df
     orphans_dormitory_group_df = orphans_dormitory_df.groupby(by=['Файл']).agg({'Статус_Сиротство': 'count'})
     group_main_df = group_main_df.join(orphans_dormitory_group_df)  # добавляем в свод
     group_main_df.rename(columns={'Статус_Сиротство': 'Общежитие сироты'}, inplace=True)
