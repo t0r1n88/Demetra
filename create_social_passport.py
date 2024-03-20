@@ -142,7 +142,7 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Соц. стипендия инвалиды'}, inplace=True)
 
     # Создаем датафрейм с получателями бесплатного питания
-    eating_df = df[df['Статус_Питание'].isin(['получает компенсацию за питание', 'питается в БРИТ','получает компенсацию за питание + питается в БРИТ'])]
+    eating_df = df[df['Статус_Питание'].isin(['получает компенсацию за питание', 'питается в ПОО','получает компенсацию за питание + питается в ПОО'])]
     dct_name_sheet['Питание все'] = eating_df  # добавляем в словарь
 
     # получаем малоимущих
@@ -271,19 +271,19 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
 
     # считаем сирот получающих питание
     all_eating_orphans_df = orphans_df[
-        orphans_df['Статус_Питание'].isin(['питается в БРИТ', 'получает компенсацию за питание',
-                                           'получает компенсацию за питание + питается в БРИТ'])]
+        orphans_df['Статус_Питание'].isin(['питается в ПОО', 'получает компенсацию за питание',
+                                           'получает компенсацию за питание + питается в ПОО'])]
     dct_name_sheet['Сироты питание все'] = all_eating_orphans_df
     all_eating_orphans_group_df = all_eating_orphans_df.groupby(by=['Файл']).agg({'Статус_Сиротство': 'count'})
     group_orphans_main_df = group_orphans_main_df.join(all_eating_orphans_group_df)  # добавляем в свод
     group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Питается всего'}, inplace=True)
 
     # считаем сирот получающих питание в брит
-    brit_eating_orphans_df = orphans_df[orphans_df['Статус_Питание'].isin(['питается в БРИТ'])]
-    dct_name_sheet['Сироты питание БРИТ'] = brit_eating_orphans_df
+    brit_eating_orphans_df = orphans_df[orphans_df['Статус_Питание'].isin(['питается в ПОО'])]
+    dct_name_sheet['Сироты питание ПОО'] = brit_eating_orphans_df
     brit_eating_orphans_group_df = brit_eating_orphans_df.groupby(by=['Файл']).agg({'Статус_Сиротство': 'count'})
     group_orphans_main_df = group_orphans_main_df.join(brit_eating_orphans_group_df)  # добавляем в свод
-    group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Питается в БРИТ'}, inplace=True)
+    group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Питается в ПОО'}, inplace=True)
 
     # считаем сирот получающих компенсацию
     compens_eating_orphans_df = orphans_df[orphans_df['Статус_Питание'].isin(['получает компенсацию за питание'])]
@@ -294,12 +294,12 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
 
     # считаем сирот получающих компенсацию + питание в брит
     brit_compens_eating_orphans_df = orphans_df[
-        orphans_df['Статус_Питание'].isin(['получает компенсацию за питание + питается в БРИТ'])]
-    dct_name_sheet['Сироты питание БРИТ+компенсация'] = brit_compens_eating_orphans_df
+        orphans_df['Статус_Питание'].isin(['получает компенсацию за питание + питается в ПОО'])]
+    dct_name_sheet['Сироты питание ПОО+компенсация'] = brit_compens_eating_orphans_df
     brit_compens_eating_orphans_group_df = brit_compens_eating_orphans_df.groupby(by=['Файл']).agg(
         {'Статус_Сиротство': 'count'})
     group_orphans_main_df = group_orphans_main_df.join(brit_compens_eating_orphans_group_df)  # добавляем в свод
-    group_orphans_main_df.rename(columns={'Статус_Сиротство': 'БРИТ+компенсация'}, inplace=True)
+    group_orphans_main_df.rename(columns={'Статус_Сиротство': 'ПОО+компенсация'}, inplace=True)
 
     group_orphans_main_df.fillna(0, inplace=True)  # заполняем наны
     group_orphans_main_df = group_orphans_main_df.astype(int)  # приводим к инту
