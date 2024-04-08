@@ -546,6 +546,15 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
 
             new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
             soc_df = pd.concat([soc_df, new_part_df], axis=0)
+        # Создаем раскладку по группам
+        new_group_header_df = pd.DataFrame(columns=['Показатель', 'Значение'],
+                                   data=[['Статус_студентов по группам', None]])  # создаем строку с заголовком
+        new_group_df = create_value_str(main_df, 'Группа', 'Статус_Учёба',
+                                        {'Обучается': 'Обучается', 'Академ': 'Академический отпуск',
+                                         'Не указан статус': 'Нет статуса'})
+        new_group_header_df = pd.concat([new_group_header_df, new_group_df], axis=0)
+
+        soc_df = pd.concat([soc_df, new_group_header_df], axis=0)
 
         soc_wb = write_df_to_excel({'Свод по статусам':soc_df},write_index=False)
         soc_wb = del_sheet(soc_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
