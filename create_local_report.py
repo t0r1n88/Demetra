@@ -245,6 +245,16 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         custom_report_wb.save(f'{path_end_folder}/Свод по выбранным колонкам Статусов от {current_time}.xlsx')
 
         # Сохраняем лист со всеми данными
+        lst_date_columns = []  # список для колонок с датами
+        for column in main_df.columns:
+            if 'дата' in column.lower():
+                lst_date_columns.append(column)
+        main_df[lst_date_columns] = main_df[lst_date_columns].apply(pd.to_datetime, errors='coerce', dayfirst=True,
+                                                          format='mixed')  # Приводим к типу
+        main_df[lst_date_columns] = main_df[lst_date_columns].applymap(
+            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, pd.Timestamp) else x)
+
+        main_df.replace('Нет статуса','',inplace=True)
         main_wb = write_df_to_excel({'Общий список':main_df},write_index=False)
         main_wb = del_sheet(main_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
