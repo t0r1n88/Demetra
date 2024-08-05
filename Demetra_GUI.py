@@ -7,6 +7,7 @@ from create_union_table import merge_table # соединие таблиц
 from expired_doc import check_expired_docs
 from preparation_list import prepare_list # подготовка персональных данных
 from split_table import split_table # разделение таблицы
+from generate_docs import generate_docs_from_template
 import pandas as pd
 import os
 from tkinter import *
@@ -389,6 +390,65 @@ def processing_check_expired_docs():
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Выберите файл с данными и папку куда будет генерироваться файл')
         logging.exception('AN ERROR HAS OCCURRED')
+
+"""
+Функции для создания документов
+"""
+def select_file_template_doc():
+    """
+    Функция для выбора файла шаблона
+    :return: Путь к файлу шаблона
+    """
+    global name_file_template_doc
+    name_file_template_doc = filedialog.askopenfilename(
+        filetypes=(('Word files', '*.docx'), ('all files', '*.*')))
+
+
+def select_file_data_doc():
+    """
+    Функция для выбора файла с данными на основе которых будет генерироваться документ
+    :return: Путь к файлу с данными
+    """
+    global name_file_data_doc
+    # Получаем путь к файлу
+    name_file_data_doc = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
+def select_end_folder_doc():
+    """
+    Функция для выбора папки куда будут генерироваться файлы
+    :return:
+    """
+    global path_to_end_folder_doc
+    path_to_end_folder_doc = filedialog.askdirectory()
+
+def generate_docs_other():
+    """
+    Функция для создания документов из произвольных таблиц(т.е. отличающихся от структуры базы данных Веста Обработка таблиц и создание документов ver 1.35)
+    :return:
+    """
+    try:
+        name_column = entry_name_column_data.get()
+        name_type_file = entry_type_file.get()
+        name_value_column = entry_value_column.get()
+
+        # получаем состояние чекбокса создания pdf
+        mode_pdf = mode_pdf_value.get()
+        # Получаем состояние  чекбокса объединения файлов в один
+        mode_combine = mode_combine_value.get()
+        # Получаем состояние чекбокса создания индвидуального файла
+        mode_group = mode_group_doc.get()
+
+        generate_docs_from_template(name_column, name_type_file, name_value_column, mode_pdf, name_file_template_doc,
+                                    name_file_data_doc, path_to_end_folder_doc,
+                                    mode_combine, mode_group)
+
+
+    except NameError as e:
+        messagebox.showerror('Веста Обработка таблиц и создание документов ver 1.35',
+                             f'Выберите шаблон,файл с данными и папку куда будут генерироваться файлы')
+        logging.exception('AN ERROR HAS OCCURRED')
+
 
 
 
@@ -775,7 +835,137 @@ if __name__ == '__main__':
                                command=processing_split_table)
     btn_split_process.pack(padx=10, pady=10)
 
+    """
+     Создаем вкладку создания документов
+     """
+    tab_create_doc = Frame(tab_control)
+    tab_control.add(tab_create_doc, text='Создание\nдокументов')
 
+    create_doc_frame_description = LabelFrame(tab_create_doc)
+    create_doc_frame_description.pack()
+
+    lbl_hello = Label(create_doc_frame_description,
+                      text='Генерация документов по шаблону'
+                           '\nДля корректной работы программы уберите из таблицы\nобъединенные ячейки'
+                           '\nДанные обрабатываются только с первого листа файла Excel!!!', width=60)
+    lbl_hello.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+    # #
+    # #
+    # Картинка
+    path_to_img = resource_path('logo.png')
+    img = PhotoImage(file=path_to_img)
+    Label(create_doc_frame_description,
+          image=img, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем фрейм для действий
+    create_doc_frame_action = LabelFrame(tab_create_doc, text='Подготовка')
+    create_doc_frame_action.pack()
+
+    # Создаем кнопку Выбрать шаблон
+    btn_template_doc = Button(create_doc_frame_action, text='1) Выберите шаблон документа', font=('Arial Bold', 14),
+                              command=select_file_template_doc
+                              )
+    btn_template_doc.pack(padx=10, pady=10)
+
+    btn_data_doc = Button(create_doc_frame_action, text='2) Выберите файл с данными', font=('Arial Bold', 14),
+                          command=select_file_data_doc
+                          )
+    btn_data_doc.pack(padx=10, pady=10)
+    #
+    # Создаем кнопку для выбора папки куда будут генерироваться файлы
+
+    # Определяем текстовую переменную
+    entry_name_column_data = StringVar()
+    # Описание поля
+    label_name_column_data = Label(create_doc_frame_action,
+                                   text='3) Введите название колонки в таблице\n по которой будут создаваться имена файлов')
+    label_name_column_data.pack(padx=10, pady=10)
+    # поле ввода
+    data_column_entry = Entry(create_doc_frame_action, textvariable=entry_name_column_data, width=30)
+    data_column_entry.pack(ipady=5)
+
+    # Поле для ввода названия генериуемых документов
+    # Определяем текстовую переменную
+    entry_type_file = StringVar()
+    # Описание поля
+    label_name_column_type_file = Label(create_doc_frame_action, text='4) Введите название создаваемых документов')
+    label_name_column_type_file.pack(padx=10, pady=10)
+    # поле ввода
+    type_file_column_entry = Entry(create_doc_frame_action, textvariable=entry_type_file, width=30)
+    type_file_column_entry.pack(ipady=5)
+
+    btn_choose_end_folder_doc = Button(create_doc_frame_action, text='5) Выберите конечную папку',
+                                       font=('Arial Bold', 14),
+                                       command=select_end_folder_doc
+                                       )
+    btn_choose_end_folder_doc.pack(padx=10, pady=10)
+
+    # Создаем область для того чтобы поместить туда опции
+    frame_data_for_options = LabelFrame(tab_create_doc, text='Дополнительные опции')
+    frame_data_for_options.pack(padx=10, pady=10)
+
+    # Создаем переменную для хранения результа переключения чекбокса
+    mode_combine_value = StringVar()
+
+    # Устанавливаем значение по умолчанию для этой переменной. По умолчанию будет вестись подсчет числовых данных
+    mode_combine_value.set('No')
+    # Создаем чекбокс для выбора режима подсчета
+
+    chbox_mode_calculate = Checkbutton(frame_data_for_options,
+                                       text='Поставьте галочку, если вам нужно чтобы все файлы были объединены в один',
+                                       variable=mode_combine_value,
+                                       offvalue='No',
+                                       onvalue='Yes')
+    chbox_mode_calculate.pack()
+
+    # Создаем чекбокс для режима создания pdf
+    # Создаем переменную для хранения результа переключения чекбокса
+    mode_pdf_value = StringVar()
+
+    # Устанавливаем значение по умолчанию для этой переменной. По умолчанию будет вестись подсчет числовых данных
+    mode_pdf_value.set('No')
+    # Создаем чекбокс для выбора режима подсчета
+
+    chbox_mode_pdf = Checkbutton(frame_data_for_options,
+                                 text='Поставьте галочку, если вам нужно чтобы \n'
+                                      'дополнительно создавались pdf версии документов',
+                                 variable=mode_pdf_value,
+                                 offvalue='No',
+                                 onvalue='Yes')
+    chbox_mode_pdf.pack()
+
+    # создаем чекбокс для единичного документа
+
+    # Создаем переменную для хранения результа переключения чекбокса
+    mode_group_doc = StringVar()
+
+    # Устанавливаем значение по умолчанию для этой переменной. По умолчанию будет вестись подсчет числовых данных
+    mode_group_doc.set('No')
+    # Создаем чекбокс для выбора режима подсчета
+    chbox_mode_group = Checkbutton(frame_data_for_options,
+                                   text='Поставьте галочку, если вам нужно создать один документ\nдля конкретного значения (например для определенного ФИО)',
+                                   variable=mode_group_doc,
+                                   offvalue='No',
+                                   onvalue='Yes')
+    chbox_mode_group.pack(padx=10, pady=10)
+    # Создаем поле для ввода значения по которому будет создаваться единичный документ
+    # Определяем текстовую переменную
+    entry_value_column = StringVar()
+    # Описание поля
+    label_name_column_group = Label(frame_data_for_options,
+                                    text='Введите значение из колонки\nуказанной на шаге 3 для которого нужно создать один документ,\nнапример конкретное ФИО')
+    label_name_column_group.pack()
+    # поле ввода
+    type_file_group_entry = Entry(frame_data_for_options, textvariable=entry_value_column, width=30)
+    type_file_group_entry.pack(ipady=5)
+
+    # Создаем кнопку для создания документов из таблиц с произвольной структурой
+    btn_create_files_other = Button(tab_create_doc, text='6) Создать документ(ы)',
+                                    font=('Arial Bold', 20),
+                                    command=generate_docs_other
+                                    )
+    btn_create_files_other.pack(padx=10, pady=10)
 
 
 
