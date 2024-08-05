@@ -4,6 +4,7 @@
 from create_local_report import create_local_report # создание отчета по выбранным пользователем параметрам
 from create_social_passport import create_social_report # создание отчета по социальному состоянию
 from create_union_table import merge_table # соединие таблиц
+from expired_doc import check_expired_docs
 from preparation_list import prepare_list # подготовка персональных данных
 from split_table import split_table # разделение таблицы
 import pandas as pd
@@ -356,11 +357,44 @@ def processing_preparation_file():
                              f'Выберите файл с данными и папку куда будет генерироваться файл')
         logging.exception('AN ERROR HAS OCCURRED')
 
+"""
+Функции для проверки истекающих документов
+"""
+def select_file_data_expired():
+    """
+    Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
+    :return: Путь к файлу с данными
+    """
+    global name_file_data_expired
+    # Получаем путь к файлу
+    name_file_data_expired = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
+def select_data_folder_expired():
+    """
+    Функция для выбора папки куда будут генерироваться файлы
+    :return:
+    """
+    global path_to_data_folder_expired
+    path_to_data_folder_expired = filedialog.askdirectory()
+
+def processing_check_expired_docs():
+    """
+    Функция для генерации документов
+    """
+    try:
+        check_expired_docs(name_file_data_expired,path_to_data_folder_expired)
+
+    except NameError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Выберите файл с данными и папку куда будет генерироваться файл')
+        logging.exception('AN ERROR HAS OCCURRED')
+
 
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты  ver 1.0')
+    window.title('Деметра Отчеты  ver 1.1')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -386,7 +420,7 @@ if __name__ == '__main__':
        Создаем вкладку для создания социального паспорта БРИТ
        """
     tab_create_social_report = ttk.Frame(tab_control)
-    tab_control.add(tab_create_social_report, text='Стандартный отчет')
+    tab_control.add(tab_create_social_report, text='Стандартный\n отчет')
 
     create_social_report_frame_description = LabelFrame(tab_create_social_report)
     create_social_report_frame_description.pack()
@@ -450,7 +484,7 @@ if __name__ == '__main__':
     Создаем вкладку для создания настраиваемых отчетов по любым таблицам
     """
     tab_create_local_report= ttk.Frame(tab_control)
-    tab_control.add(tab_create_local_report, text='Настраиваемый отчет')
+    tab_control.add(tab_create_local_report, text='Настраиваемый\n отчет')
 
     create_local_report_frame_description = LabelFrame(tab_create_local_report)
     create_local_report_frame_description.pack()
@@ -517,7 +551,7 @@ if __name__ == '__main__':
     Создаем вкладку для слияния файлов таблиц
     """
     tab_create_merge_report = ttk.Frame(tab_control)
-    tab_control.add(tab_create_merge_report, text='Соединить файлы для отчета')
+    tab_control.add(tab_create_merge_report, text='Соединить файлы\n для отчета')
 
     create_merge_report_frame_description = LabelFrame(tab_create_merge_report)
     create_merge_report_frame_description.pack()
@@ -563,12 +597,58 @@ if __name__ == '__main__':
                                        command=processing_merge_report)
     btn_generate_merge_report.pack(padx=10, pady=10)
 
+    """
+    Создаем вкладку для проверки исткающих документов
+    """
+    tab_expired_docs = ttk.Frame(tab_control)
+    tab_control.add(tab_expired_docs, text='Заканчивающиеся\n документы')
+
+    expired_docs_frame_description = LabelFrame(tab_expired_docs)
+    expired_docs_frame_description.pack()
+
+    lbl_hello_expired_docs = Label(expired_docs_frame_description,
+                                   text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
+                                        'Поиск истекающих документов подтверждающих социальные льготы\n'
+                                        'Красным выделяются строки если осталось 7 и меньше дней;\n'
+                                        'Оранжевым выделяются строки если осталось 14 и меньше дней;\n'
+                                        'Желтым выделяются строки если осталось 31 и меньше дней;',
+                                   width=60)
+    lbl_hello_expired_docs.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+
+    # Картинка
+    path_to_img_expired_docs = resource_path('logo.png')
+    img_expired_docs = PhotoImage(file=path_to_img_expired_docs)
+    Label(expired_docs_frame_description,
+          image=img_expired_docs, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_expired_docs = LabelFrame(tab_expired_docs, text='Подготовка')
+    frame_data_expired_docs.pack(padx=10, pady=10)
+
+    # Создаем кнопку выбора файла с данными
+    btn_choose_prep_file = Button(frame_data_expired_docs, text='1) Выберите файл', font=('Arial Bold', 14),
+                                  command=select_file_data_expired)
+    btn_choose_prep_file.pack(padx=10, pady=10)
+
+    # Создаем кнопку выбора конечной папки
+    btn_choose_end_folder_prep = Button(frame_data_expired_docs, text='2) Выберите конечную папку', font=('Arial Bold', 14),
+                                        command=select_data_folder_expired)
+    btn_choose_end_folder_prep.pack(padx=10, pady=10)
+
+    # Создаем кнопку очистки
+    btn_choose_processing_prep = Button(tab_expired_docs, text='3) Выполнить обработку', font=('Arial Bold', 20),
+                                        command=processing_check_expired_docs)
+    btn_choose_processing_prep.pack(padx=10, pady=10)
+
+
+
 
     """
     Создаем вкладку для предварительной обработки списка
     """
     tab_preparation= ttk.Frame(tab_control)
-    tab_control.add(tab_preparation, text='Подготовка списка')
+    tab_control.add(tab_preparation, text='Подготовка\n списка')
 
     preparation_frame_description = LabelFrame(tab_preparation)
     preparation_frame_description.pack()
@@ -628,7 +708,7 @@ if __name__ == '__main__':
     """
     # Создаем вкладку для подсчета данных по категориям
     tab_split_tables = ttk.Frame(tab_control)
-    tab_control.add(tab_split_tables, text='Разделение таблицы')
+    tab_control.add(tab_split_tables, text='Разделение\n таблицы')
 
     split_tables_frame_description = LabelFrame(tab_split_tables)
     split_tables_frame_description.pack()
