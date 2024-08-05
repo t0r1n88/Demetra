@@ -170,16 +170,15 @@ def generate_docs_from_template(name_column,name_type_file,name_value_column,mod
         used_name_file = set()  # множество для уже использованных имен файлов
         # Заполняем Nan
         df.fillna(' ', inplace=True)
-        lst_date_columns = []
 
-        for idx, column in enumerate(df.columns):
+        lst_date_columns = []  # список для колонок с датами
+        for column in df.columns:
             if 'дата' in column.lower():
-                lst_date_columns.append(idx)
-
-        # Конвертируем в пригодный строковый формат
-        for i in lst_date_columns:
-            df.iloc[:, i] = pd.to_datetime(df.iloc[:, i], errors='coerce', dayfirst=True)
-            df.iloc[:, i] = df.iloc[:, i].apply(create_doc_convert_date)
+                lst_date_columns.append(column)
+        df[lst_date_columns] = df[lst_date_columns].apply(pd.to_datetime, errors='coerce', dayfirst=True,
+                                                          format='mixed')  # Приводим к типу
+        df[lst_date_columns] = df[lst_date_columns].applymap(
+            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, pd.Timestamp) else x)
 
         # Конвертируем датафрейм в список словарей
         data = df.to_dict('records')

@@ -47,7 +47,6 @@ def check_expired_docs(data_file: str, result_folder: str):
     for column in df.columns:
         if 'дата' in column.lower():
             lst_date_columns.append(column)
-    print(lst_date_columns)
     df[lst_date_columns] = df[lst_date_columns].apply(pd.to_datetime, errors='coerce',dayfirst=True,format='mixed')  # Приводим к типу
     df[lst_date_columns] = df[lst_date_columns].applymap(lambda x: x.strftime('%d.%m.%Y') if isinstance(x,pd.Timestamp) else x)
 
@@ -56,7 +55,6 @@ def check_expired_docs(data_file: str, result_folder: str):
 
     # Создаем регулярное выражение
     pattern_symbols = re.compile(r"[/*'\[\]/\\]")
-    print(date_end_columns)
     df[date_end_columns] = df[date_end_columns].apply(pd.to_datetime,errors='coerce',dayfirst=True,format='mixed') # Приводим к типу
     for idx,name_column in enumerate(date_end_columns):
         short_name_sheet = name_column.split('Дата_окончания_')[-1][:30] # Делаем короткое имя
