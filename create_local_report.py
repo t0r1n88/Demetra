@@ -422,9 +422,7 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
 
 if __name__== '__main__':
     main_etalon_file = 'data/Эталон.xlsx'
-    main_etalon_file = 'data/Эталон подсчет.xlsx'
-    main_data_folder = 'data/01.03'
-    main_data_folder = 'data/Подсчет'
+    main_data_folder = 'data/Данные'
     main_result_folder = 'data/Результат'
     main_params_file = 'data/Параметры отчета.xlsx'
     main_checkbox_expelled = 0
