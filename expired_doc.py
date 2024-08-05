@@ -26,6 +26,7 @@ def check_expired_docs(data_file: str, result_folder: str):
     :return:файл Excel
     """
     dct_df = dict() # словарь для хранения датафреймов с колонками истекающих дат
+    current_date = pd.to_datetime('today', dayfirst=True)  # получаем текущую дату
 
     df = pd.read_excel(data_file,dtype=str)
     df.dropna(how='all',inplace=True) # очищаем от пустых строк
@@ -44,9 +45,14 @@ def check_expired_docs(data_file: str, result_folder: str):
         # очищаем названия колонок от символов */\ []''
         short_name_sheet = re.sub(pattern_symbols,'',short_name_sheet)
         temp_df = df[df[name_column].notnull()] # очищаем от пустых
+        # Добавляем колонку с числом дней между текущим и окончанием срока действия документа
+        temp_df['Осталось дней'] = temp_df[name_column].apply(
+            lambda x: (pd.to_datetime(x,dayfirst=True) - current_date).days)
+        # Фильтруем только тех у кого меньше месяца
+        temp_df = temp_df[temp_df['Осталось дней'] <= 31]
         dct_df[short_name_sheet] = temp_df
 
-    itog_wb = write_df_to_excel(dct_df,False)
+    itog_wb = write_df_to_excel_expired_docs(dct_df,False)
 
     itog_wb = del_sheet(itog_wb,['Sheet'])
 
