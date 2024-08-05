@@ -50,8 +50,6 @@ def check_expired_docs(data_file: str, result_folder: str):
     print(lst_date_columns)
     df[lst_date_columns] = df[lst_date_columns].apply(pd.to_datetime, errors='coerce',dayfirst=True,format='mixed')  # Приводим к типу
     df[lst_date_columns] = df[lst_date_columns].applymap(lambda x: x.strftime('%d.%m.%Y') if isinstance(x,pd.Timestamp) else x)
-    print(df['Дата_выдачи_паспорта'])
-    print(df['Дата_рождения'])
 
     # получаем список колонок, где есть сочетание Дата_окончания
     date_end_columns = [column for column in df.columns if 'Дата_окончания' in column]
