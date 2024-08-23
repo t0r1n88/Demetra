@@ -13,21 +13,6 @@ warnings.simplefilter(action='ignore', category=DeprecationWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 pd.options.mode.chained_assignment = None
 
-def create_doc_convert_date(cell):
-    """
-    Функция для конвертации даты при создании документов
-    :param cell:
-    :return:
-    """
-    try:
-        string_date = datetime.datetime.strftime(cell, '%d.%m.%Y')
-        return string_date
-    except ZeroDivisionError:
-        pass
-    # except ValueError:
-    #     return 'Не удалось конвертировать дату.Проверьте значение ячейки!!!'
-    # except TypeError:
-    #     return 'Не удалось конвертировать дату.Проверьте значение ячейки!!!'
 
 
 def check_expired_docs(data_file: str, result_folder: str):
@@ -48,15 +33,17 @@ def check_expired_docs(data_file: str, result_folder: str):
         for column in df.columns:
             if 'дата' in column.lower():
                 lst_date_columns.append(column)
-        df[lst_date_columns] = df[lst_date_columns].apply(pd.to_datetime, errors='coerce',dayfirst=True,format='mixed')  # Приводим к типу
-        df[lst_date_columns] = df[lst_date_columns].applymap(lambda x: x.strftime('%d.%m.%Y') if isinstance(x,pd.Timestamp) else x)
+        df[lst_date_columns] = df[lst_date_columns].apply(pd.to_datetime, errors='coerce',dayfirst=True)  # Приводим к типу
+        df[lst_date_columns] = df[lst_date_columns].applymap(
+            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp, datetime.datetime)) and pd.notna(x) else x
+        )
 
         # получаем список колонок, где есть сочетание Дата_окончания
         date_end_columns = [column for column in df.columns if 'Дата_окончания' in column]
 
         # Создаем регулярное выражение
         pattern_symbols = re.compile(r"[/*'\[\]/\\]")
-        df[date_end_columns] = df[date_end_columns].apply(pd.to_datetime,errors='coerce',dayfirst=True,format='mixed') # Приводим к типу
+        df[date_end_columns] = df[date_end_columns].apply(pd.to_datetime,errors='coerce',dayfirst=True) # Приводим к типу
         for idx,name_column in enumerate(date_end_columns):
             short_name_sheet = name_column.split('Дата_окончания_')[-1][:30] # Делаем короткое имя
             # очищаем названия колонок от символов */\ []''
@@ -64,10 +51,11 @@ def check_expired_docs(data_file: str, result_folder: str):
             temp_df = df[df[name_column].notnull()] # очищаем от пустых
             # Добавляем колонку с числом дней между текущим и окончанием срока действия документа
             temp_df['Осталось дней'] = temp_df[name_column].apply(
-                lambda x: (pd.to_datetime(x,dayfirst=True,format='mixed') - current_date).days)
+                lambda x: (pd.to_datetime(x,dayfirst=True) - current_date).days)
 
             temp_df[date_end_columns] = temp_df[date_end_columns].applymap(
-                lambda x: x.strftime('%d.%m.%Y') if isinstance(x, pd.Timestamp) else x)
+            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp, datetime.datetime)) and pd.notna(x) else x
+        )
             # Фильтруем только тех у кого меньше месяца
             temp_df = temp_df[temp_df['Осталось дней'] <= 31]
             dct_df[short_name_sheet] = temp_df
