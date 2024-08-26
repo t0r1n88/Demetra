@@ -49,20 +49,26 @@ def check_expired_docs(data_file: str, result_folder: str):
             # очищаем названия колонок от символов */\ []''
             short_name_sheet = re.sub(pattern_symbols,'',short_name_sheet)
             temp_df = df[df[name_column].notnull()] # очищаем от пустых
-            # Добавляем колонку с числом дней между текущим и окончанием срока действия документа
-            temp_df['Осталось дней'] = temp_df[name_column].apply(
-                lambda x: (pd.to_datetime(x,dayfirst=True) - current_date).days)
+            if len(temp_df) != 0:
+                # Добавляем колонку с числом дней между текущим и окончанием срока действия документа
+                temp_df['Осталось дней'] = temp_df[name_column].apply(
+                    lambda x: (pd.to_datetime(x,dayfirst=True) - current_date).days)
 
-            temp_df[date_end_columns] = temp_df[date_end_columns].applymap(
-            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp, datetime.datetime)) and pd.notna(x) else x
-        )
-            # Фильтруем только тех у кого меньше месяца
-            temp_df = temp_df[temp_df['Осталось дней'] <= 31]
-            dct_df[short_name_sheet] = temp_df
+                temp_df[date_end_columns] = temp_df[date_end_columns].applymap(
+                lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp, datetime.datetime)) and pd.notna(x) else x
+            )
+                # Фильтруем только тех у кого меньше месяца
+                temp_df = temp_df[temp_df['Осталось дней'] <= 31]
+                dct_df[short_name_sheet] = temp_df
 
-        itog_wb = write_df_to_excel_expired_docs(dct_df,False)
+        if len(dct_df) != 0:
+            itog_wb = write_df_to_excel_expired_docs(dct_df,False)
 
-        itog_wb = del_sheet(itog_wb,['Sheet'])
+            itog_wb = del_sheet(itog_wb,['Sheet'])
+        else:
+            # если истекающих документов не найдено то просто записываем информационное сообщение
+            itog_wb = openpyxl.Workbook()
+            itog_wb['Sheet']['A1'] = 'В ближайший месяц не найдено истекающих документов'
 
         # генерируем текущее время
         t = time.localtime()
@@ -78,7 +84,7 @@ def check_expired_docs(data_file: str, result_folder: str):
 
 
 if __name__ == '__main__':
-    main_file = 'data/Данные/Общий файл.xlsx'
+    main_file = 'data/Результат/Общий файл.xlsx'
     main_result_folder = 'data/Результат'
 
     check_expired_docs(main_file,main_result_folder)
