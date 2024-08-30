@@ -1,10 +1,13 @@
 """
 Скрипт для создания  отчета по социальному паспорту студента БРИТ
 """
-from support_functions import *
+from support_functions import write_df_to_excel,write_df_to_excel_report_brit,del_sheet,declension_fio_by_case
+from tkinter import messagebox
+
 import pandas as pd
 import numpy as np
 import openpyxl
+from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Font, PatternFill
 import time
 from collections import Counter
@@ -377,7 +380,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
     """
     try:
         # обязательные колонки
-        name_columns_set = {'Статус_ОП','Статус_Бюджет','Статус_Общежитие','Статус_Учёба','Статус_Всеобуч', 'Статус_Национальность',
+        name_columns_set = {'ФИО','Статус_ОП','Статус_Бюджет','Статус_Общежитие','Статус_Учёба','Статус_Всеобуч', 'Статус_Национальность',
                             'Статус_Соц_стипендия', 'Статус_Соц_положение_семьи',
                             'Статус_Питание',
                             'Статус_Состав_семьи', 'Статус_Уровень_здоровья', 'Статус_Сиротство',
@@ -392,8 +395,8 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
         main_sheet = wb.sheetnames[0] # получаем название первого листа с которым и будем сравнивать новые файлы
         main_df = pd.read_excel(etalon_file,sheet_name=main_sheet,nrows=0) # загружаем датафрейм чтобы получить эталонные колонки
         # Проверяем на обязательные колонки
-        always_cols = name_columns_set.difference(set(main_df.columns))
-        if len(always_cols) != 0:
+        etallon_always_cols = name_columns_set.difference(set(main_df.columns))
+        if len(etallon_always_cols) != 0:
             raise NotColumn
         etalon_cols = set(main_df.columns) # эталонные колонки
 
@@ -482,6 +485,10 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
             lambda x: x.strftime('%d.%m.%Y') if isinstance(x, pd.Timestamp) else x)
 
         main_df.replace('Нет статуса','',inplace=True)
+
+        # Добавляем колонки со склоненными ФИО
+        main_df = declension_fio_by_case(main_df)
+
 
         main_wb = write_df_to_excel({'Общий список':main_df},write_index=False)
         main_wb = del_sheet(main_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
@@ -637,7 +644,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
     except NotColumn:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Проверьте названия колонок в первом листе эталонного файла, для работы программы\n'
-                             f' требуются колонки: {";".join(always_cols)}'
+                             f' требуюется наличие колонок: {";".join(etallon_always_cols)}'
                              )
     except NotGoodSheet:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
