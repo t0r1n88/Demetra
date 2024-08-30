@@ -1,10 +1,12 @@
 """
 Скрипт для обработки списка студентов на отделении и создания отчетности по нему
 """
-from support_functions import *
+from support_functions import write_df_to_excel,write_df_to_excel_report_brit,del_sheet,declension_fio_by_case
+from tkinter import messagebox
 import pandas as pd
 import numpy as np
 import openpyxl
+from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Font, PatternFill
 import time
 from collections import Counter
@@ -225,6 +227,9 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
         main_df.drop(columns=['Для переноса','файл для переноса'],inplace=True)
 
         main_df.fillna('Нет статуса', inplace=True) # заполняем пустые ячейки
+
+        # Добавляем склонение по падежам и создание инициалов
+        main_df = declension_fio_by_case(main_df)
 
 
         # Создаем списки на основе которых мы создаем настраиваемый отчет
