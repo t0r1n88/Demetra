@@ -134,7 +134,7 @@ def create_local_report(etalon_file:str,data_folder:str, path_end_folder:str, pa
     """
     try:
         # обязательные колонки
-        name_columns_set = {'Статус_ОП','Статус_Учёба'}
+        name_columns_set = {'Статус_ОП','Статус_Учёба','ФИО'}
         error_df = pd.DataFrame(
             columns=['Название файла', 'Название листа', 'Значение ошибки', 'Описание ошибки'])  # датафрейм для ошибок
         wb = openpyxl.load_workbook(etalon_file) # загружаем эталонный файл

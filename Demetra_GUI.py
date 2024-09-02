@@ -487,7 +487,7 @@ if __name__ == '__main__':
 
     lbl_hello_create_social_report = Label(create_social_report_frame_description,
                                            text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
-                                                'Создание отчета по социальному статусу контингента БРИТ'
+                                                'Создание отчетов по стандарту БРИТ'
                                            , width=60)
     lbl_hello_create_social_report.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
 
@@ -618,7 +618,7 @@ if __name__ == '__main__':
 
     lbl_hello_create_merge_report = Label(create_merge_report_frame_description,
                                           text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
-                                               'Слияние файлов в общий файл, каждый лист из исходого файла\n'
+                                               'Слияние файлов в общий файл, каждый лист из исходного файла\n'
                                                'будет скопирован на отдельный лист общего файла'
                                           , width=60)
     lbl_hello_create_merge_report.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
