@@ -7,7 +7,7 @@ from create_union_table import merge_table # соединие таблиц
 from expired_doc import check_expired_docs
 from preparation_list import prepare_list # подготовка персональных данных
 from split_table import split_table # разделение таблицы
-from generate_docs import generate_docs_from_template
+from demetra_generate_docs import generate_docs_from_template
 import pandas as pd
 import os
 from tkinter import *
