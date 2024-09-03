@@ -277,22 +277,22 @@ def generate_docs_from_template(name_column,name_type_file,name_value_column,mod
                 raise CheckBoxException
 
     except NameError as e:
-        messagebox.showerror('Веста Обработка таблиц и создание документов',
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Выберите шаблон,файл с данными и папку куда будут генерироваться файлы')
         logging.exception('AN ERROR HAS OCCURRED')
     except KeyError as e:
-        messagebox.showerror('Веста Обработка таблиц и создание документов',
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'В таблице не найдена указанная колонка {e.args}')
     except PermissionError:
-        messagebox.showerror('Веста Обработка таблиц и создание документов',
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Закройте все файлы Word созданные Вестой')
         logging.exception('AN ERROR HAS OCCURRED')
     except FileNotFoundError:
-        messagebox.showerror('Веста Обработка таблиц и создание документов',
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Перенесите файлы, конечную папку с которой вы работете в корень диска. Проблема может быть\n '
                              f'в слишком длинном пути к обрабатываемым файлам или конечной папке.')
     except exceptions.TemplateSyntaxError:
-        messagebox.showerror('Веста Обработка таблиц и создание документов',
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Ошибка в оформлении вставляемых значений в шаблоне\n'
                              f'Проверьте свой шаблон на наличие следующих ошибок:\n'
                              f'1) Вставляемые значения должны быть оформлены двойными фигурными скобками\n'
@@ -302,23 +302,23 @@ def generate_docs_from_template(name_column,name_type_file,name_value_column,mod
                              f'{{{{Дата_рождения}}}}')
 
     except NotImplementedError as e:
-        messagebox.showerror('Веста Обработка таблиц и создание документов',
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Создание pdf файлов работает ТОЛЬКО в WIndows, уберите галочку из чекбокса создания pdf ')
     except CheckBoxException:
-        messagebox.showerror('Веста Обработка таблиц и создание документов',
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Уберите галочку из чекбокса Поставьте галочку, если вам нужно создать один документ\nдля конкретного значения (например для определенного ФИО)'
                              )
     except NotFoundValue:
-        messagebox.showerror('Веста Обработка таблиц и создание документов',
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Указанное значение не найдено в выбранной колонке\nПроверьте наличие такого значения в таблице'
                              )
     except:
         logging.exception('AN ERROR HAS OCCURRED')
-        messagebox.showerror('Веста Обработка таблиц и создание документов',
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              'Возникла ошибка!!! Подробности ошибки в файле error.log')
 
     else:
-        messagebox.showinfo('Веста Обработка таблиц и создание документов', 'Создание документов завершено!')
+        messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Создание документов завершено!')
 
 if __name__ == '__main__':
     name_column_main = 'ФИО'
