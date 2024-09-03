@@ -2,7 +2,7 @@
 Скрипт для подготовки списка
 Очистка некорректных данных, удаление лишних пробелов
 """
-from support_functions import write_df_to_excel # функция для записи в файл Excel с автоподбором ширины
+from demetra_support_functions import write_df_to_excel # функция для записи в файл Excel с автоподбором ширины
 import time
 import gc
 import pandas as pd

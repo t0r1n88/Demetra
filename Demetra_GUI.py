@@ -3,10 +3,10 @@
 """
 from create_local_report import create_local_report # создание отчета по выбранным пользователем параметрам
 from create_social_passport import create_social_report # создание отчета по социальному состоянию
-from create_union_table import merge_table # соединие таблиц
+from demetra_create_union_table import merge_table # соединие таблиц
 from expired_doc import check_expired_docs
-from preparation_list import prepare_list # подготовка персональных данных
-from split_table import split_table # разделение таблицы
+from demetra_preparation_list import prepare_list # подготовка персональных данных
+from demetra_split_table import split_table # разделение таблицы
 from demetra_generate_docs import generate_docs_from_template
 import pandas as pd
 import os

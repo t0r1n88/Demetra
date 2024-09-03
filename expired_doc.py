@@ -1,7 +1,7 @@
 """
 Скрипт для проверки истекающих лицензий
 """
-from support_functions import *
+from demetra_support_functions import *
 import pandas as pd
 import time
 import re

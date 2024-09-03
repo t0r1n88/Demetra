@@ -1,7 +1,7 @@
 """
 Скрипт для создания  отчета по социальному паспорту студента БРИТ
 """
-from support_functions import write_df_to_excel,write_df_to_excel_report_brit,del_sheet,declension_fio_by_case
+from demetra_support_functions import write_df_to_excel,write_df_to_excel_report_brit,del_sheet,declension_fio_by_case
 from tkinter import messagebox
 
 import pandas as pd

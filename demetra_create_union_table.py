@@ -1,7 +1,7 @@
 """
 Скрипт для создания общего файла в котором каждый список был бы отдельным листом
 """
-from support_functions import *
+from demetra_support_functions import *
 import pandas as pd
 import openpyxl
 from copy import copy
