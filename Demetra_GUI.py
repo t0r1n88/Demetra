@@ -1,20 +1,24 @@
 """
 Графический интерфейс для программы
 """
-from create_local_report import create_local_report # создание отчета по выбранным пользователем параметрам
-from create_social_passport import create_social_report # создание отчета по социальному состоянию
-from demetra_create_union_table import merge_table # соединие таблиц
+import re
+
+from create_local_report import create_local_report  # создание отчета по выбранным пользователем параметрам
+from create_social_passport import create_social_report  # создание отчета по социальному состоянию
+from demetra_create_union_table import merge_table  # соединие таблиц
 from expired_doc import check_expired_docs
-from demetra_preparation_list import prepare_list # подготовка персональных данных
-from demetra_split_table import split_table # разделение таблицы
+from demetra_preparation_list import prepare_list  # подготовка персональных данных
+from demetra_split_table import split_table  # разделение таблицы
 from demetra_generate_docs import generate_docs_from_template
 import pandas as pd
+from pandas._libs.tslibs.parsing import DateParseError
 import os
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import ttk
 import warnings
+
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 warnings.simplefilter(action='ignore', category=DeprecationWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -22,6 +26,7 @@ pd.options.mode.chained_assignment = None
 import sys
 import locale
 import logging
+
 logging.basicConfig(
     level=logging.WARNING,
     filename="error.log",
@@ -31,6 +36,7 @@ logging.basicConfig(
     datefmt='%H:%M:%S',
 )
 
+
 class SameFolder(Exception):
     """
     Исключение для обработки случая когда выбраны одинаковые папки
@@ -38,10 +44,11 @@ class SameFolder(Exception):
     pass
 
 
-
 """
 Системные функции
 """
+
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -51,6 +58,7 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
 
 def make_textmenu(root):
     """
@@ -92,6 +100,7 @@ def show_textmenu(event):
 def on_scroll(*args):
     canvas.yview(*args)
 
+
 def set_window_size(window):
     screen_width = window.winfo_screenwidth()
     screen_height = window.winfo_screenheight()
@@ -122,16 +131,14 @@ def set_window_size(window):
     window.geometry(f"{width}x{height}+{x}+{y}")
 
 
-
-
-
-
 """
 Прикладные функции
 """
 """
 Создание локального отчета
 """
+
+
 def select_file_etalon_local_report():
     """
     Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
@@ -139,7 +146,8 @@ def select_file_etalon_local_report():
     """
     global name_file_etalon_local_report
     # Получаем путь к файлу
-    name_file_etalon_local_report = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    name_file_etalon_local_report = filedialog.askopenfilename(
+        filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
 
 
 def select_file_params_local_report():
@@ -149,7 +157,9 @@ def select_file_params_local_report():
     """
     global name_file_params_local_report
     # Получаем путь к файлу
-    name_file_params_local_report = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    name_file_params_local_report = filedialog.askopenfilename(
+        filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
 
 def select_folder_data_local_report():
     """
@@ -168,6 +178,7 @@ def select_end_folder_local_report():
     global path_to_end_folder_local_report
     path_to_end_folder_local_report = filedialog.askdirectory()
 
+
 def processing_local_report():
     """
     Создание локальных отчетов
@@ -177,17 +188,20 @@ def processing_local_report():
         if path_folder_local_report == path_to_end_folder_local_report:
             raise SameFolder
         checkbox_expelled = group_rb_expelled_local_report.get()
-        create_local_report(name_file_etalon_local_report,path_folder_local_report,path_to_end_folder_local_report,name_file_params_local_report,checkbox_expelled)
+        create_local_report(name_file_etalon_local_report, path_folder_local_report, path_to_end_folder_local_report,
+                            name_file_params_local_report, checkbox_expelled)
     except NameError:
-        messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,файл с данными, конечную папку')
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             'Выберите файл с параметрами,файл с данными, конечную папку')
     except SameFolder:
-        messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите разные папки в качестве исходной и конечной')
-
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             'Выберите разные папки в качестве исходной и конечной')
 
 
 """
 Создание социального отчета по контингенту БРИТ
 """
+
 
 def select_file_etalon_social_report():
     """
@@ -196,7 +210,9 @@ def select_file_etalon_social_report():
     """
     global name_file_etalon_social_report
     # Получаем путь к файлу
-    name_file_etalon_social_report = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    name_file_etalon_social_report = filedialog.askopenfilename(
+        filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
 
 def select_folder_data_social_report():
     """
@@ -215,24 +231,45 @@ def select_end_folder_social_report():
     global path_to_end_folder_social_report
     path_to_end_folder_social_report = filedialog.askdirectory()
 
+
 def processing_social_report():
     """
     Создание отчета по социальным показателям БРИТ
     :return:
     """
     try:
+        select_date = var_select_date.get()
+        # Если ничего
+        if not select_date:
+            select_date = pd.to_datetime('today')
+        else:
+            result = re.search(r'\d{2}\.\d{2}\.\d{4}', select_date)
+            if result:
+                select_date = pd.to_datetime(result.group(), dayfirst=True, errors='raise')
+            else:
+                raise DateParseError
         if path_folder_social_report == path_to_end_folder_social_report:
             raise SameFolder
         checkbox_expelled = group_rb_expelled_social_report.get()
-        create_social_report(name_file_etalon_social_report,path_folder_social_report,path_to_end_folder_social_report,checkbox_expelled)
+        create_social_report(name_file_etalon_social_report, path_folder_social_report,
+                             path_to_end_folder_social_report, checkbox_expelled, select_date)
     except NameError:
-        messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,папку с данными, конечную папку')
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             'Выберите файл с параметрами,папку с данными, конечную папку')
     except SameFolder:
-        messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите разные папки в качестве исходной и конечной')
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             'Выберите разные папки в качестве исходной и конечной')
+    except DateParseError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Введено некорректное значение даты.\n'
+                             f'Введите дату в формате: ДД.ММ.ГГГГ например 14.06.2024')
+
 
 """
 Функции для соединения таблиц
 """
+
+
 def select_file_etalon_merge_report():
     """
     Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
@@ -240,7 +277,8 @@ def select_file_etalon_merge_report():
     """
     global name_file_etalon_merge_report
     # Получаем путь к файлу
-    name_file_etalon_merge_report = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    name_file_etalon_merge_report = filedialog.askopenfilename(
+        filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
 
 
 def select_data_folder_merge_report():
@@ -250,6 +288,7 @@ def select_data_folder_merge_report():
     """
     global path_to_data_folder_merge_report
     path_to_data_folder_merge_report = filedialog.askdirectory()
+
 
 def select_end_folder_merge_report():
     """
@@ -269,16 +308,15 @@ def processing_merge_report():
     try:
         merge_table(name_file_etalon_merge_report, path_to_data_folder_merge_report, path_to_end_folder_merge_report)
     except NameError:
-        messagebox.showerror('Деметра Отчеты социальный паспорт студента','Выберите файл с параметрами,файл с данными, конечную папку')
-
-
-
-
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             'Выберите файл с параметрами,файл с данными, конечную папку')
 
 
 """
 Функции для разделения таблицы
 """
+
+
 def select_file_split():
     """
     Функция для выбора файла с таблицей которую нужно разделить
@@ -297,6 +335,7 @@ def select_end_folder_split():
     global path_to_end_folder_split
     path_to_end_folder_split = filedialog.askdirectory()
 
+
 def processing_split_table():
     """
     Функция для получения разделения таблицы по значениям
@@ -305,13 +344,13 @@ def processing_split_table():
     # названия листов в таблицах
     try:
         # name_sheet = str(entry_sheet_name_split.get()) # получаем имя листа
-        number_column = entry_number_column_split.get() #  получаем порядковый номер колонки
-        number_column = int(number_column) # конвертируем в инт
+        number_column = entry_number_column_split.get()  # получаем порядковый номер колонки
+        number_column = int(number_column)  # конвертируем в инт
 
-        checkbox_split = group_rb_type_split.get() # получаем значения переключиталея
+        checkbox_split = group_rb_type_split.get()  # получаем значения переключиталея
 
         # находим разницу
-        split_table(file_data_split,number_column,checkbox_split,path_to_end_folder_split)
+        split_table(file_data_split, number_column, checkbox_split, path_to_end_folder_split)
     except ValueError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Введите целое числа начиная с 1 !!!')
@@ -325,6 +364,8 @@ def processing_split_table():
 """
 Функции для вкладки подготовка файлов
 """
+
+
 def select_prep_file():
     """
     Функция для выбора файла который нужно преобразовать
@@ -351,16 +392,19 @@ def processing_preparation_file():
     try:
         # name_sheet = var_name_sheet_prep.get() # получаем название листа
         checkbox_dupl = mode_dupl_value.get()
-        prepare_list(glob_prep_file,glob_path_to_end_folder_prep,checkbox_dupl)
+        prepare_list(glob_prep_file, glob_path_to_end_folder_prep, checkbox_dupl)
 
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Выберите файл с данными и папку куда будет генерироваться файл')
         logging.exception('AN ERROR HAS OCCURRED')
 
+
 """
 Функции для проверки истекающих документов
 """
+
+
 def select_file_data_expired():
     """
     Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
@@ -379,21 +423,25 @@ def select_data_folder_expired():
     global path_to_data_folder_expired
     path_to_data_folder_expired = filedialog.askdirectory()
 
+
 def processing_check_expired_docs():
     """
     Функция для генерации документов
     """
     try:
-        check_expired_docs(name_file_data_expired,path_to_data_folder_expired)
+        check_expired_docs(name_file_data_expired, path_to_data_folder_expired)
 
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Выберите файл с данными и папку куда будет генерироваться файл')
         logging.exception('AN ERROR HAS OCCURRED')
 
+
 """
 Функции для создания документов
 """
+
+
 def select_file_template_doc():
     """
     Функция для выбора файла шаблона
@@ -422,6 +470,7 @@ def select_end_folder_doc():
     global path_to_end_folder_doc
     path_to_end_folder_doc = filedialog.askdirectory()
 
+
 def generate_docs_other():
     """
     Функция для создания документов из произвольных таблиц(т.е. отличающихся от структуры базы данных Веста Обработка таблиц и создание документов ver 1.35)
@@ -448,8 +497,6 @@ def generate_docs_other():
         messagebox.showerror('Веста Обработка таблиц и создание документов ver 1.35',
                              f'Выберите шаблон,файл с данными и папку куда будут генерироваться файлы')
         logging.exception('AN ERROR HAS OCCURRED')
-
-
 
 
 if __name__ == '__main__':
@@ -504,15 +551,26 @@ if __name__ == '__main__':
 
     # Создаем кнопку выбора эталонного файла
     btn_choose_file_etalon_social_report = Button(frame_data_social_report, text='1) Выберите эталонный файл',
-                                                 font=('Arial Bold', 14),
-                                                 command=select_file_etalon_social_report)
+                                                  font=('Arial Bold', 14),
+                                                  command=select_file_etalon_social_report)
     btn_choose_file_etalon_social_report.pack(padx=10, pady=10)
 
     btn_choose_folder_social_report = Button(frame_data_social_report, text='2) Выберите папку с исходными файлами',
-                                          font=('Arial Bold', 14),
-                                          command=select_folder_data_social_report)
+                                             font=('Arial Bold', 14),
+                                             command=select_folder_data_social_report)
     btn_choose_folder_social_report.pack(padx=10, pady=10)
 
+    # Определяем текстовую переменную для стартовой даты
+    var_select_date = StringVar()
+    # Описание поля
+    label_select_date = Label(frame_data_social_report,
+                              text='Введите дату на которую будет считаться текущий возраст студентов в формате: ДД.ММ.ГГГГ например 25.12.2024\n'
+                                   'Если вы ничего не введете, то текущий возраст студентов будет считаться на момент запуска программы\n'
+                                   'От значения текущего возраста зависит подсчет совершеннолетних, СПО-1, 1-ПК и т.п.')
+    label_select_date.pack()
+    # поле ввода
+    entry_select_date = Entry(frame_data_social_report, textvariable=var_select_date, width=30)
+    entry_select_date.pack()
 
     # Переключатель:вариант слияния файлов
     # Создаем переключатель
@@ -525,8 +583,6 @@ if __name__ == '__main__':
                 value=0).pack()
     Radiobutton(frame_rb_social_report, text='Б) Подсчет с отчисленными', variable=group_rb_expelled_social_report,
                 value=1).pack()
-
-
 
     # Создаем кнопку выбора конечной папки
     btn_choose_end_folder_social_report = Button(frame_data_social_report, text='4) Выберите конечную папку',
@@ -543,16 +599,16 @@ if __name__ == '__main__':
     """
     Создаем вкладку для создания настраиваемых отчетов по любым таблицам
     """
-    tab_create_local_report= ttk.Frame(tab_control)
+    tab_create_local_report = ttk.Frame(tab_control)
     tab_control.add(tab_create_local_report, text='Настраиваемый\n отчет')
 
     create_local_report_frame_description = LabelFrame(tab_create_local_report)
     create_local_report_frame_description.pack()
 
     lbl_hello_create_local_report = Label(create_local_report_frame_description,
-                                  text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
-                                       'Создание настраиваемых отчетов'
-                                       ,width=60)
+                                          text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
+                                               'Создание настраиваемых отчетов'
+                                          , width=60)
     lbl_hello_create_local_report.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
 
     # Картинка
@@ -572,17 +628,16 @@ if __name__ == '__main__':
                                                  command=select_file_etalon_local_report)
     btn_choose_file_etalon_local_report.pack(padx=10, pady=10)
 
-
     # Создаем кнопку выбора файла с параметрами
-    btn_choose_file_params_local_report= Button(frame_data_local_report, text='2) Выберите файл c параметрами', font=('Arial Bold', 14),
-                                       command=select_file_params_local_report)
+    btn_choose_file_params_local_report = Button(frame_data_local_report, text='2) Выберите файл c параметрами',
+                                                 font=('Arial Bold', 14),
+                                                 command=select_file_params_local_report)
     btn_choose_file_params_local_report.pack(padx=10, pady=10)
 
-
-    btn_choose_folder_data_local_report= Button(frame_data_local_report, text='3) Выберите папку с исходными файлами', font=('Arial Bold', 14),
-                                       command=select_folder_data_local_report)
+    btn_choose_folder_data_local_report = Button(frame_data_local_report, text='3) Выберите папку с исходными файлами',
+                                                 font=('Arial Bold', 14),
+                                                 command=select_folder_data_local_report)
     btn_choose_folder_data_local_report.pack(padx=10, pady=10)
-
 
     # Переключатель:вариант слияния файлов
     # Создаем переключатель
@@ -596,15 +651,16 @@ if __name__ == '__main__':
     Radiobutton(frame_rb_local_report, text='Б) Подсчет с отчисленными', variable=group_rb_expelled_local_report,
                 value=1).pack()
 
-
     # Создаем кнопку выбора конечной папки
-    btn_choose_end_folder_local_report= Button(frame_data_local_report, text='5) Выберите конечную папку', font=('Arial Bold', 14),
-                                       command=select_end_folder_local_report)
+    btn_choose_end_folder_local_report = Button(frame_data_local_report, text='5) Выберите конечную папку',
+                                                font=('Arial Bold', 14),
+                                                command=select_end_folder_local_report)
     btn_choose_end_folder_local_report.pack(padx=10, pady=10)
 
     # Создаем кнопку генерации отчетов
 
-    btn_generate_local_report = Button(tab_create_local_report,text='6) Создать отчеты', font=('Arial Bold', 14),command=processing_local_report)
+    btn_generate_local_report = Button(tab_create_local_report, text='6) Создать отчеты', font=('Arial Bold', 14),
+                                       command=processing_local_report)
     btn_generate_local_report.pack(padx=10, pady=10)
 
     """
@@ -640,10 +696,10 @@ if __name__ == '__main__':
                                                  command=select_file_etalon_merge_report)
     btn_choose_file_etalon_merge_report.pack(padx=10, pady=10)
 
-    btn_choose_file_merge_report = Button(frame_data_merge_report, text='2) Выберите папку с исходными файлами', font=('Arial Bold', 14),
+    btn_choose_file_merge_report = Button(frame_data_merge_report, text='2) Выберите папку с исходными файлами',
+                                          font=('Arial Bold', 14),
                                           command=select_data_folder_merge_report)
     btn_choose_file_merge_report.pack(padx=10, pady=10)
-
 
     # Создаем кнопку выбора конечной папки
     btn_choose_end_folder_merge_report = Button(frame_data_merge_report, text='3) Выберите конечную папку',
@@ -692,7 +748,8 @@ if __name__ == '__main__':
     btn_choose_prep_file.pack(padx=10, pady=10)
 
     # Создаем кнопку выбора конечной папки
-    btn_choose_end_folder_prep = Button(frame_data_expired_docs, text='2) Выберите конечную папку', font=('Arial Bold', 14),
+    btn_choose_end_folder_prep = Button(frame_data_expired_docs, text='2) Выберите конечную папку',
+                                        font=('Arial Bold', 14),
                                         command=select_data_folder_expired)
     btn_choose_end_folder_prep.pack(padx=10, pady=10)
 
@@ -701,13 +758,10 @@ if __name__ == '__main__':
                                         command=processing_check_expired_docs)
     btn_choose_processing_prep.pack(padx=10, pady=10)
 
-
-
-
     """
     Создаем вкладку для предварительной обработки списка
     """
-    tab_preparation= ttk.Frame(tab_control)
+    tab_preparation = ttk.Frame(tab_control)
     tab_control.add(tab_preparation, text='Подготовка\n списка')
 
     preparation_frame_description = LabelFrame(tab_preparation)
@@ -719,7 +773,8 @@ if __name__ == '__main__':
                                        '(ФИО,паспортные данные,\nтелефон,e-mail,дата рождения,ИНН)\n преобразование СНИЛС в формат ХХХ-ХХХ-ХХХ ХХ.\n'
                                        'Создание списка дубликатов по каждой колонке\n'
                                        'Данные обрабатываются С ПЕРВОГО ЛИСТА В ФАЙЛЕ !!!\n'
-                                       'Для корректной работы программы уберите из таблицы\nобъединенные ячейки',width=60)
+                                       'Для корректной работы программы уберите из таблицы\nобъединенные ячейки',
+                                  width=60)
     lbl_hello_preparation.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
 
     # Картинка
@@ -734,13 +789,13 @@ if __name__ == '__main__':
     frame_data_prep.pack(padx=10, pady=10)
 
     # Создаем кнопку выбора файла с данными
-    btn_choose_prep_file= Button(frame_data_prep, text='1) Выберите файл', font=('Arial Bold', 14),
-                                       command=select_prep_file)
+    btn_choose_prep_file = Button(frame_data_prep, text='1) Выберите файл', font=('Arial Bold', 14),
+                                  command=select_prep_file)
     btn_choose_prep_file.pack(padx=10, pady=10)
 
     # Создаем кнопку выбора конечной папки
-    btn_choose_end_folder_prep= Button(frame_data_prep, text='2) Выберите конечную папку', font=('Arial Bold', 14),
-                                       command=select_end_folder_prep)
+    btn_choose_end_folder_prep = Button(frame_data_prep, text='2) Выберите конечную папку', font=('Arial Bold', 14),
+                                        command=select_end_folder_prep)
     btn_choose_end_folder_prep.pack(padx=10, pady=10)
 
     # Создаем переменную для хранения результа переключения чекбокса
@@ -751,16 +806,15 @@ if __name__ == '__main__':
     # Создаем чекбокс для выбора режима подсчета
 
     chbox_mode_dupl = Checkbutton(frame_data_prep,
-                                       text='Проверить каждую колонку таблицы на дубликаты',
-                                       variable=mode_dupl_value,
-                                       offvalue='No',
-                                       onvalue='Yes')
+                                  text='Проверить каждую колонку таблицы на дубликаты',
+                                  variable=mode_dupl_value,
+                                  offvalue='No',
+                                  onvalue='Yes')
     chbox_mode_dupl.pack(padx=10, pady=10)
 
-
     # Создаем кнопку очистки
-    btn_choose_processing_prep= Button(tab_preparation, text='3) Выполнить обработку', font=('Arial Bold', 20),
-                                       command=processing_preparation_file)
+    btn_choose_processing_prep = Button(tab_preparation, text='3) Выполнить обработку', font=('Arial Bold', 20),
+                                        command=processing_preparation_file)
     btn_choose_processing_prep.pack(padx=10, pady=10)
 
     """
@@ -775,9 +829,10 @@ if __name__ == '__main__':
 
     lbl_hello_split_tables = Label(split_tables_frame_description,
                                    text='Центр опережающей профессиональной подготовки Республики Бурятия\nРазделение таблицы Excel по листам и файлам'
-                                       '\nДля корректной работы программы уберите из таблицы\nобъединенные ячейки\n'
-                                       'Данные обрабатываются С ПЕРВОГО ЛИСТА В ФАЙЛЕ !!!\n'
-                                       'Заголовок таблицы должен занимать ОДНУ СТРОКУ\n и в нем не должно быть объединенных ячеек!',width=60)
+                                        '\nДля корректной работы программы уберите из таблицы\nобъединенные ячейки\n'
+                                        'Данные обрабатываются С ПЕРВОГО ЛИСТА В ФАЙЛЕ !!!\n'
+                                        'Заголовок таблицы должен занимать ОДНУ СТРОКУ\n и в нем не должно быть объединенных ячеек!',
+                                   width=60)
     lbl_hello_split_tables.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
 
     # Картинка
@@ -802,8 +857,6 @@ if __name__ == '__main__':
     Radiobutton(frame_rb_type_split, text='Б) По отдельным файлам', variable=group_rb_type_split,
                 value=1).pack()
 
-
-
     # Создаем кнопку Выбрать файл
 
     btn_example_split = Button(frame_data_for_split, text='2) Выберите файл с таблицей', font=('Arial Bold', 14),
@@ -814,13 +867,12 @@ if __name__ == '__main__':
     entry_number_column_split = IntVar()
     # Описание поля
     label_number_column_split = Label(frame_data_for_split,
-                                             text='3) Введите порядковый номер колонки начиная с 1\nпо значениям которой нужно разделить таблицу')
+                                      text='3) Введите порядковый номер колонки начиная с 1\nпо значениям которой нужно разделить таблицу')
     label_number_column_split.pack(padx=10, pady=10)
     # поле ввода имени листа
     entry_number_column_split = Entry(frame_data_for_split, textvariable=entry_number_column_split,
-                                             width=30)
+                                      width=30)
     entry_number_column_split.pack(ipady=5)
-
 
     btn_choose_end_folder_split = Button(frame_data_for_split, text='4) Выберите конечную папку',
                                          font=('Arial Bold', 14),
@@ -966,11 +1018,6 @@ if __name__ == '__main__':
                                     command=generate_docs_other
                                     )
     btn_create_files_other.pack(padx=10, pady=10)
-
-
-
-
-
 
     # Создаем виджет для управления полосой прокрутки
     canvas.create_window((0, 0), window=tab_control, anchor="nw")
