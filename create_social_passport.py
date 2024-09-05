@@ -97,6 +97,19 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     # Отбрасываем на всякий случай отчисленных
     df = df[df['Статус_Учёба'] != 'Отчислен']
 
+    # Совершеннолетние
+    maturity_df = df[df['Совершеннолетие'] == 'совершеннолетний']
+    dct_name_sheet['Совершеннолетние'] = maturity_df  # добавляем в словарь
+    maturity_df_group_df = maturity_df.groupby(by=['Файл']).agg({'Совершеннолетие': 'count'})  # создаем базовый
+    group_main_df = group_main_df.join(maturity_df_group_df)  # добавляем в свод
+    group_main_df.rename(columns={'Совершеннолетие': 'Совершеннолетние'}, inplace=True)
+    # Несовершеннолетние
+    not_maturity_df = df[df['Совершеннолетие'] == 'несовершеннолетний']
+    dct_name_sheet['Несовершеннолетние'] = not_maturity_df  # добавляем в словарь
+    not_maturity_df_group_df = not_maturity_df.groupby(by=['Файл']).agg({'Совершеннолетие': 'count'})  # создаем базовый
+    group_main_df = group_main_df.join(not_maturity_df_group_df)  # добавляем в свод
+    group_main_df.rename(columns={'Совершеннолетие': 'Несовершеннолетние'}, inplace=True)
+
     # Создаем датафрейм с сиротами
     orphans_df = df[df['Статус_Сиротство'].isin(['гособеспечение + постинтернатное сопровождение',
                                                  'дети-сироты, находящиеся на полном государственном обеспечении',
@@ -115,6 +128,20 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     invalid_group_df = invalid_df.groupby(by=['Файл']).agg({'Статус_Уровень_здоровья': 'count'})  # создаем базовый
     group_main_df = group_main_df.join(invalid_group_df)  # добавляем в свод
     group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Инвалиды'}, inplace=True)
+
+    # Создаем датафрейм с совершеннолетними инвалидами
+    maturity_invalid_df = invalid_df[invalid_df['Совершеннолетие'] == 'совершеннолетний']
+    dct_name_sheet['Инвалиды_сов'] = maturity_invalid_df  # добавляем в словарь
+    maturity_invalid_group_df = maturity_invalid_df.groupby(by=['Файл']).agg({'Статус_Уровень_здоровья': 'count'})  # создаем базовый
+    group_main_df = group_main_df.join(maturity_invalid_group_df)  # добавляем в свод
+    group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Инвалиды совер-ние'}, inplace=True)
+
+    # Создаем датафрейм с несовершеннолетними инвалидами
+    not_maturity_invalid_df = invalid_df[invalid_df['Совершеннолетие'] == 'несовершеннолетний']
+    dct_name_sheet['Инвалиды_несов'] = not_maturity_invalid_df  # добавляем в словарь
+    not_maturity_invalid_group_df = not_maturity_invalid_df.groupby(by=['Файл']).agg({'Статус_Уровень_здоровья': 'count'})  # создаем базовый
+    group_main_df = group_main_df.join(not_maturity_invalid_group_df)  # добавляем в свод
+    group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Инвалиды несов-ние'}, inplace=True)
 
 
     # Создаем датафрейм с получателями социальной стипендии
