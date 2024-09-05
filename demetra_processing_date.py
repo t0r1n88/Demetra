@@ -152,6 +152,8 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
 
         # Подсчитываем Текущий_возраст
         df['Текущий_возраст'] = df[name_column].apply(lambda x: calculate_age(x, raw_selected_date))
+
+
         # Добавлем признак совершеннолетия
         df['Совершеннолетие'] = df['Текущий_возраст'].apply(calculation_maturity)
 
@@ -229,9 +231,10 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
         # Заполняем пустые строки
         df[lst_create_date_columns]=df[lst_create_date_columns].fillna('Ошибочное значение!!!')
 
+
         # заполняем сводные таблицы
         # Количество совершенолетних
-        df_svod_by_matur = df.groupby(['Совершеннолетие']).agg({name_column: 'count'})
+        df_svod_by_matur = df.groupby(['Совершеннолетие']).agg({'ФИО': 'count'})
         df_svod_by_matur = df_svod_by_matur.reset_index()
         df_svod_by_matur.columns = ['Статус_Совершеннолетие','Количество']
         df_svod_by_matur = df_svod_by_matur.sort_values(by='Количество',ascending=False)
@@ -239,13 +242,13 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
 
         # Сводная по возрастам
 
-        df_svod_by_age = df.groupby(['Текущий_возраст']).agg({name_column: 'count'})
+        df_svod_by_age = df.groupby(['Текущий_возраст']).agg({'ФИО': 'count'})
         df_svod_by_age = df_svod_by_age.reset_index()
         df_svod_by_age.columns = ['Текущий возраст','Количество']
         wb = write_group_df_to_excel(wb,'Свод по возрастам',df_svod_by_age,False,True)
 
         # Сводная по месяцам
-        df_svod_by_month = df.groupby(['Название_месяца_рождения']).agg({name_column: 'count'})
+        df_svod_by_month = df.groupby(['Название_месяца_рождения']).agg({'ФИО': 'count'})
 
         # Сортируем индекс чтобы месяцы шли в хоронологическом порядке
         # Взял отсюда https://stackoverflow.com/questions/40816144/pandas-series-sort-by-month-index
@@ -261,31 +264,31 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
         wb = write_group_df_to_excel(wb,'Свод по месяцам',df_svod_by_month,False,True)
 
         # Сводная по годам
-        df_svod_by_year = df.groupby(['Год_рождения']).agg({name_column: 'count'})
+        df_svod_by_year = df.groupby(['Год_рождения']).agg({'ФИО': 'count'})
         df_svod_by_year = df_svod_by_year.reset_index()
         df_svod_by_year.columns = ['Год', 'Количество']
         wb = write_group_df_to_excel(wb, 'Свод по годам', df_svod_by_year, False, True)
 
         # Сводная по 1-ПК
-        df_svod_by_1PK = df.groupby(['Один_ПК']).agg({name_column: 'count'})
+        df_svod_by_1PK = df.groupby(['Один_ПК']).agg({'ФИО': 'count'})
         df_svod_by_1PK = df_svod_by_1PK.reset_index()
         df_svod_by_1PK.columns = ['Категория', 'Количество']
         wb = write_group_df_to_excel(wb, 'Свод по 1-ПК', df_svod_by_1PK, False, True)
 
         # Сводная по 1-ПО
-        df_svod_by_1PO = df.groupby(['Один_ПО']).agg({name_column: 'count'})
+        df_svod_by_1PO = df.groupby(['Один_ПО']).agg({'ФИО': 'count'})
         df_svod_by_1PO = df_svod_by_1PO.reset_index()
         df_svod_by_1PO.columns = ['Категория', 'Количество']
         wb = write_group_df_to_excel(wb, 'Свод по 1-ПО', df_svod_by_1PO, False, True)
 
         # Сводная по СПО-1
-        df_svod_by_SPO1 = df.groupby(['СПО_Один']).agg({name_column: 'count'})
+        df_svod_by_SPO1 = df.groupby(['СПО_Один']).agg({'ФИО': 'count'})
         df_svod_by_SPO1 = df_svod_by_SPO1.reset_index()
         df_svod_by_SPO1.columns = ['Категория', 'Количество']
         wb = write_group_df_to_excel(wb, 'Свод по СПО-1', df_svod_by_SPO1, False, True)
 
         # Сводная по Росстату
-        df_svod_by_Ros = df.groupby(['Росстат']).agg({name_column: 'count'})
+        df_svod_by_Ros = df.groupby(['Росстат']).agg({'ФИО': 'count'})
 
         # Сортируем индекс
         df_svod_by_Ros.index = pd.CategoricalIndex(df_svod_by_Ros.index,
