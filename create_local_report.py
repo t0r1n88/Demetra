@@ -322,6 +322,14 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
             main_df[main_df['Совершеннолетие'].isin(['отрицательный возраст', 'Ошибочное значение!!!'])])
         soc_df.loc[len(soc_df)] = ['Возраст',
                                    f'Совершеннолетних - {quantity_maturity_students}, Несовершеннолетних - {quantity_not_maturity_students}, Неправильная дата рождения - {quantity_error_maturity_students}, Всего {quantity_except_deducted} (включая академ. и без статуса)']
+        # Распределение по СПО-1
+        header_spo = pd.DataFrame(columns=['Показатель', 'Значение'],
+                                   data=[['Статус_СПО-1', None]])  # создаем строку с заголовком
+        df_svod_by_SPO1 = main_df.groupby(['СПО_Один']).agg({'ФИО': 'count'})
+        df_svod_by_SPO1 = df_svod_by_SPO1.reset_index()
+        df_svod_by_SPO1.columns = ['Показатель', 'Значение']
+        soc_df = pd.concat([soc_df, header_spo], axis=0)
+        soc_df = pd.concat([soc_df, df_svod_by_SPO1], axis=0)
         for name_column in lst_status:
             if name_column == 'Статус_ОП':
                 new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
