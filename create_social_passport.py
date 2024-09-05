@@ -271,6 +271,20 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     group_orphans_main_df = group_orphans_main_df.join(all_orphans_group_df)  # добавляем в свод
     group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Всего'}, inplace=True)
 
+    # Считаем сирот совершеннолетних
+    maturity_orphans_df = orphans_df[orphans_df['Совершеннолетие'] == 'совершеннолетний']
+    dct_name_sheet['Сироты совер-ние'] = maturity_orphans_df
+    maturity_orphans_group_df = maturity_orphans_df.groupby(by=['Файл']).agg({'Статус_Сиротство': 'count'})
+    group_orphans_main_df = group_orphans_main_df.join(maturity_orphans_group_df)  # добавляем в свод
+    group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Сироты совершеннолетние'}, inplace=True)
+
+    # Считаем сирот несовершеннолетних
+    not_maturity_orphans_df = orphans_df[orphans_df['Совершеннолетие'] == 'несовершеннолетний']
+    dct_name_sheet['Сироты несовер-ние'] = not_maturity_orphans_df
+    not_maturity_orphans_group_df = not_maturity_orphans_df.groupby(by=['Файл']).agg({'Статус_Сиротство': 'count'})
+    group_orphans_main_df = group_orphans_main_df.join(not_maturity_orphans_group_df)  # добавляем в свод
+    group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Сироты несовершеннолетние'}, inplace=True)
+
     # считаем академ
     akadem_orphans_df = orphans_df[orphans_df['Статус_Учёба'].str.contains('Академический отпуск')]
     dct_name_sheet['Сироты академ'] = akadem_orphans_df
