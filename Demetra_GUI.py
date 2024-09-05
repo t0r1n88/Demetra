@@ -185,17 +185,33 @@ def processing_local_report():
     :return:
     """
     try:
+        select_date = var_select_date_local.get()
+        # Если ничего
+        if not select_date:
+            select_date = pd.to_datetime('today')
+        else:
+            result = re.search(r'\d{2}\.\d{2}\.\d{4}', select_date)
+            if result:
+                select_date = pd.to_datetime(result.group(), dayfirst=True, errors='raise')
+            else:
+                raise DateParseError
         if path_folder_local_report == path_to_end_folder_local_report:
             raise SameFolder
         checkbox_expelled = group_rb_expelled_local_report.get()
         create_local_report(name_file_etalon_local_report, path_folder_local_report, path_to_end_folder_local_report,
-                            name_file_params_local_report, checkbox_expelled)
+                            name_file_params_local_report, checkbox_expelled,select_date)
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
-                             'Выберите файл с параметрами,файл с данными, конечную папку')
+                             'Выберите файл с параметрами,папку с данными, конечную папку')
     except SameFolder:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              'Выберите разные папки в качестве исходной и конечной')
+    except DateParseError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Введено некорректное значение даты.\n'
+                             f'Введите дату в формате: ДД.ММ.ГГГГ например 14.06.2024')
+
+
 
 
 """
@@ -501,7 +517,7 @@ def generate_docs_other():
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты  ver 1.1')
+    window.title('Деметра Отчеты  ver 1.2')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -560,11 +576,11 @@ if __name__ == '__main__':
                                              command=select_folder_data_social_report)
     btn_choose_folder_social_report.pack(padx=10, pady=10)
 
-    # Определяем текстовую переменную для стартовой даты
+    # Определяем текстовую переменную для даты
     var_select_date = StringVar()
     # Описание поля
     label_select_date = Label(frame_data_social_report,
-                              text='Введите дату на которую будет считаться текущий возраст студентов в формате: ДД.ММ.ГГГГ например 25.12.2024\n'
+                              text='3) Введите дату на которую будет считаться текущий возраст студентов в формате: ДД.ММ.ГГГГ например 25.12.2024\n'
                                    'Если вы ничего не введете, то текущий возраст студентов будет считаться на момент запуска программы\n'
                                    'От значения текущего возраста зависит подсчет совершеннолетних, СПО-1, 1-ПК и т.п.')
     label_select_date.pack()
@@ -576,7 +592,7 @@ if __name__ == '__main__':
     # Создаем переключатель
     group_rb_expelled_social_report = IntVar()
     # Создаем фрейм для размещения переключателей(pack и грид не используются в одном контейнере)
-    frame_rb_social_report = LabelFrame(frame_data_social_report, text='3) Выберите вариант подсчета')
+    frame_rb_social_report = LabelFrame(frame_data_social_report, text='4) Выберите вариант подсчета')
     frame_rb_social_report.pack(padx=10, pady=10)
     #
     Radiobutton(frame_rb_social_report, text='А) Подсчет без отчисленных', variable=group_rb_expelled_social_report,
@@ -585,14 +601,14 @@ if __name__ == '__main__':
                 value=1).pack()
 
     # Создаем кнопку выбора конечной папки
-    btn_choose_end_folder_social_report = Button(frame_data_social_report, text='4) Выберите конечную папку',
+    btn_choose_end_folder_social_report = Button(frame_data_social_report, text='5) Выберите конечную папку',
                                                  font=('Arial Bold', 14),
                                                  command=select_end_folder_social_report)
     btn_choose_end_folder_social_report.pack(padx=10, pady=10)
 
     # Создаем кнопку генерации отчетов
 
-    btn_generate_social_report = Button(tab_create_social_report, text='5) Создать отчеты', font=('Arial Bold', 14),
+    btn_generate_social_report = Button(tab_create_social_report, text='6) Создать отчеты', font=('Arial Bold', 14),
                                         command=processing_social_report)
     btn_generate_social_report.pack(padx=10, pady=10)
 
@@ -638,12 +654,23 @@ if __name__ == '__main__':
                                                  font=('Arial Bold', 14),
                                                  command=select_folder_data_local_report)
     btn_choose_folder_data_local_report.pack(padx=10, pady=10)
+    # Определяем текстовую переменную для даты
+    var_select_date_local = StringVar()
+    # Описание поля
+    label_select_date_local = Label(frame_data_local_report,
+                              text='4) Введите дату на которую будет считаться текущий возраст студентов в формате: ДД.ММ.ГГГГ например 25.12.2024\n'
+                                   'Если вы ничего не введете, то текущий возраст студентов будет считаться на момент запуска программы\n'
+                                   'От значения текущего возраста зависит подсчет совершеннолетних, СПО-1, 1-ПК и т.п.')
+    label_select_date_local.pack()
+    # поле ввода
+    entry_select_date_local = Entry(frame_data_local_report, textvariable=var_select_date_local, width=30)
+    entry_select_date_local.pack()
 
     # Переключатель:вариант слияния файлов
     # Создаем переключатель
     group_rb_expelled_local_report = IntVar()
     # Создаем фрейм для размещения переключателей(pack и грид не используются в одном контейнере)
-    frame_rb_local_report = LabelFrame(frame_data_local_report, text='4) Выберите вариант подсчета')
+    frame_rb_local_report = LabelFrame(frame_data_local_report, text='5) Выберите вариант подсчета')
     frame_rb_local_report.pack(padx=10, pady=10)
     #
     Radiobutton(frame_rb_local_report, text='А) Подсчет без отчисленных', variable=group_rb_expelled_local_report,
@@ -652,14 +679,14 @@ if __name__ == '__main__':
                 value=1).pack()
 
     # Создаем кнопку выбора конечной папки
-    btn_choose_end_folder_local_report = Button(frame_data_local_report, text='5) Выберите конечную папку',
+    btn_choose_end_folder_local_report = Button(frame_data_local_report, text='6) Выберите конечную папку',
                                                 font=('Arial Bold', 14),
                                                 command=select_end_folder_local_report)
     btn_choose_end_folder_local_report.pack(padx=10, pady=10)
 
     # Создаем кнопку генерации отчетов
 
-    btn_generate_local_report = Button(tab_create_local_report, text='6) Создать отчеты', font=('Arial Bold', 14),
+    btn_generate_local_report = Button(tab_create_local_report, text='7) Создать отчеты', font=('Arial Bold', 14),
                                        command=processing_local_report)
     btn_generate_local_report.pack(padx=10, pady=10)
 
