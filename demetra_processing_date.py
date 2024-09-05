@@ -1,6 +1,7 @@
 """
 Функция для подсчета текущего возраста и разбиения по возрастным категориям
 """
+from demetra_support_functions import write_group_df_to_excel
 import pandas as pd
 import numpy as np
 import datetime
@@ -96,15 +97,18 @@ def calculation_maturity(value):
     :return: совершеннолетний если >=18, несовершеннолетний если от нуля до 18, отрицательный возраст если Текущий_возраст
      меньше нуля
     """
-    if isinstance(value, int):
-        if value >= 18:
+    try:
+        int_value = int(value)
+        if int_value >= 18:
             return 'совершеннолетний'
-        elif 0 <= value < 18:
+        elif 0 <= int_value < 18:
             return 'несовершеннолетний'
         else:
             return 'отрицательный возраст'
-    else:
+    except:
         return None
+
+
 
 
 def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_end_folder_date: str):
@@ -134,13 +138,8 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
         # Создаем файл excel
         wb = openpyxl.Workbook()
         # Создаем листы
-        # Переименовываем лист чтобы в итоговом файле не было пустого листа
-        ren_sheet = wb['Sheet']
-        ren_sheet.title = 'Итоговая таблица'
-
-        # wb.create_sheet(title='Итоговая таблица', index=0)
-        wb.create_sheet(title='Свод по возрастам', index=1)
-        wb.create_sheet(title='Свод сов_несов', index=2)
+        wb.create_sheet(title='Свод сов_несов', index=1)
+        wb.create_sheet(title='Свод по возрастам', index=2)
         wb.create_sheet(title='Свод по месяцам', index=3)
         wb.create_sheet(title='Свод по годам', index=4)
         wb.create_sheet(title='Свод по 1-ПК', index=5)
@@ -228,17 +227,22 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
         df.fillna('Ошибочное значение!!!', inplace=True)
 
         # заполняем сводные таблицы
+        # Количество совершенолетних
+        df_svod_by_matur = df.groupby(['Совершеннолетие']).agg({name_column: 'count'})
+        df_svod_by_matur = df_svod_by_matur.reset_index()
+        df_svod_by_matur.columns = ['Статус_Совершеннолетие','Количество']
+        df_svod_by_matur = df_svod_by_matur.sort_values(by='Количество',ascending=False)
+        wb = write_group_df_to_excel(wb,'Свод сов_несов',df_svod_by_matur,False,True)
+
         # Сводная по возрастам
 
         df_svod_by_age = df.groupby(['Текущий_возраст']).agg({name_column: 'count'})
-        df_svod_by_age.columns = ['Количество']
-
-        for r in dataframe_to_rows(df_svod_by_age, index=True, header=True):
-            wb['Свод по возрастам'].append(r)
+        df_svod_by_age = df_svod_by_age.reset_index()
+        df_svod_by_age.columns = ['Текущий возраст','Количество']
+        wb = write_group_df_to_excel(wb,'Свод по возрастам',df_svod_by_age,False,True)
 
         # Сводная по месяцам
         df_svod_by_month = df.groupby(['Название_месяца_рождения']).agg({name_column: 'count'})
-        df_svod_by_month.columns = ['Количество']
 
         # Сортируем индекс чтобы месяцы шли в хоронологическом порядке
         # Взял отсюда https://stackoverflow.com/questions/40816144/pandas-series-sort-by-month-index
@@ -249,41 +253,36 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
                                                                  'Ошибочное значение!!!'],
                                                      ordered=True)
         df_svod_by_month.sort_index(inplace=True)
-
-        for r in dataframe_to_rows(df_svod_by_month, index=True, header=True):
-            wb['Свод по месяцам'].append(r)
+        df_svod_by_month = df_svod_by_month.reset_index()
+        df_svod_by_month.columns = ['Месяц','Количество']
+        wb = write_group_df_to_excel(wb,'Свод по месяцам',df_svod_by_month,False,True)
 
         # Сводная по годам
         df_svod_by_year = df.groupby(['Год_рождения']).agg({name_column: 'count'})
-        df_svod_by_year.columns = ['Количество']
-
-        for r in dataframe_to_rows(df_svod_by_year, index=True, header=True):
-            wb['Свод по годам'].append(r)
+        df_svod_by_year = df_svod_by_year.reset_index()
+        df_svod_by_year.columns = ['Год', 'Количество']
+        wb = write_group_df_to_excel(wb, 'Свод по годам', df_svod_by_year, False, True)
 
         # Сводная по 1-ПК
         df_svod_by_1PK = df.groupby(['Один_ПК']).agg({name_column: 'count'})
-        df_svod_by_1PK.columns = ['Количество']
-
-        for r in dataframe_to_rows(df_svod_by_1PK, index=True, header=True):
-            wb['Свод по 1-ПК'].append(r)
+        df_svod_by_1PK = df_svod_by_1PK.reset_index()
+        df_svod_by_1PK.columns = ['Категория', 'Количество']
+        wb = write_group_df_to_excel(wb, 'Свод по 1-ПК', df_svod_by_1PK, False, True)
 
         # Сводная по 1-ПО
         df_svod_by_1PO = df.groupby(['Один_ПО']).agg({name_column: 'count'})
-        df_svod_by_1PO.columns = ['Количество']
-
-        for r in dataframe_to_rows(df_svod_by_1PO, index=True, header=True):
-            wb['Свод по 1-ПО'].append(r)
+        df_svod_by_1PO = df_svod_by_1PO.reset_index()
+        df_svod_by_1PO.columns = ['Категория', 'Количество']
+        wb = write_group_df_to_excel(wb, 'Свод по 1-ПО', df_svod_by_1PO, False, True)
 
         # Сводная по СПО-1
         df_svod_by_SPO1 = df.groupby(['СПО_Один']).agg({name_column: 'count'})
-        df_svod_by_SPO1.columns = ['Количество']
-
-        for r in dataframe_to_rows(df_svod_by_SPO1, index=True, header=True):
-            wb['Свод по СПО-1'].append(r)
+        df_svod_by_SPO1 = df_svod_by_SPO1.reset_index()
+        df_svod_by_SPO1.columns = ['Категория', 'Количество']
+        wb = write_group_df_to_excel(wb, 'Свод по СПО-1', df_svod_by_SPO1, False, True)
 
         # Сводная по Росстату
         df_svod_by_Ros = df.groupby(['Росстат']).agg({name_column: 'count'})
-        df_svod_by_Ros.columns = ['Количество']
 
         # Сортируем индекс
         df_svod_by_Ros.index = pd.CategoricalIndex(df_svod_by_Ros.index,
@@ -294,31 +293,18 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
                                                                '70 лет и старше', 'Ошибочное значение!!!'],
                                                    ordered=True)
         df_svod_by_Ros.sort_index(inplace=True)
-
-        for r in dataframe_to_rows(df_svod_by_Ros, index=True, header=True):
-            wb['Свод по категориям Росстата'].append(r)
+        df_svod_by_Ros = df_svod_by_Ros.reset_index()
+        df_svod_by_Ros.columns = ['Категория', 'Количество']
+        wb = write_group_df_to_excel(wb, 'Свод по категориям Росстата', df_svod_by_Ros, False, True)
 
         df[name_column] = df['temp']  # заменяем временной колонкой
         df.drop(columns=['temp'], inplace=True)
 
-        for r in dataframe_to_rows(df, index=False, header=True):
-            wb['Итоговая таблица'].append(r)
-
-        # сохраняем по ширине колонок
-        for column in wb['Итоговая таблица'].columns:
-            max_length = 0
-            column_name = get_column_letter(column[0].column)
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(cell.value)
-                except:
-                    pass
-            adjusted_width = (max_length + 2)
-            wb['Итоговая таблица'].column_dimensions[column_name].width = adjusted_width
-
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
+        # удаляем пустой лист
+        if 'Sheet' in wb.sheetnames:
+            del wb['Sheet']
 
         wb.save(f'{path_to_end_folder_date}/Свод по возрастам от {current_time}.xlsx')
 

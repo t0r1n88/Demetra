@@ -6,6 +6,7 @@ from tkinter import filedialog
 from tkinter import messagebox
 import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, PatternFill
 
@@ -408,3 +409,44 @@ def del_sheet(wb: openpyxl.Workbook, lst_name_sheet: list) -> openpyxl.Workbook:
             del wb[del_sheet]
 
     return wb
+
+
+def write_group_df_to_excel(wb:openpyxl.Workbook,name_sheet:str,df:pd.DataFrame,write_index:bool,write_header:bool):
+    """
+    Функция для записи сгруппированных датафреймов так как у них иногда появляются пустые сроки
+    :param wb: документ openpyxl
+    :param name_sheet: название листа
+    :param df: датафрейм для записи
+    :param write_index: записывать ли индекс
+    :param write_header: записывать ли заголовок
+    :return: записаный лист
+    """
+    # записываем данные в лист
+    none_check = None  # чекбокс для проверки наличия пустой первой строки, такое почему то иногда бывает
+    for row in dataframe_to_rows(df, index=write_index, header=write_header):
+        if len(row) == 1 and not row[0]:  # убираем пустую строку
+            none_check = True
+            wb[name_sheet].append(row)
+        else:
+            wb[name_sheet].append(row)
+    if none_check:
+        wb[name_sheet].delete_rows(2)
+        # сохраняем по ширине колонок
+    for column in wb[name_sheet].columns:
+        max_length = 0
+        column_name = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        if adjusted_width >= 80:
+            wb[name_sheet].column_dimensions[column_name].width = 80
+            for cell in wb[name_sheet][column_name]:
+                cell.alignment = Alignment(horizontal='left', wrap_text=True)
+        else:
+            wb[name_sheet].column_dimensions[column_name].width = adjusted_width + 2
+    return wb
+
