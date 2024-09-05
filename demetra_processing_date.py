@@ -62,9 +62,7 @@ def calculate_age(born, raw_selected_date):
     """
 
     try:
-        # today = date.today()
         selected_date = pd.to_datetime(raw_selected_date, dayfirst=True)
-        # return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
         return selected_date.year - born.year - ((selected_date.month, selected_date.day) < (born.month, born.day))
 
     except ValueError:
@@ -90,26 +88,45 @@ def create_doc_convert_date(cell):
     except TypeError:
         return f'Неправильное значение - {cell}'
 
-def proccessing_date(raw_selected_date, name_column, name_file_data_date, path_to_end_folder_date):
+
+def calculation_maturity(value):
+    """
+    Присвоение признака совершеннолетия
+    :param value: значение
+    :return: совершеннолетний если >=18, несовершеннолетний если от нуля до 18, отрицательный возраст если Текущий_возраст
+     меньше нуля
+    """
+    if isinstance(value, int):
+        if value >= 18:
+            return 'совершеннолетний'
+        elif 0 <= value < 18:
+            return 'несовершеннолетний'
+        else:
+            return 'отрицательный возраст'
+    else:
+        return None
+
+
+def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_end_folder_date: str):
     """
    Функция для разбиения по категориям 1-ПК 1-ПО СПО-1, подсчета текущего возраста и выделения месяца,года
-    :param raw_selected_date: дата на момент которой нужно подсчитать текущий возраст в формате DD.MM.YYYY
+    :param raw_selected_date: дата на момент которой нужно подсчитать Текущий_возраст в формате DD.MM.YYYY
     :param name_column: название колонки с датами рождения
-    :param name_file_data_date: путь к файлу Excel с данными
+    :param name_file_data_date: датафрейм с данными
     :param path_to_end_folder_date: папка куда будет сохранен итоговый файл
     :return: файл Excel  содержащий исходный файл с добавленными колонками категорий и т.п.
     """
 
     try:
-        global name_os # делаем глобальной, чтобы проверять месяц
+        global name_os  # делаем глобальной, чтобы проверять месяц
         name_os = platform.system()
 
-        # Считываем файл
-        df = pd.read_excel(name_file_data_date)
         # создаем временную колонку которой в конце заменим исходную колонку
         df['temp'] = pd.to_datetime(df[name_column], dayfirst=True, errors='ignore')
         df['temp'] = df['temp'].fillna('Пустая ячейка')
-        df['temp'] = df['temp'].apply(lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp, datetime.datetime)) and pd.notna(x) else f'Некорректное значение - {str(x)}')
+        df['temp'] = df['temp'].apply(
+            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp, datetime.datetime)) and pd.notna(
+                x) else f'Некорректное значение - {str(x)}')
 
         # В случае ошибок заменяем значение NaN
         df[name_column] = pd.to_datetime(df[name_column], dayfirst=True, errors='coerce')
@@ -123,41 +140,45 @@ def proccessing_date(raw_selected_date, name_column, name_file_data_date, path_t
 
         # wb.create_sheet(title='Итоговая таблица', index=0)
         wb.create_sheet(title='Свод по возрастам', index=1)
-        wb.create_sheet(title='Свод по месяцам', index=2)
-        wb.create_sheet(title='Свод по годам', index=3)
-        wb.create_sheet(title='Свод по 1-ПК', index=4)
-        wb.create_sheet(title='Свод по 1-ПО', index=5)
-        wb.create_sheet(title='Свод по СПО-1', index=6)
-        wb.create_sheet(title='Свод по категориям Росстата', index=7)
+        wb.create_sheet(title='Свод сов_несов', index=2)
+        wb.create_sheet(title='Свод по месяцам', index=3)
+        wb.create_sheet(title='Свод по годам', index=4)
+        wb.create_sheet(title='Свод по 1-ПК', index=5)
+        wb.create_sheet(title='Свод по 1-ПО', index=6)
+        wb.create_sheet(title='Свод по СПО-1', index=7)
+        wb.create_sheet(title='Свод по категориям Росстата', index=8)
 
-        # Подсчитываем текущий возраст
-        df['Текущий возраст'] = df[name_column].apply(lambda x:calculate_age(x, raw_selected_date))
+        # Подсчитываем Текущий_возраст
+        df['Текущий_возраст'] = df[name_column].apply(lambda x: calculate_age(x, raw_selected_date))
+        # Добавлем признак совершеннолетия
+        df['Совершеннолетие'] = df['Текущий_возраст'].apply(calculation_maturity)
 
         # Получаем номер месяца
-        df['Порядковый номер месяца рождения'] = df[name_column].apply(extract_number_month)
+        df['Порядковый_номер_месяца_рождения'] = df[name_column].apply(extract_number_month)
 
         # Получаем название месяца
-        df['Название месяца рождения'] = df[name_column].apply(extract_name_month)
-        dct_month = {'January':'Январь','February':'Февраль','March':'Март','April':'Апрель','May':'Май','June':'Июнь','July':'Июль',
-                     'August':'Август','September':'Сентябрь','October':'Октябрь',
-                     'November':'Ноябрь','December':'Декабрь'}
-        df['Название месяца рождения'] = df['Название месяца рождения'].replace(dct_month)
+        df['Название_месяца_рождения'] = df[name_column].apply(extract_name_month)
+        dct_month = {'January': 'Январь', 'February': 'Февраль', 'March': 'Март', 'April': 'Апрель', 'May': 'Май',
+                     'June': 'Июнь', 'July': 'Июль',
+                     'August': 'Август', 'September': 'Сентябрь', 'October': 'Октябрь',
+                     'November': 'Ноябрь', 'December': 'Декабрь'}
+        df['Название_месяца_рождения'] = df['Название_месяца_рождения'].replace(dct_month)
 
         # Получаем год рождения
-        df['Год рождения'] = df[name_column].apply(extract_year)
+        df['Год_рождения'] = df[name_column].apply(extract_year)
 
         # Присваиваем категорию по 1-ПК
-        df['1-ПК Категория'] = pd.cut(df['Текущий возраст'], [0, 24, 29, 34, 39, 44, 49, 54, 59, 64, 101, 10000],
+        df['Один_ПК'] = pd.cut(df['Текущий_возраст'], [0, 24, 29, 34, 39, 44, 49, 54, 59, 64, 101, 10000],
                                       labels=['моложе 25 лет', '25-29', '30-34', '35-39',
                                               '40-44', '45-49', '50-54', '55-59', '60-64',
                                               '65 и более',
                                               'Возраст  больше 101'])
         # Приводим к строковому виду, иначе не запишется на лист
-        df['1-ПК Категория'] = df['1-ПК Категория'].astype(str)
-        df['1-ПК Категория'] = df['1-ПК Категория'].replace('nan','Ошибочное значение!!!')
+        df['Один_ПК'] = df['Один_ПК'].astype(str)
+        df['Один_ПК'] = df['Один_ПК'].replace('nan', 'Ошибочное значение!!!')
 
         # Присваиваем категорию по 1-ПО
-        df['1-ПО Категория'] = pd.cut(df['Текущий возраст'],
+        df['Один_ПО'] = pd.cut(df['Текущий_возраст'],
                                       [0, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
                                        26, 27, 28,
                                        29, 34, 39, 44, 49, 54, 59, 64, 101],
@@ -174,11 +195,11 @@ def proccessing_date(raw_selected_date, name_column, name_file_data_date, path_t
                                               '60-64 лет',
                                               '65 лет и старше'])
         # Приводим к строковому виду, иначе не запишется на лист
-        df['1-ПО Категория'] = df['1-ПО Категория'].astype(str)
-        df['1-ПО Категория'] = df['1-ПО Категория'].replace('nan', 'Ошибочное значение!!!')
+        df['Один_ПО'] = df['Один_ПО'].astype(str)
+        df['Один_ПО'] = df['Один_ПО'].replace('nan', 'Ошибочное значение!!!')
 
         # Присваиваем категорию по 1-СПО
-        df['СПО-1 Категория'] = pd.cut(df['Текущий возраст'],
+        df['СПО_Один'] = pd.cut(df['Текущий_возраст'],
                                        [0, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 34,
                                         39,
                                         101],
@@ -190,19 +211,18 @@ def proccessing_date(raw_selected_date, name_column, name_file_data_date, path_t
                                                '29 лет',
                                                '30-34 лет', '35-39 лет', '40 лет и старше'])
         ## Приводим к строковому виду, иначе не запишется на лист
-        df['СПО-1 Категория'] = df['СПО-1 Категория'].astype(str)
-        df['СПО-1 Категория'] = df['СПО-1 Категория'].replace('nan', 'Ошибочное значение!!!')
+        df['СПО_Один'] = df['СПО_Один'].astype(str)
+        df['СПО_Один'] = df['СПО_Один'].replace('nan', 'Ошибочное значение!!!')
 
         # Присваиваем категорию по Росстату
-        df['Росстат Категория'] = pd.cut(df['Текущий возраст'],
+        df['Росстат'] = pd.cut(df['Текущий_возраст'],
                                          [0, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 200],
                                          labels=['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34',
                                                  '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',
                                                  '70 лет и старше'])
         ## Приводим к строковому виду, иначе не запишется на лист
-        df['Росстат Категория'] = df['Росстат Категория'].astype(str)
-        df['Росстат Категория'] = df['Росстат Категория'].replace('nan', 'Ошибочное значение!!!')
-
+        df['Росстат'] = df['Росстат'].astype(str)
+        df['Росстат'] = df['Росстат'].replace('nan', 'Ошибочное значение!!!')
 
         # Заполняем пустые строки
         df.fillna('Ошибочное значение!!!', inplace=True)
@@ -210,14 +230,14 @@ def proccessing_date(raw_selected_date, name_column, name_file_data_date, path_t
         # заполняем сводные таблицы
         # Сводная по возрастам
 
-        df_svod_by_age = df.groupby(['Текущий возраст']).agg({name_column: 'count'})
+        df_svod_by_age = df.groupby(['Текущий_возраст']).agg({name_column: 'count'})
         df_svod_by_age.columns = ['Количество']
 
         for r in dataframe_to_rows(df_svod_by_age, index=True, header=True):
             wb['Свод по возрастам'].append(r)
 
         # Сводная по месяцам
-        df_svod_by_month = df.groupby(['Название месяца рождения']).agg({name_column: 'count'})
+        df_svod_by_month = df.groupby(['Название_месяца_рождения']).agg({name_column: 'count'})
         df_svod_by_month.columns = ['Количество']
 
         # Сортируем индекс чтобы месяцы шли в хоронологическом порядке
@@ -225,7 +245,8 @@ def proccessing_date(raw_selected_date, name_column, name_file_data_date, path_t
         df_svod_by_month.index = pd.CategoricalIndex(df_svod_by_month.index,
                                                      categories=['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
                                                                  'Июль',
-                                                                 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь','Ошибочное значение!!!'],
+                                                                 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+                                                                 'Ошибочное значение!!!'],
                                                      ordered=True)
         df_svod_by_month.sort_index(inplace=True)
 
@@ -233,37 +254,36 @@ def proccessing_date(raw_selected_date, name_column, name_file_data_date, path_t
             wb['Свод по месяцам'].append(r)
 
         # Сводная по годам
-        df_svod_by_year = df.groupby(['Год рождения']).agg({name_column: 'count'})
+        df_svod_by_year = df.groupby(['Год_рождения']).agg({name_column: 'count'})
         df_svod_by_year.columns = ['Количество']
 
         for r in dataframe_to_rows(df_svod_by_year, index=True, header=True):
             wb['Свод по годам'].append(r)
 
         # Сводная по 1-ПК
-        df_svod_by_1PK = df.groupby(['1-ПК Категория']).agg({name_column: 'count'})
+        df_svod_by_1PK = df.groupby(['Один_ПК']).agg({name_column: 'count'})
         df_svod_by_1PK.columns = ['Количество']
 
         for r in dataframe_to_rows(df_svod_by_1PK, index=True, header=True):
             wb['Свод по 1-ПК'].append(r)
 
         # Сводная по 1-ПО
-        df_svod_by_1PO = df.groupby(['1-ПО Категория']).agg({name_column: 'count'})
+        df_svod_by_1PO = df.groupby(['Один_ПО']).agg({name_column: 'count'})
         df_svod_by_1PO.columns = ['Количество']
 
         for r in dataframe_to_rows(df_svod_by_1PO, index=True, header=True):
             wb['Свод по 1-ПО'].append(r)
 
         # Сводная по СПО-1
-        df_svod_by_SPO1 = df.groupby(['СПО-1 Категория']).agg({name_column: 'count'})
+        df_svod_by_SPO1 = df.groupby(['СПО_Один']).agg({name_column: 'count'})
         df_svod_by_SPO1.columns = ['Количество']
 
         for r in dataframe_to_rows(df_svod_by_SPO1, index=True, header=True):
             wb['Свод по СПО-1'].append(r)
 
         # Сводная по Росстату
-        df_svod_by_Ros = df.groupby(['Росстат Категория']).agg({name_column: 'count'})
+        df_svod_by_Ros = df.groupby(['Росстат']).agg({name_column: 'count'})
         df_svod_by_Ros.columns = ['Количество']
-
 
         # Сортируем индекс
         df_svod_by_Ros.index = pd.CategoricalIndex(df_svod_by_Ros.index,
@@ -278,8 +298,8 @@ def proccessing_date(raw_selected_date, name_column, name_file_data_date, path_t
         for r in dataframe_to_rows(df_svod_by_Ros, index=True, header=True):
             wb['Свод по категориям Росстата'].append(r)
 
-        df[name_column] = df['temp'] # заменяем временной колонкой
-        df.drop(columns=['temp'],inplace=True)
+        df[name_column] = df['temp']  # заменяем временной колонкой
+        df.drop(columns=['temp'], inplace=True)
 
         for r in dataframe_to_rows(df, index=False, header=True):
             wb['Итоговая таблица'].append(r)
@@ -299,9 +319,10 @@ def proccessing_date(raw_selected_date, name_column, name_file_data_date, path_t
 
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
-        name_column = re.sub(r'[\r\b\n\t<> :"?*|\\/]', '_', name_column)
 
-        wb.save(f'{path_to_end_folder_date}/Результат обработки колонки {name_column} от {current_time}.xlsx')
+        wb.save(f'{path_to_end_folder_date}/Свод по возрастам от {current_time}.xlsx')
+
+        return df
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Выберите файл с данными и папку куда будет генерироваться файл')
@@ -321,6 +342,7 @@ def proccessing_date(raw_selected_date, name_column, name_file_data_date, path_t
                              'Возникла ошибка!!! Подробности ошибки в файле error.log')
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
+
 
 if __name__ == '__main__':
     raw_selected_date_main = '01.10.2023'
