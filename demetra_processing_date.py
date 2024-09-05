@@ -125,6 +125,9 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
         global name_os  # делаем глобальной, чтобы проверять месяц
         name_os = platform.system()
 
+        lst_create_date_columns =['Текущий_возраст','Совершеннолетие','Порядковый_номер_месяца_рождения','Название_месяца_рождения',
+                                  'Год_рождения','Один_ПК','Один_ПО','СПО_Один','Росстат']
+
         # создаем временную колонку которой в конце заменим исходную колонку
         df['temp'] = pd.to_datetime(df[name_column], dayfirst=True, errors='ignore')
         df['temp'] = df['temp'].fillna('Пустая ячейка')
@@ -224,7 +227,7 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
         df['Росстат'] = df['Росстат'].replace('nan', 'Ошибочное значение!!!')
 
         # Заполняем пустые строки
-        df.fillna('Ошибочное значение!!!', inplace=True)
+        df[lst_create_date_columns]=df[lst_create_date_columns].fillna('Ошибочное значение!!!')
 
         # заполняем сводные таблицы
         # Количество совершенолетних
@@ -326,8 +329,8 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
         logging.exception('AN ERROR HAS OCCURRED')
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              'Возникла ошибка!!! Подробности ошибки в файле error.log')
-    else:
-        messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
+
+
 
 
 if __name__ == '__main__':

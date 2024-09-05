@@ -132,7 +132,7 @@ def create_for_custom_report(df: pd.DataFrame, params_df: pd.DataFrame) -> openp
 
 
 def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str, params_report: str,
-                        checkbox_expelled: int, raw_data) -> None:
+                        checkbox_expelled: int, raw_date) -> None:
     """
     Функция для генерации отчетов на основе файла с данными групп
     """
@@ -236,7 +236,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         main_df.fillna('Нет статуса', inplace=True)  # заполняем пустые ячейки
 
         # Добавляем разбиение по датам
-        main_df = proccessing_date(raw_data, 'Дата_рождения', main_df,path_end_folder)
+        main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_end_folder)
 
         # Добавляем склонение по падежам и создание инициалов
         main_df = declension_fio_by_case(main_df)

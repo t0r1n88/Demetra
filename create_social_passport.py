@@ -2,6 +2,7 @@
 Скрипт для создания  отчета по социальному паспорту студента БРИТ
 """
 from demetra_support_functions import write_df_to_excel,write_df_to_excel_report_brit,del_sheet,declension_fio_by_case
+from demetra_processing_date import proccessing_date
 from tkinter import messagebox
 
 import pandas as pd
@@ -374,13 +375,13 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     lst_report_wb.save(f'{path_end_folder}/Списки для отчета по стандарту БРИТ от {current_time}.xlsx')
 
 
-def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,checkbox_expelled:int)->None:
+def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,checkbox_expelled:int,raw_date)->None:
     """
     Функция для генерации отчета по социальному статусу студентов БРИТ
     """
     try:
         # обязательные колонки
-        name_columns_set = {'ФИО','Статус_ОП','Статус_Бюджет','Статус_Общежитие','Статус_Учёба','Статус_Всеобуч', 'Статус_Национальность',
+        name_columns_set = {'ФИО','Дата_рождения','Статус_ОП','Статус_Бюджет','Статус_Общежитие','Статус_Учёба','Статус_Всеобуч', 'Статус_Национальность',
                             'Статус_Соц_стипендия', 'Статус_Соц_положение_семьи',
                             'Статус_Питание',
                             'Статус_Состав_семьи', 'Статус_Уровень_здоровья', 'Статус_Сиротство',
@@ -485,6 +486,8 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
             lambda x: x.strftime('%d.%m.%Y') if isinstance(x, pd.Timestamp) else x)
 
         main_df.replace('Нет статуса','',inplace=True)
+        # Добавляем разбиение по датам
+        main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_end_folder)
 
         # Добавляем колонки со склоненными ФИО
         main_df = declension_fio_by_case(main_df)
@@ -662,9 +665,10 @@ if __name__ == '__main__':
     # main_data_folder = 'data/Подсчет'
     main_end_folder = 'data/Результат'
     main_checkbox_expelled = 0
+    main_raw_date = '05.09.2024'
     # main_checkbox_expelled = 1
 
-    create_social_report(main_etalon_file,main_data_folder,main_end_folder,main_checkbox_expelled)
+    create_social_report(main_etalon_file,main_data_folder,main_end_folder,main_checkbox_expelled,main_raw_date)
 
     print('Lindy Booth !!!')
 
