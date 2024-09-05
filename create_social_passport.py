@@ -579,6 +579,13 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
         soc_df.loc[len(soc_df)] = ['Количество студентов (контингент)',
                                    f'Обучается - {quantity_study_student}, Академ - {quantity_academ_student}, Не указан статус - {quantity_not_status_student}, Всего {quantity_except_deducted} (включая академ. и без статуса)']  # добавляем количество студентов
 
+        # считаем количество совершенолетних студентов
+        quantity_maturity_students = len(main_df[main_df['Совершеннолетие'] == 'совершеннолетний'])
+        quantity_not_maturity_students = len(main_df[main_df['Совершеннолетие'] == 'несовершеннолетний'])
+        quantity_error_maturity_students = len(main_df[main_df['Совершеннолетие'].isin(['отрицательный возраст','Ошибочное значение!!!'])])
+        soc_df.loc[len(soc_df)] = ['Возраст',
+                                   f'Совершеннолетних - {quantity_maturity_students}, Несовершеннолетних - {quantity_not_maturity_students}, Неправильная дата рождения - {quantity_error_maturity_students}, Всего {quantity_except_deducted} (включая академ. и без статуса)']
+
         for name_column in lst_status:
             if name_column == 'Статус_ОП':
                 new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
