@@ -47,6 +47,13 @@ class SameFolder(Exception):
 """
 Системные функции
 """
+def set_rus_locale():
+    """
+    Функция чтобы можно было извлечь русские названия месяцев
+    """
+    locale.setlocale(
+        locale.LC_ALL,
+        'rus_rus' if sys.platform == 'win32' else 'ru_RU.UTF-8')
 
 
 def resource_path(relative_path):
@@ -186,6 +193,7 @@ def processing_local_report():
     """
     try:
         select_date = var_select_date_local.get()
+        set_rus_locale()
         # Если ничего
         if not select_date:
             select_date = pd.to_datetime('today')
@@ -255,6 +263,8 @@ def processing_social_report():
     """
     try:
         select_date = var_select_date.get()
+        # Устанавливаем русскую локаль
+        set_rus_locale()
         # Если ничего
         if not select_date:
             select_date = pd.to_datetime('today')
