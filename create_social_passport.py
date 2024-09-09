@@ -16,6 +16,7 @@ import re
 import os
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
+warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 warnings.simplefilter(action='ignore', category=DeprecationWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 pd.options.mode.chained_assignment = None
@@ -468,7 +469,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
                 lst_sheets_temp_wb = temp_wb.sheetnames # получаем список листов в файле
                 for name_sheet in lst_sheets_temp_wb:
                     if name_sheet != 'Данные для выпадающих списков': # отбрасываем лист с даннными выпадающих списков
-                        temp_df = pd.read_excel(f'{data_folder}/{file}',sheet_name=name_sheet) # получаем колонки которые есть на листе
+                        temp_df = pd.read_excel(f'{data_folder}/{file}',sheet_name=name_sheet,dtype=str) # получаем колонки которые есть на листе
                         # Проверяем на обязательные колонки
                         always_cols = name_columns_set.difference(set(temp_df.columns))
                         if len(always_cols) != 0:

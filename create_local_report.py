@@ -17,6 +17,7 @@ import os
 import warnings
 
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
+warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 warnings.simplefilter(action='ignore', category=DeprecationWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 pd.options.mode.chained_assignment = None
@@ -197,7 +198,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                 for name_sheet in lst_sheets_temp_wb:
                     if name_sheet != 'Данные для выпадающих списков':  # отбрасываем лист с даннными выпадающих списков
                         temp_df = pd.read_excel(f'{data_folder}/{file}',
-                                                sheet_name=name_sheet)  # получаем колонки которые есть на листе
+                                                sheet_name=name_sheet,dtype=str)  # получаем колонки которые есть на листе
                         # проверяем на соответствие эталонному файлу
                         diff_cols = etalon_cols.difference(set(temp_df.columns))
                         if len(diff_cols) != 0:
@@ -246,7 +247,6 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         main_df.drop(columns=['Для переноса', 'файл для переноса'], inplace=True)
 
         main_df.fillna('Нет статуса', inplace=True)  # заполняем пустые ячейки
-
         # Добавляем разбиение по датам
         main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_end_folder)
 
