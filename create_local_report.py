@@ -245,8 +245,19 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         main_df.insert(0, 'Файл', main_df['файл для переноса'])
         main_df.insert(1, 'Группа', main_df['Для переноса'])
         main_df.drop(columns=['Для переноса', 'файл для переноса'], inplace=True)
-
         main_df.fillna('Нет статуса', inplace=True)  # заполняем пустые ячейки
+
+        # Сохраняем лист со всеми данными
+        lst_date_columns = []  # список для колонок с датами
+        for column in main_df.columns:
+            if 'дата' in column.lower():
+                lst_date_columns.append(column)
+        main_df[lst_date_columns] = main_df[lst_date_columns].apply(pd.to_datetime, errors='coerce', dayfirst=True,
+                                                                    format='mixed')  # Приводим к типу
+        main_df[lst_date_columns] = main_df[lst_date_columns].applymap(
+            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, pd.Timestamp) else x)
+
+        main_df.replace('Нет статуса', '', inplace=True)
         # Добавляем разбиение по датам
         main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_end_folder)
 
