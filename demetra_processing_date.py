@@ -258,10 +258,10 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
                                                                  'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
                                                                  'Ошибочное значение!!!'],
                                                      ordered=True)
+        df_svod_by_month.columns = ['Количество']
         df_svod_by_month.sort_index(inplace=True)
-        df_svod_by_month = df_svod_by_month.reset_index()
-        df_svod_by_month.columns = ['Месяц','Количество']
-        wb = write_group_df_to_excel(wb,'Свод по месяцам',df_svod_by_month,False,True)
+        for r in dataframe_to_rows(df_svod_by_month, index=True, header=True):
+            wb['Свод по месяцам'].append(r)
 
         # Сводная по годам
         df_svod_by_year = df.groupby(['Год_рождения']).agg({'ФИО': 'count'})
