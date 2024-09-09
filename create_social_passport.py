@@ -11,6 +11,7 @@ import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Font, PatternFill
 import time
+import datetime
 from collections import Counter
 import re
 import os
@@ -535,7 +536,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
         main_df[lst_date_columns] = main_df[lst_date_columns].apply(pd.to_datetime, errors='coerce', dayfirst=True,
                                                           format='mixed')  # Приводим к типу
         main_df[lst_date_columns] = main_df[lst_date_columns].applymap(
-            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, pd.Timestamp) else x)
+            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp,datetime.datetime)) and pd.notna(x) else x)
 
         main_df.replace('Нет статуса','',inplace=True)
         # Добавляем разбиение по датам
