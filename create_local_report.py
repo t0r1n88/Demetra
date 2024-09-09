@@ -20,6 +20,17 @@ warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 warnings.simplefilter(action='ignore', category=DeprecationWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 pd.options.mode.chained_assignment = None
+import sys
+import locale
+
+
+def set_rus_locale():
+    """
+    Функция чтобы можно было извлечь русские названия месяцев
+    """
+    locale.setlocale(
+        locale.LC_ALL,
+        'rus_rus' if sys.platform == 'win32' else 'ru_RU.UTF-8')
 
 
 class NotColumn(Exception):
@@ -137,6 +148,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
     Функция для генерации отчетов на основе файла с данными групп
     """
     try:
+        set_rus_locale()  # устанавливаем русскую локаль что категоризация по месяцам работала
         # обязательные колонки
         name_columns_set = {'Статус_ОП', 'Статус_Учёба', 'ФИО', 'Дата_рождения'}
         error_df = pd.DataFrame(

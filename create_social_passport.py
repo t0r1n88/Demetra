@@ -19,6 +19,9 @@ warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 warnings.simplefilter(action='ignore', category=DeprecationWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 pd.options.mode.chained_assignment = None
+import sys
+import locale
+
 class NotColumn(Exception):
     """
     Исключение для обработки случая когда отсутствуют нужные колонки
@@ -31,7 +34,13 @@ class NotGoodSheet(Exception):
     """
     pass
 
-
+def set_rus_locale():
+    """
+    Функция чтобы можно было извлечь русские названия месяцев
+    """
+    locale.setlocale(
+        locale.LC_ALL,
+        'rus_rus' if sys.platform == 'win32' else 'ru_RU.UTF-8')
 def create_value_str(df:pd.DataFrame,name_column:str,target_name_column:str,dct_str:dict)->pd.DataFrame:
     """
     Функция для формирования строки нужного формата с использованием переменных
@@ -421,6 +430,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
     Функция для генерации отчета по социальному статусу студентов БРИТ
     """
     try:
+        set_rus_locale() # устанавливаем русскую локаль что категоризация по месяцам работала
         # обязательные колонки
         name_columns_set = {'ФИО','Дата_рождения','Статус_ОП','Статус_Бюджет','Статус_Общежитие','Статус_Учёба','Статус_Всеобуч', 'Статус_Национальность',
                             'Статус_Соц_стипендия', 'Статус_Соц_положение_семьи',
