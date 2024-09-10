@@ -93,6 +93,32 @@ def convert_number(value):
     except:
         return 0
 
+
+def convert_to_date(value):
+    """
+    Функция для конвертации строки в текст
+    :param value: значение для конвертации
+    :return:
+    """
+    try:
+        if value == 'Нет статуса':
+            return None
+        else:
+            date_value  = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            return date_value
+    except ValueError:
+        result = re.search(r'\d{2}\.\d{2}\.\d{4}',value)
+        if result:
+            return datetime.datetime.strptime(result.group(), '%d.%m.%Y')
+        else:
+            return None
+    except:
+        return None
+
+
+
+
+
 def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     """
     Функция для создания отчета по стандарту БРИТ
@@ -533,8 +559,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
         for column in main_df.columns:
             if 'дата' in column.lower():
                 lst_date_columns.append(column)
-        main_df[lst_date_columns] = main_df[lst_date_columns].apply(pd.to_datetime, errors='coerce', dayfirst=True,
-                                                          format='mixed')  # Приводим к типу
+        main_df[lst_date_columns] = main_df[lst_date_columns].applymap(convert_to_date)  # Приводим к типу
         main_df[lst_date_columns] = main_df[lst_date_columns].applymap(
             lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp,datetime.datetime)) and pd.notna(x) else x)
 
