@@ -386,6 +386,8 @@ def generate_docs_from_template(name_file_template_doc, name_file_data_doc,name_
                     finish_path = f'{path_to_end_folder_doc}/{clean_name_folder}'
                     if not os.path.exists(finish_path):
                         os.makedirs(finish_path)
+                    temp_df = temp_df.applymap(
+                        lambda x: str.replace(x, 'Не заполнено', '') if isinstance(x, str) else x)
                     data = temp_df.to_dict('records') # делаем из датафрейма список словарей
 
                     if mode_combine == 'No':
@@ -475,7 +477,8 @@ def generate_docs_from_template(name_file_template_doc, name_file_data_doc,name_
                         finish_path = f'{path_to_end_folder_doc}/{clean_first_name_folder}/{clean_second_name_folder}'
                         if not os.path.exists(finish_path):
                             os.makedirs(finish_path)
-
+                        temp_df_second_layer = temp_df_second_layer.applymap(
+                            lambda x: str.replace(x, 'Не заполнено', '') if isinstance(x, str) else x)
                         data = temp_df_second_layer.to_dict('records')  # конвертируем в список словарей
                         if mode_combine == 'No':
                             if mode_group == 'No':
@@ -574,7 +577,9 @@ def generate_docs_from_template(name_file_template_doc, name_file_data_doc,name_
                             finish_path = f'{path_to_end_folder_doc}/{clean_first_name_folder}/{clean_second_name_folder}/{clean_third_name_folder}'
                             if not os.path.exists(finish_path):
                                 os.makedirs(finish_path)
-
+                                # заменяем перед записью документа Не заполнено на пробел
+                            temp_df_third_layer = temp_df_third_layer.applymap(
+                                    lambda x: str.replace(x, 'Не заполнено', '') if isinstance(x, str) else x)
                             data = temp_df_third_layer.to_dict('records')  # конвертируем в список словарей
                             if mode_combine == 'No':
                                 if mode_group == 'No':
