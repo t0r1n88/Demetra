@@ -493,31 +493,34 @@ def generate_docs_other():
     :return:
     """
     try:
-        name_column = entry_name_column_data.get()
-        name_type_file = entry_type_file.get()
-        name_value_column = entry_value_column.get()
+        name_column = entry_name_column_data.get()  # название колонки по которой будут создаваться имена файлов
+        name_type_file = entry_type_file.get()  # название создаваемого документа
+        name_value_column = entry_value_column.get()  # значение для генерации одиночного файла
+        number_structure_folder = entry_structure_folder_value.get()  # получаем список номеров колонок для структуры папок
 
         # получаем состояние чекбокса создания pdf
         mode_pdf = mode_pdf_value.get()
-        # Получаем состояние  чекбокса объединения файлов в один
+        # Получаем состояние чекбокса объединения файлов в один
         mode_combine = mode_combine_value.get()
         # Получаем состояние чекбокса создания индвидуального файла
-        mode_group = mode_group_doc.get()
+        mode_group = mode_group_doc_value.get()
+        # получаем состояние чекбокса создания структуры папок
+        mode_structure_folder = mode_structure_folder_value.get()
 
-        generate_docs_from_template(name_column, name_type_file, name_value_column, mode_pdf, name_file_template_doc,
-                                    name_file_data_doc, path_to_end_folder_doc,
-                                    mode_combine, mode_group)
+        generate_docs_from_template(name_file_template_doc, name_file_data_doc, name_column, name_type_file,
+                                    path_to_end_folder_doc, name_value_column, mode_pdf,
+                                    mode_combine, mode_group, mode_structure_folder, number_structure_folder)
 
 
     except NameError as e:
-        messagebox.showerror('Веста Обработка таблиц и создание документов ver 1.35',
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Выберите шаблон,файл с данными и папку куда будут генерироваться файлы')
         logging.exception('AN ERROR HAS OCCURRED')
 
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты  ver 1.2')
+    window.title('Деметра Отчеты  ver 1.3')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -561,7 +564,7 @@ if __name__ == '__main__':
           image=img_create_social_report, padx=10, pady=10
           ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
 
-    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    # Создаем область для того, чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
     frame_data_social_report = LabelFrame(tab_create_social_report, text='Подготовка')
     frame_data_social_report.pack(padx=10, pady=10)
 
@@ -924,12 +927,14 @@ if __name__ == '__main__':
     create_doc_frame_description.pack()
 
     lbl_hello = Label(create_doc_frame_description,
-                      text='Генерация документов по шаблону'
-                           '\nДля корректной работы программы уберите из таблицы\nобъединенные ячейки'
-                           '\nДанные обрабатываются только с первого листа файла Excel!!!', width=60)
+                      text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
+                           'Генерация документов по шаблону\n'
+                           'ПРИМЕЧАНИЯ\n'
+                           'Данные обрабатываются С ПЕРВОГО ЛИСТА В ФАЙЛЕ !!!\n'
+                           'Заголовок таблицы должен занимать только первую строку!\n'
+                           'Для корректной работы программы уберите из таблицы\nобъединенные ячейки'
+                      , width=60)
     lbl_hello.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
-    # #
-    # #
     # Картинка
     path_to_img = resource_path('logo.png')
     img = PhotoImage(file=path_to_img)
@@ -984,6 +989,27 @@ if __name__ == '__main__':
     frame_data_for_options = LabelFrame(tab_create_doc, text='Дополнительные опции')
     frame_data_for_options.pack(padx=10, pady=10)
 
+    # Создаем переменную для хранения переключателя сложного сохранения
+    mode_structure_folder_value = StringVar()
+    mode_structure_folder_value.set('No')  # по умолчанию сложная структура создаваться не будет
+    chbox_mode_structure_folder = Checkbutton(frame_data_for_options,
+                                              text='Поставьте галочку, если вам нужно чтобы файлы были сохранены по дополнительным папкам',
+                                              variable=mode_structure_folder_value,
+                                              offvalue='No',
+                                              onvalue='Yes')
+    chbox_mode_structure_folder.pack()
+    # Создаем поле для ввода
+    # Определяем текстовую переменную
+    entry_structure_folder_value = StringVar()
+    # Описание поля
+    label_number_column = Label(frame_data_for_options,
+                                text='Введите через запятую не более 3 порядковых номеров колонок по которым будет создаваться структура папок.\n'
+                                     'Например: 4,15,8')
+    label_number_column.pack()
+    # поле ввода
+    entry_value_number_column = Entry(frame_data_for_options, textvariable=entry_structure_folder_value, width=30)
+    entry_value_number_column.pack(ipady=5)
+
     # Создаем переменную для хранения результа переключения чекбокса
     mode_combine_value = StringVar()
 
@@ -1017,14 +1043,14 @@ if __name__ == '__main__':
     # создаем чекбокс для единичного документа
 
     # Создаем переменную для хранения результа переключения чекбокса
-    mode_group_doc = StringVar()
+    mode_group_doc_value = StringVar()
 
     # Устанавливаем значение по умолчанию для этой переменной. По умолчанию будет вестись подсчет числовых данных
-    mode_group_doc.set('No')
+    mode_group_doc_value.set('No')
     # Создаем чекбокс для выбора режима подсчета
     chbox_mode_group = Checkbutton(frame_data_for_options,
                                    text='Поставьте галочку, если вам нужно создать один документ\nдля конкретного значения (например для определенного ФИО)',
-                                   variable=mode_group_doc,
+                                   variable=mode_group_doc_value,
                                    offvalue='No',
                                    onvalue='Yes')
     chbox_mode_group.pack(padx=10, pady=10)
