@@ -702,14 +702,14 @@ if __name__ == '__main__':
     name_column_main = 'ФИО'
     name_type_file_main = 'Справка'
     name_value_column_main = 'Алехин Данила Прокопьевич'
-    mode_pdf_main = 'Yes'
+    mode_pdf_main = 'No'
     name_file_template_doc_main = 'data/Шаблон справки.docx'
     name_file_data_doc_main = 'data/Общий файл.xlsx'
     path_to_end_folder_doc_main = 'data/1'
     mode_combine_main = 'No'
     mode_group_main = 'No'
     main_mode_structure_folder = 'Yes'
-    main_structure_folder = '31'
+    main_structure_folder = '27,31'
 
     generate_docs_from_template(name_file_template_doc_main,name_file_data_doc_main,name_column_main, name_type_file_main, path_to_end_folder_doc_main,
                                 name_value_column_main, mode_pdf_main,
