@@ -497,6 +497,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
                 for name_sheet in lst_sheets_temp_wb:
                     if name_sheet != 'Данные для выпадающих списков': # отбрасываем лист с даннными выпадающих списков
                         temp_df = pd.read_excel(f'{data_folder}/{file}',sheet_name=name_sheet,dtype=str) # получаем колонки которые есть на листе
+
                         # Проверяем на обязательные колонки
                         always_cols = name_columns_set.difference(set(temp_df.columns))
                         if len(always_cols) != 0:
@@ -506,7 +507,8 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
                                 columns=['Название файла', 'Название листа', 'Значение ошибки',
                                          'Описание ошибки'])
                             error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
-                            continue  # не обрабатываем лист где найдены ошибки
+                            continue  # не обрабатываем лист, где найдены ошибки
+
                         # проверяем на соответствие эталонному файлу
                         diff_cols = etalon_cols.difference(set(temp_df.columns))
                         if len(diff_cols) != 0:
@@ -516,7 +518,37 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
                                 columns=['Название файла', 'Название листа', 'Значение ошибки',
                                          'Описание ошибки'])
                             error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
-                            continue  # не обрабатываем лист где найдены ошибки
+                            continue  # не обрабатываем лист, где найдены ошибки
+
+                        # Проверяем на наличие колонок без названия Unnamed
+                        unnamed_lst = [f'{idx} колонка не имеет названия' for idx, name_column in enumerate(temp_df.columns, 1) if 'Unnamed' in name_column]
+                        if len(unnamed_lst) != 0:
+                            temp_error_df = pd.DataFrame(
+                                data=[[f'{name_file}', f'{name_sheet}', f'{";".join(unnamed_lst)}',
+                                       'В файле на указанном листе найдена(ы) колонка(и) у которых нет названия. ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
+                                columns=['Название файла', 'Название листа', 'Значение ошибки',
+                                         'Описание ошибки'])
+                            error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+                            continue  # не обрабатываем лист, где найдены ошибки
+
+                        # Проверяем порядок колонок
+                        order_main_columns = list(main_df.columns)# порядок колонок эталонного файла
+                        order_temp_df_columns = list(temp_df.columns)# порядок колонок проверяемого файла
+                        error_order_lst = []# список для несовпадающих пар
+                        # Сравниваем попарно колонки
+                        for main,temp in zip(order_main_columns,order_temp_df_columns):
+                            if main != temp:
+                                error_order_lst.append(f'На месте колонки {main} находится колонка {temp}')
+                        if len(error_order_lst) != 0:
+                            temp_error_df = pd.DataFrame(
+                                data=[[f'{name_file}', f'{name_sheet}', f'{";".join(error_order_lst)}',
+                                       'Неправильный порядок колонок по сравнению с эталоном. Приведите порядок колонок в соответствии с порядком в эталоне. ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
+                                columns=['Название файла', 'Название листа', 'Значение ошибки',
+                                         'Описание ошибки'])
+                            error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+                            continue  # не обрабатываем лист, где найдены ошибки
+
+
 
                         temp_df.dropna(how='all', inplace=True)  # удаляем пустые строки
                         # проверяем наличие колонок Файл и Группа
