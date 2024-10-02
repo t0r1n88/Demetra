@@ -134,6 +134,22 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     # Отбрасываем на всякий случай отчисленных
     df = df[df['Статус_Учёба'] != 'Отчислен']
 
+    # Считаем общее количество студентов
+    study_df = df[df['Статус_Учёба'] == 'Обучается']
+    dct_name_sheet['Обучается'] = study_df  # добавляем в словарь
+    study_df_group_df = study_df.groupby(by=['Файл']).agg({'ФИО': 'count'})  # создаем базовый
+    group_main_df = group_main_df.join(study_df_group_df)  # добавляем в свод
+    group_main_df.rename(columns={'ФИО': 'Обучается'}, inplace=True)
+
+    # Считаем количество студентов в академе
+    akadem_df = df[df['Статус_Учёба'].str.contains('Академ')]
+    dct_name_sheet['Академ'] = akadem_df  # добавляем в словарь
+    akadem_df_group_df = akadem_df.groupby(by=['Файл']).agg({'ФИО': 'count'})  # создаем базовый
+    group_main_df = group_main_df.join(akadem_df_group_df)  # добавляем в свод
+    group_main_df.rename(columns={'ФИО': 'Академ. отпуск'}, inplace=True)
+
+
+
     # Совершеннолетние
     maturity_df = df[df['Совершеннолетие'] == 'совершеннолетний']
     dct_name_sheet['Совершеннолетние'] = maturity_df  # добавляем в словарь
