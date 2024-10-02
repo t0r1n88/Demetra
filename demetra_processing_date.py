@@ -235,17 +235,16 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
         # заполняем сводные таблицы
         # Количество совершенолетних
         df_svod_by_matur = df.groupby(['Совершеннолетие']).agg({'ФИО': 'count'})
-        df_svod_by_matur = df_svod_by_matur.reset_index()
-        df_svod_by_matur.columns = ['Статус_Совершеннолетие','Количество']
-        df_svod_by_matur = df_svod_by_matur.sort_values(by='Количество',ascending=False)
-        wb = write_group_df_to_excel(wb,'Свод сов_несов',df_svod_by_matur,False,True)
+        df_svod_by_matur.columns = ['Количество']
+        for r in dataframe_to_rows(df_svod_by_matur, index=True, header=True):
+            wb['Свод сов_несов'].append(r)
 
         # Сводная по возрастам
 
         df_svod_by_age = df.groupby(['Текущий_возраст']).agg({'ФИО': 'count'})
-        df_svod_by_age = df_svod_by_age.reset_index()
-        df_svod_by_age.columns = ['Текущий возраст','Количество']
-        wb = write_group_df_to_excel(wb,'Свод по возрастам',df_svod_by_age,False,True)
+        df_svod_by_age.columns = ['Количество']
+        for r in dataframe_to_rows(df_svod_by_age, index=True, header=True):
+            wb['Свод по возрастам'].append(r)
 
         # Сводная по месяцам
         df_svod_by_month = df.groupby(['Название_месяца_рождения']).agg({'ФИО': 'count'})
@@ -265,27 +264,27 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
 
         # Сводная по годам
         df_svod_by_year = df.groupby(['Год_рождения']).agg({'ФИО': 'count'})
-        df_svod_by_year = df_svod_by_year.reset_index()
-        df_svod_by_year.columns = ['Год', 'Количество']
-        wb = write_group_df_to_excel(wb, 'Свод по годам', df_svod_by_year, False, True)
+        df_svod_by_year.columns = ['Количество']
+        for r in dataframe_to_rows(df_svod_by_year, index=True, header=True):
+            wb['Свод по годам'].append(r)
 
         # Сводная по 1-ПК
         df_svod_by_1PK = df.groupby(['Один_ПК']).agg({'ФИО': 'count'})
-        df_svod_by_1PK = df_svod_by_1PK.reset_index()
-        df_svod_by_1PK.columns = ['Категория', 'Количество']
-        wb = write_group_df_to_excel(wb, 'Свод по 1-ПК', df_svod_by_1PK, False, True)
+        df_svod_by_1PK.columns = ['Количество']
+        for r in dataframe_to_rows(df_svod_by_1PK, index=True, header=True):
+            wb['Свод по 1-ПК'].append(r)
 
         # Сводная по 1-ПО
         df_svod_by_1PO = df.groupby(['Один_ПО']).agg({'ФИО': 'count'})
-        df_svod_by_1PO = df_svod_by_1PO.reset_index()
-        df_svod_by_1PO.columns = ['Категория', 'Количество']
-        wb = write_group_df_to_excel(wb, 'Свод по 1-ПО', df_svod_by_1PO, False, True)
+        df_svod_by_1PO.columns = ['Количество']
+        for r in dataframe_to_rows(df_svod_by_1PO, index=True, header=True):
+            wb['Свод по 1-ПО'].append(r)
 
         # Сводная по СПО-1
         df_svod_by_SPO1 = df.groupby(['СПО_Один']).agg({'ФИО': 'count'})
-        df_svod_by_SPO1 = df_svod_by_SPO1.reset_index()
-        df_svod_by_SPO1.columns = ['Категория', 'Количество']
-        wb = write_group_df_to_excel(wb, 'Свод по СПО-1', df_svod_by_SPO1, False, True)
+        df_svod_by_SPO1.columns = ['Количество']
+        for r in dataframe_to_rows(df_svod_by_SPO1, index=True, header=True):
+            wb['Свод по СПО-1'].append(r)
 
         # Сводная по Росстату
         df_svod_by_Ros = df.groupby(['Росстат']).agg({'ФИО': 'count'})
@@ -299,9 +298,9 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
                                                                '70 лет и старше', 'Ошибочное значение!!!'],
                                                    ordered=True)
         df_svod_by_Ros.sort_index(inplace=True)
-        df_svod_by_Ros = df_svod_by_Ros.reset_index()
-        df_svod_by_Ros.columns = ['Категория', 'Количество']
-        wb = write_group_df_to_excel(wb, 'Свод по категориям Росстата', df_svod_by_Ros, False, True)
+        df_svod_by_Ros.columns = ['Количество']
+        for r in dataframe_to_rows(df_svod_by_Ros, index=True, header=True):
+            wb['Свод по категориям Росстата'].append(r)
 
         df[name_column] = df['temp']  # заменяем временной колонкой
         df.drop(columns=['temp'], inplace=True)
