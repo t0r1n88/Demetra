@@ -131,9 +131,6 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
 
     group_main_df = pd.DataFrame(index=list(df['Файл'].unique()))
 
-    # Отбрасываем на всякий случай отчисленных
-    df = df[df['Статус_Учёба'] != 'Отчислен']
-
     # Считаем общее количество студентов
     study_df = df[df['Статус_Учёба'] == 'Обучается']
     dct_name_sheet['Обучается'] = study_df  # добавляем в словарь
