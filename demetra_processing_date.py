@@ -339,7 +339,7 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
 if __name__ == '__main__':
     raw_selected_date_main = '01.10.2023'
     name_column_main = 'Дата рождения'
-    name_file_data_date_main = 'data/Обработка дат/Сгенерированный массив данных для дат.xlsx'
+    name_file_data_date_main = pd.read_excel('data/data.xlsx',dtype=str)
     path_to_end_folder_date_main = 'data'
 
     proccessing_date(raw_selected_date_main, name_column_main, name_file_data_date_main, path_to_end_folder_date_main)
