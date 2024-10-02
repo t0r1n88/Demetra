@@ -645,6 +645,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
             counting_report_wb.save(f'{path_end_folder}/Свод по колонкам Подсчета от {current_time}.xlsx')
 
         # Создаем Свод по статусам
+        main_df.replace('','Нет статуса',inplace=True)
         # Собираем колонки содержащие слово Статус_ и Подсчет_
         lst_status = [name_column for name_column in main_df.columns if 'Статус_' in name_column or 'Подсчет_' in name_column]
         # Создаем датафрейм с данными по статусам
