@@ -116,6 +116,61 @@ def create_initials(cell, checkbox, space):
     else:
         return cell
 
+def extract_fio(fio:str,code_fio:int):
+    """
+    Функция для получения из ячейки с ФИО отдельных Фамилии, Имени, Отчества
+    :param value: ФИО
+    :param code_fio: что нужно получить 0-Фамилия, 1- Имя, 2- Отчество
+    :return: соответствующее значение
+    """
+    fio = fio.strip()  # очищаем строку от пробельных символов с начала и конца
+    if len(fio) == 0:
+        return 'Не заполнено ФИО'
+    else:
+        part_fio = fio.split()  # разбиваем по пробелам создавая список где [0] это Фамилия,[1]-Имя,[2]-Отчество
+
+        if len(part_fio) == 3:  # проверяем на длину и обрабатываем только те что имеют длину 3
+            lastname = part_fio[0].capitalize()  # Фамилия
+            firstname = part_fio[1].capitalize()  # Имя
+            middlename = part_fio[2].capitalize()  # Отчество
+
+            if code_fio == 0:
+                return lastname
+            elif code_fio == 1:
+                return firstname
+            else:
+                return middlename
+        elif len(part_fio) == 2:  # проверяем на длину и обрабатываем только те что имеют длину 2
+            lastname = part_fio[0].capitalize()  # Фамилия
+            firstname = part_fio[1].capitalize()  # Имя
+
+            if code_fio == 0:
+                return lastname
+            elif code_fio == 1:
+                return firstname
+            else:
+                return 'Не найдено отчество'
+        elif len(part_fio) == 1:  # проверяем на длину и обрабатываем только те что имеют длину 1
+            lastname = part_fio[0].capitalize()  # Фамилия
+            if code_fio == 0:
+                return lastname
+            elif code_fio == 1:
+                return 'Не найдено имя'
+            else:
+                return 'Не найдено отчество'
+        else:
+            lastname = part_fio[0].capitalize()  # Фамилия
+            firstname = part_fio[1].capitalize()  # Имя
+            middlename = part_fio[2].capitalize()  # Отчество
+            if code_fio == 0:
+                return lastname
+            elif code_fio == 1:
+                return firstname
+            else:
+                return middlename
+
+
+
 def declension_fio_by_case(df:pd.DataFrame):
     """
     Функция для склонения ФИО по падежам и создания инициалов
@@ -198,6 +253,11 @@ def declension_fio_by_case(df:pd.DataFrame):
         lambda x: create_initials(x, 'ИФ', 'пробел'))
 
     # Вставляем получившиеся колонки в конец датафрейма
+    # Фамилия Имя Отчество
+    df['Фамилия'] = df[fio_column].apply(lambda x:extract_fio(x,0))
+    df['Имя'] = df[fio_column].apply(lambda x:extract_fio(x,1))
+    df['Отчество'] = df[fio_column].apply(lambda x:extract_fio(x,2))
+
     # Падежи
     df['Родительный_падеж'] = temp_df['Родительный_падеж']
     df['Дательный_падеж'] = temp_df['Дательный_падеж']
