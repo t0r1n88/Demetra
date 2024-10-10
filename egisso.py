@@ -46,16 +46,26 @@ def add_cols_pers_data(df:pd.DataFrame,ben_cols:list,req_cols_lst:list,name_col_
     """
     df = df[df[name_col_ben].notna()] # убираем незаполненные строки
     ben_df = df[ben_cols] # начинаем собирать датафрейм льгот
-    ben_df.insert(0,'Льгота',name_col_ben) # добавляем колонку определяющую что за льгота
+    ben_df.columns = ['Статус льготы','Реквизиты','Дата окончания льготы',]
+    name_col_ben = name_col_ben.replace('Статус_','')
+    ben_df.insert(0,'Льгота',name_col_ben) # добавляем колонку определяющую, что за льгота
 
     for name_column in req_cols_lst:
         if name_column in df.columns:
             ben_df[name_column] = df[name_column]
         else:
-            ben_df[name_column] = f'Не найдена колонка с названием {name_column}'
+            ben_df[name_column] = f'В исходном файле не найдена колонка с названием {name_column}'
     ben_df.insert(10,'Тип документа','')
-    ben_df.to_excel('data/dfsf.xlsx',index=False)
 
+    return ben_df
+
+def check_error_ben(df:pd.DataFrame):
+    """
+    Функция для проверки правильности данных
+    :param df:датафрейм с данными по одной льготе
+    :return:2 датафрейма  один без ошибок и второй где указаны ошибки
+    """
+    pass
 
 
 
@@ -68,20 +78,31 @@ def create_part_egisso_data(df:pd.DataFrame):
     :param df: датафрейм с данными соц паспортов
     :return: 2 файла xlsx. С данными проверки корректности заполнения и с данными
     """
+    main_df = pd.DataFrame(columns=['Льгота','Статус льготы','Реквизиты','Дата окончания льготы','Файл','СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Тип документа','Серия_паспорта','Номер_паспорта',
+                                  'Дата_выдачи_паспорта','Кем_выдан'])
     lst_cols_df = list(df.columns) # создаем список
 
     # ищем колонки со льготами
     benefits_cols_dct = find_cols_benefits(lst_cols_df)
 
     # список требуемых колонок для персональных данных
-    req_lst_personal_data_cols = ['СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Серия_паспорта','Номер_паспорта',
+    req_lst_personal_data_cols = ['Файл','СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Серия_паспорта','Номер_паспорта',
                                   'Дата_выдачи_паспорта','Кем_выдан']
 
     # Собираем датафреймы
     for name_benefit,ben_cols in benefits_cols_dct.items():
-        temp_df_full = add_cols_pers_data(df.copy(),ben_cols,req_lst_personal_data_cols,name_benefit)
+        if name_benefit == 'Статус_Уровень_здоровья':
+            health_df = df.copy() # костыль из-за того что в статус уровень здоровья для здоровых тоже указаны значения
+            health_df = health_df[health_df['Статус_Уровень_здоровья'] != 'Здоров, нет противопоказаний']
+            temp_df_full = add_cols_pers_data(health_df,ben_cols,req_lst_personal_data_cols,name_benefit) # получаем датафрейм по конкретной льготе
+        else:
+            temp_df_full = add_cols_pers_data(df.copy(),ben_cols,req_lst_personal_data_cols,name_benefit) # получаем датафрейм по конкретной льготе
+
+        check_error_ben(temp_df_full)
+        main_df = pd.concat([main_df,temp_df_full])
 
 
+    main_df.to_excel('data/Полнай.xlsx',index=False)
 
 
 
