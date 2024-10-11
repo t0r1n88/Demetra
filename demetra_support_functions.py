@@ -4,6 +4,7 @@
 import pandas as pd
 from tkinter import filedialog
 from tkinter import messagebox
+import re
 import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Alignment
@@ -508,5 +509,67 @@ def write_group_df_to_excel(wb:openpyxl.Workbook,name_sheet:str,df:pd.DataFrame,
                 cell.alignment = Alignment(horizontal='left', wrap_text=True)
         else:
             wb[name_sheet].column_dimensions[column_name].width = adjusted_width + 2
+    return wb
+
+
+def write_to_excel_egisso(df:pd.DataFrame):
+    """
+    Функция для создания файла openpyxl  с листами по льготам
+    :param df: датафрейм с данными
+    :return: файл openpyxl WOrkbook
+    """
+    wb = openpyxl.Workbook()
+    name_base = wb.sheetnames[0] # Получаем название листа
+    # Записываем общий список
+    for row in dataframe_to_rows(df, index=False, header=True):
+        wb[name_base].append(row)
+    # Устанавливаем автоширину колонок
+    for column in wb[name_base].columns:
+        max_length = 0
+        column_name = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        wb[name_base].column_dimensions[column_name].width = adjusted_width
+    wb[name_base].column_dimensions['C'].width = 40
+
+    lst_ben = df['Льгота'].unique() # Список льгот
+    for idx,benefit in enumerate(lst_ben,1):
+        temp_df = df[df['Льгота'] == benefit] # фильтруем датафрейм по названию льготы
+        short_value = benefit[:25]  # получаем обрезанное значение
+        short_value = re.sub(r'[\[\]\'+()<> :"?*|\\/]', '_', short_value)
+        wb.create_sheet(short_value,idx) # создаем лист
+        for row in dataframe_to_rows(temp_df, index=False, header=True):
+            wb[short_value].append(row)
+        # Устанавливаем автоширину колонок
+        for column in wb[short_value].columns:
+            max_length = 0
+            column_name = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            wb[short_value].column_dimensions[column_name].width = adjusted_width
+        wb[short_value].column_dimensions['C'].width = 40
+
+
+
+
+
+
+
+
+
+
+
+
+    wb[name_base].title = 'Общий список'
     return wb
 

@@ -212,18 +212,6 @@ def check_error_ben(df:pd.DataFrame):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def create_part_egisso_data(df:pd.DataFrame):
     """
     Функция для создания файла xlsx  содержащего в себе данные для егиссо
@@ -258,8 +246,13 @@ def create_part_egisso_data(df:pd.DataFrame):
         main_df = pd.concat([main_df,temp_clean_df])
         error_df = pd.concat([error_df,temp_error_df])
 
-    main_df.to_excel('data/main.xlsx',index=False)
-    error_df.to_excel('data/error.xlsx',index=False)
+
+    main_wb = write_to_excel_egisso(main_df)
+    error_wb = write_to_excel_egisso(error_df)
+
+    main_wb.save('data/Чистый файл.xlsx')
+    error_wb.save('data/Ошибки.xlsx')
+
 
 
 
