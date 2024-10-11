@@ -44,7 +44,7 @@ def add_cols_pers_data(df:pd.DataFrame,ben_cols:list,req_cols_lst:list,name_col_
     :param name_col_ben: наименование льготы
     :return: датафрейм с добавленными колонками
     """
-    df[name_col_ben] = df[name_col_ben].replace('нет',None)
+    df[name_col_ben] = df[name_col_ben].replace('нет',None) # подчищаем заполненные нет
     df = df[df[name_col_ben].notna()] # убираем незаполненные строки
     ben_df = df[ben_cols] # начинаем собирать датафрейм льгот
     ben_df.columns = ['Статус льготы','Реквизиты','Дата окончания льготы',]
@@ -60,13 +60,50 @@ def add_cols_pers_data(df:pd.DataFrame,ben_cols:list,req_cols_lst:list,name_col_
 
     return ben_df
 
+def check_simple_str_column(value,error_str:str):
+    """
+    Функция для проверки на заполнение ячейки для простой колонки с текстом не требующим дополнительной проверки
+    :param value: значение ячейки
+    :param error_str: сообщение об ошибки
+    """
+    if pd.isna(value):
+        return error_str
+    else:
+        return value
+
+def processing_snils(value):
+    result = re.findall(r'\d',value)
+    if len(result) == 11:
+        # проверяем на лидирующий ноль
+        out_str = ''.join(result)
+        if out_str.startswith('0'):
+            return out_str
+        else:
+            return int(out_str)
+    else:
+        return f'Ошибка: В СНИЛС должно быть 11 цифр а в ячейке {len(result)} цифр(ы) - {value}'
+
+
 def check_error_ben(df:pd.DataFrame):
     """
     Функция для проверки правильности данных
     :param df:датафрейм с данными по одной льготе
     :return:2 датафрейма  один без ошибок и второй где указаны ошибки
     """
-    print(df.columns)
+    # Базовые датафреймы
+    clean_df = pd.DataFrame(columns=['Льгота','Статус льготы','Реквизиты','Дата окончания льготы','Файл','СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Тип документа','Серия_паспорта','Номер_паспорта',
+                                  'Дата_выдачи_паспорта','Кем_выдан'])
+    error_df = pd.DataFrame(columns=['Льгота','Статус льготы','Реквизиты','Дата окончания льготы','Файл','СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Тип документа','Серия_паспорта','Номер_паспорта',
+                                  'Дата_выдачи_паспорта','Кем_выдан'])
+
+    checked_simple_cols = ['СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Тип документа','Серия_паспорта','Номер_паспорта',
+                                  'Дата_выдачи_паспорта','Кем_выдан']
+
+    df[checked_simple_cols] = df[checked_simple_cols].applymap(lambda x:check_simple_str_column(x,'Не заполнено'))
+    df['СНИЛС'] = df['СНИЛС'].apply(processing_snils)
+
+    df.to_excel('data/tres.xlsx')
+
 
 
 
@@ -105,7 +142,6 @@ def create_part_egisso_data(df:pd.DataFrame):
 
 
 
-    main_df.to_excel('data/Полнай.xlsx',index=False)
 
 
 
