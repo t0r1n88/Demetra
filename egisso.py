@@ -44,6 +44,7 @@ def add_cols_pers_data(df:pd.DataFrame,ben_cols:list,req_cols_lst:list,name_col_
     """
     df[name_col_ben] = df[name_col_ben].replace('нет',None) # подчищаем заполненные нет
     df = df[df[name_col_ben].notna()] # убираем незаполненные строки
+    df = df[df[name_col_ben] != ''] # убираем пустые строки
     ben_df = df[ben_cols] # начинаем собирать датафрейм льгот
     ben_df.columns = ['Статус льготы','Реквизиты','Дата окончания льготы',]
     name_col_ben = name_col_ben.replace('Статус_','')
