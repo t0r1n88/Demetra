@@ -3,6 +3,7 @@
 """
 from demetra_support_functions import write_df_to_excel,write_df_to_excel_report_brit,del_sheet,declension_fio_by_case
 from demetra_processing_date import proccessing_date
+from egisso import create_part_egisso_data
 from tkinter import messagebox
 
 import pandas as pd
@@ -624,6 +625,12 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
 
         # генерируем отчет по стандарту БРИТ
         create_report_brit(main_df.copy(),path_end_folder)
+
+        # Генерируем файлы егиссо
+        egisso_clean_wb, egisso_error_wb = create_part_egisso_data(main_df)
+        egisso_clean_wb.save(f'{path_end_folder}/ЕГИССО перс данные от {current_time}.xlsx')
+        egisso_error_wb.save(f'{path_end_folder}/ЕГИССО ОШИБКИ от {current_time}.xlsx')
+
 
         # Создаем файл в котором будут сводные данные по колонкам с Подсчетом
         dct_counting_df = dict() # словарь в котором будут храниться датафреймы созданные для каждой колонки

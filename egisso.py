@@ -2,11 +2,9 @@
 Скрипт для создания файла в котором будут содержаться частичные данные для загрузки в егиссо
 Паспортные данные ,снилс фио
 """
-from demetra_support_functions import *
+from demetra_support_functions import write_to_excel_egisso
 import pandas as pd
-import time
 import re
-import datetime
 import warnings
 
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
@@ -250,8 +248,8 @@ def create_part_egisso_data(df:pd.DataFrame):
     main_wb = write_to_excel_egisso(main_df,'Чистый')
     error_wb = write_to_excel_egisso(error_df,'Ошибки')
 
-    main_wb.save('data/Чистый файл.xlsx')
-    error_wb.save('data/Ошибки.xlsx')
+    return main_wb,error_wb
+
 
 
 
