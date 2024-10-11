@@ -101,9 +101,52 @@ def processing_fio(value,pattern):
         error_str = re.sub(r'\s','Пробельный символ',value)
         return f'Ошибка: ФИО должно начинаться с большой буквы и содержать только буквы кириллицы и дефис. В ячейке указано - {error_str}'
 
+def processing_date(value, pattern):
+    """
+    Функция для проверки соответсвия формата даты
+    :param value:значение
+    :param pattern: объект re.compile
+    :return:
+    """
+    if re.fullmatch(pattern,value):
+        return value
+    else:
+        error_str = re.sub(r'\s','Пробельный символ',value)
+        return f'Ошибка: Дата должна иметь формат ДД.ММ.ГГГГ, например 21.10.2024. В ячейке указано - {error_str}'
 
 
+def processing_series(value, pattern):
+    """
+    Функция для проверки соответсвия формата серии паспорта
+    :param value:значение
+    :param pattern: объект re.compile
+    :return:
+    """
+    if re.fullmatch(pattern,value):
+        if value.startswith('0'):
+            return value
+        else:
+            return int(value)
+    else:
+        error_str = re.sub(r'\s','Пробельный символ',value)
+        return f'Ошибка: Серия паспорта должна состоять из 4 цифр без пробелов, например 0343. В ячейке указано - {error_str}'
 
+def processing_number(value, pattern):
+    """
+    Функция для проверки соответсвия формата номера паспорта
+    :param value:значение
+    :param pattern: объект re.compile
+    :return:
+    """
+
+    if re.fullmatch(pattern,value):
+        if value.startswith('0'):
+            return value
+        else:
+            return int(value)
+    else:
+        error_str = re.sub(r'\s','Пробельный символ',value)
+        return f'Ошибка: Номер паспорта должен состоять из 6 цифр без пробелов, например 420343. В ячейке указано - {error_str}'
 
 def check_error_ben(df:pd.DataFrame):
     """
@@ -131,8 +174,24 @@ def check_error_ben(df:pd.DataFrame):
     # Проверяем М и Ж
     df['Пол'] = df['Пол'].apply(lambda x:x if x in ('М','Ж') else f'Ошибка: Допустимые значения М и Ж. В ячейке указано {x}')
 
-    # проверяем дату
+    # проверяем колонку дату рождения
+    date_pattern = re.compile(r'^\d{2}\.\d{2}.\d{4}$') # созадем паттерн
     df['Дата_рождения'] = df['Дата_рождения'].astype(str)
+    df['Дата_рождения'] = df['Дата_рождения'].apply(lambda x:processing_date(x,date_pattern))
+    # Проверяем колонку серия паспорта
+    series_pattern = re.compile(r'^\d{4}$')
+    df['Серия_паспорта'] = df['Серия_паспорта'].astype(str)
+    df['Серия_паспорта'] = df['Серия_паспорта'].apply(lambda x: processing_series(x, series_pattern))
+    # проверяем номер паспорта
+    number_pattern = re.compile(r'^\d{6}$')
+    df['Номер_паспорта'] = df['Номер_паспорта'].astype(str)
+    df['Номер_паспорта'] = df['Номер_паспорта'].apply(lambda x: processing_number(x, number_pattern))
+    # проверяем колонку дата выдачи паспорта
+    date_pattern = re.compile(r'^\d{2}\.\d{2}.\d{4}$') # созадем паттерн
+    df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].astype(str)
+    df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].apply(lambda x:processing_date(x,date_pattern))
+
+
 
 
 
