@@ -44,6 +44,7 @@ def add_cols_pers_data(df:pd.DataFrame,ben_cols:list,req_cols_lst:list,name_col_
     :param name_col_ben: наименование льготы
     :return: датафрейм с добавленными колонками
     """
+    df[name_col_ben] = df[name_col_ben].replace('нет',None)
     df = df[df[name_col_ben].notna()] # убираем незаполненные строки
     ben_df = df[ben_cols] # начинаем собирать датафрейм льгот
     ben_df.columns = ['Статус льготы','Реквизиты','Дата окончания льготы',]
@@ -65,7 +66,7 @@ def check_error_ben(df:pd.DataFrame):
     :param df:датафрейм с данными по одной льготе
     :return:2 датафрейма  один без ошибок и второй где указаны ошибки
     """
-    pass
+    print(df.columns)
 
 
 
@@ -93,13 +94,15 @@ def create_part_egisso_data(df:pd.DataFrame):
     for name_benefit,ben_cols in benefits_cols_dct.items():
         if name_benefit == 'Статус_Уровень_здоровья':
             health_df = df.copy() # костыль из-за того что в статус уровень здоровья для здоровых тоже указаны значения
-            health_df = health_df[health_df['Статус_Уровень_здоровья'] != 'Здоров, нет противопоказаний']
+            health_df['Статус_Уровень_здоровья'] = health_df['Статус_Уровень_здоровья'].fillna('доров')
+            health_df = health_df[~health_df['Статус_Уровень_здоровья'].str.contains('доров')]
             temp_df_full = add_cols_pers_data(health_df,ben_cols,req_lst_personal_data_cols,name_benefit) # получаем датафрейм по конкретной льготе
         else:
             temp_df_full = add_cols_pers_data(df.copy(),ben_cols,req_lst_personal_data_cols,name_benefit) # получаем датафрейм по конкретной льготе
 
         check_error_ben(temp_df_full)
         main_df = pd.concat([main_df,temp_df_full])
+
 
 
     main_df.to_excel('data/Полнай.xlsx',index=False)
