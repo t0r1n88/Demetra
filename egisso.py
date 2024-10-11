@@ -148,20 +148,27 @@ def processing_number(value, pattern):
         error_str = re.sub(r'\s','Пробельный символ',value)
         return f'Ошибка: Номер паспорта должен состоять из 6 цифр без пробелов, например 420343. В ячейке указано - {error_str}'
 
+def find_error_in_row(row):
+    """
+    Функция для поиска в каждой колонке строки слова Ошибка
+    :param row:
+    :return:
+    """
+    value_lst = row.tolist()
+    error_lst = [value for value in value_lst if isinstance(value,str) and 'Ошибка' in value]
+    if len(error_lst) !=0:
+        return 'Ошибка'
+    else:
+        return 'Нет ошибок'
 def check_error_ben(df:pd.DataFrame):
     """
     Функция для проверки правильности данных
     :param df:датафрейм с данными по одной льготе
     :return:2 датафрейма  один без ошибок и второй где указаны ошибки
     """
-    # Базовые датафреймы
-    clean_df = pd.DataFrame(columns=['Льгота','Статус льготы','Реквизиты','Дата окончания льготы','Файл','СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Тип документа','Серия_паспорта','Номер_паспорта',
-                                  'Дата_выдачи_паспорта','Кем_выдан'])
-    error_df = pd.DataFrame(columns=['Льгота','Статус льготы','Реквизиты','Дата окончания льготы','Файл','СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Тип документа','Серия_паспорта','Номер_паспорта',
-                                  'Дата_выдачи_паспорта','Кем_выдан'])
 
     checked_simple_cols = ['СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Тип документа','Серия_паспорта','Номер_паспорта',
-                                  'Дата_выдачи_паспорта','Кем_выдан']
+                                  'Дата_выдачи_паспорта']
 
     df[checked_simple_cols] = df[checked_simple_cols].applymap(lambda x:check_simple_str_column(x,'не заполнено'))
     df['СНИЛС'] = df['СНИЛС'].apply(processing_snils) # проверяем снилс и конвертируем снилс
@@ -190,6 +197,18 @@ def check_error_ben(df:pd.DataFrame):
     date_pattern = re.compile(r'^\d{2}\.\d{2}.\d{4}$') # созадем паттерн
     df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].astype(str)
     df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].apply(lambda x:processing_date(x,date_pattern))
+    # Проверяем колонку Кем выдано
+    df['Кем_выдан'] = df['Кем_выдан'].apply(lambda x: check_simple_str_column(x, 'Ошибка: не заполнено'))
+    df['Ошибка'] = df.apply(find_error_in_row,axis=1)
+
+    # Создаем два датафрейма
+    clean_df = df[df['Ошибка'] == 'Нет ошибок']
+    error_df = df[df['Ошибка'] == 'Ошибка']
+    # Убираем лишнюю колонку
+    clean_df.drop(columns=['Ошибка'],inplace=True)
+    error_df.drop(columns=['Ошибка'],inplace=True)
+
+    return clean_df,error_df
 
 
 
@@ -197,7 +216,8 @@ def check_error_ben(df:pd.DataFrame):
 
 
 
-    df.to_excel('data/tres.xlsx')
+
+
 
 
 
@@ -212,6 +232,8 @@ def create_part_egisso_data(df:pd.DataFrame):
     :return: 2 файла xlsx. С данными проверки корректности заполнения и с данными
     """
     main_df = pd.DataFrame(columns=['Льгота','Статус льготы','Реквизиты','Дата окончания льготы','Файл','СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Тип документа','Серия_паспорта','Номер_паспорта',
+                                  'Дата_выдачи_паспорта','Кем_выдан'])
+    error_df = pd.DataFrame(columns=['Льгота','Статус льготы','Реквизиты','Дата окончания льготы','Файл','СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Тип документа','Серия_паспорта','Номер_паспорта',
                                   'Дата_выдачи_паспорта','Кем_выдан'])
     lst_cols_df = list(df.columns) # создаем список
 
@@ -232,8 +254,12 @@ def create_part_egisso_data(df:pd.DataFrame):
         else:
             temp_df_full = add_cols_pers_data(df.copy(),ben_cols,req_lst_personal_data_cols,name_benefit) # получаем датафрейм по конкретной льготе
 
-        check_error_ben(temp_df_full)
-        main_df = pd.concat([main_df,temp_df_full])
+        temp_clean_df, temp_error_df =check_error_ben(temp_df_full)
+        main_df = pd.concat([main_df,temp_clean_df])
+        error_df = pd.concat([error_df,temp_error_df])
+
+    main_df.to_excel('data/main.xlsx',index=False)
+    error_df.to_excel('data/error.xlsx',index=False)
 
 
 
