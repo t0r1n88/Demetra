@@ -72,6 +72,11 @@ def check_simple_str_column(value,error_str:str):
         return value
 
 def processing_snils(value):
+    """
+    Функция для проверки и обработки СНИЛС
+    :param value:
+    :return:
+    """
     result = re.findall(r'\d',value)
     if len(result) == 11:
         # проверяем на лидирующий ноль
@@ -81,7 +86,23 @@ def processing_snils(value):
         else:
             return int(out_str)
     else:
-        return f'Ошибка: В СНИЛС должно быть 11 цифр а в ячейке {len(result)} цифр(ы) - {value}'
+        return f'Ошибка: В СНИЛС должно быть 11 цифр а в ячейке {len(result)} цифр(ы). В ячейке указано - {value}'
+
+def processing_fio(value,pattern):
+    """
+    Функция для проверки соответствия
+    :param value:значение
+    :param pattern: объект re.compile
+    :return:
+    """
+    if re.fullmatch(pattern,value):
+        return value
+    else:
+        error_str = re.sub(r'\s','Пробельный символ',value)
+        return f'Ошибка: ФИО должно начинаться с большой буквы и содержать только буквы кириллицы и дефис. В ячейке указано - {error_str}'
+
+
+
 
 
 def check_error_ben(df:pd.DataFrame):
@@ -99,8 +120,23 @@ def check_error_ben(df:pd.DataFrame):
     checked_simple_cols = ['СНИЛС','Фамилия','Имя','Отчество','Пол','Дата_рождения','Тип документа','Серия_паспорта','Номер_паспорта',
                                   'Дата_выдачи_паспорта','Кем_выдан']
 
-    df[checked_simple_cols] = df[checked_simple_cols].applymap(lambda x:check_simple_str_column(x,'Не заполнено'))
-    df['СНИЛС'] = df['СНИЛС'].apply(processing_snils)
+    df[checked_simple_cols] = df[checked_simple_cols].applymap(lambda x:check_simple_str_column(x,'не заполнено'))
+    df['СНИЛС'] = df['СНИЛС'].apply(processing_snils) # проверяем снилс и конвертируем снилс
+    # првоеряем ФИО
+    fio_pattern = re.compile(r'^[ЁА-Я][ёЁа-яА-Я-]+$')
+    df['Фамилия'] = df['Фамилия'].apply(lambda x:processing_fio(x,fio_pattern)) # проверяем фамилию
+    df['Имя'] = df['Имя'].apply(lambda x:processing_fio(x,fio_pattern)) # проверяем имя
+    df['Отчество'] = df['Отчество'].apply(lambda x:processing_fio(x,fio_pattern)) # проверяем отчество
+
+    # Проверяем М и Ж
+    df['Пол'] = df['Пол'].apply(lambda x:x if x in ('М','Ж') else f'Ошибка: Допустимые значения М и Ж. В ячейке указано {x}')
+
+    # проверяем дату
+    df['Дата_рождения'] = df['Дата_рождения'].astype(str)
+
+
+
+
 
     df.to_excel('data/tres.xlsx')
 
