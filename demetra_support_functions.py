@@ -512,10 +512,11 @@ def write_group_df_to_excel(wb:openpyxl.Workbook,name_sheet:str,df:pd.DataFrame,
     return wb
 
 
-def write_to_excel_egisso(df:pd.DataFrame):
+def write_to_excel_egisso(df:pd.DataFrame,type:str):
     """
     Функция для создания файла openpyxl  с листами по льготам
     :param df: датафрейм с данными
+    :param type: для выбора параметров автоширины колонок Чистый или Ошибки
     :return: файл openpyxl WOrkbook
     """
     wb = openpyxl.Workbook()
@@ -524,18 +525,29 @@ def write_to_excel_egisso(df:pd.DataFrame):
     for row in dataframe_to_rows(df, index=False, header=True):
         wb[name_base].append(row)
     # Устанавливаем автоширину колонок
-    for column in wb[name_base].columns:
-        max_length = 0
-        column_name = get_column_letter(column[0].column)
-        for cell in column:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(cell.value)
-            except:
-                pass
-        adjusted_width = (max_length + 2)
-        wb[name_base].column_dimensions[column_name].width = adjusted_width
-    wb[name_base].column_dimensions['C'].width = 40
+    if type == 'Чистый':
+        for column in wb[name_base].columns:
+            max_length = 0
+            column_name = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            wb[name_base].column_dimensions[column_name].width = adjusted_width
+        wb[name_base].column_dimensions['C'].width = 40
+    else:
+        wb[name_base].column_dimensions['B'].width = 15
+        wb[name_base].column_dimensions['F'].width = 15
+        wb[name_base].column_dimensions['G'].width = 16
+        wb[name_base].column_dimensions['H'].width = 16
+        wb[name_base].column_dimensions['I'].width = 16
+        wb[name_base].column_dimensions['K'].width = 16
+        wb[name_base].column_dimensions['N'].width = 16
+        wb[name_base].column_dimensions['O'].width = 16
+
 
     lst_ben = df['Льгота'].unique() # Список льгот
     for idx,benefit in enumerate(lst_ben,1):
@@ -546,18 +558,28 @@ def write_to_excel_egisso(df:pd.DataFrame):
         for row in dataframe_to_rows(temp_df, index=False, header=True):
             wb[short_value].append(row)
         # Устанавливаем автоширину колонок
-        for column in wb[short_value].columns:
-            max_length = 0
-            column_name = get_column_letter(column[0].column)
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(cell.value)
-                except:
-                    pass
-            adjusted_width = (max_length + 2)
-            wb[short_value].column_dimensions[column_name].width = adjusted_width
-        wb[short_value].column_dimensions['C'].width = 40
+        if type == 'Чистый':
+            for column in wb[short_value].columns:
+                max_length = 0
+                column_name = get_column_letter(column[0].column)
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(cell.value)
+                    except:
+                        pass
+                adjusted_width = (max_length + 2)
+                wb[short_value].column_dimensions[column_name].width = adjusted_width
+            wb[short_value].column_dimensions['C'].width = 40
+        else:
+            wb[short_value].column_dimensions['B'].width = 15
+            wb[short_value].column_dimensions['F'].width = 15
+            wb[short_value].column_dimensions['G'].width = 16
+            wb[short_value].column_dimensions['H'].width = 16
+            wb[short_value].column_dimensions['I'].width = 16
+            wb[short_value].column_dimensions['K'].width = 16
+            wb[short_value].column_dimensions['N'].width = 16
+            wb[short_value].column_dimensions['O'].width = 16
 
 
 

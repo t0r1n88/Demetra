@@ -247,8 +247,8 @@ def create_part_egisso_data(df:pd.DataFrame):
         error_df = pd.concat([error_df,temp_error_df])
 
 
-    main_wb = write_to_excel_egisso(main_df)
-    error_wb = write_to_excel_egisso(error_df)
+    main_wb = write_to_excel_egisso(main_df,'Чистый')
+    error_wb = write_to_excel_egisso(error_df,'Ошибки')
 
     main_wb.save('data/Чистый файл.xlsx')
     error_wb.save('data/Ошибки.xlsx')
