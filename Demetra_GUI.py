@@ -408,7 +408,8 @@ def processing_preparation_file():
     try:
         # name_sheet = var_name_sheet_prep.get() # получаем название листа
         checkbox_dupl = mode_dupl_value.get()
-        prepare_list(glob_prep_file, glob_path_to_end_folder_prep, checkbox_dupl)
+        checkbox_alf = mode_mix_alphabets.get()
+        prepare_list(glob_prep_file, glob_path_to_end_folder_prep, checkbox_dupl,checkbox_alf)
 
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
@@ -792,17 +793,19 @@ if __name__ == '__main__':
     Создаем вкладку для предварительной обработки списка
     """
     tab_preparation = ttk.Frame(tab_control)
-    tab_control.add(tab_preparation, text='Подготовка\n списка')
+    tab_control.add(tab_preparation, text='Обработка\nсписка')
 
     preparation_frame_description = LabelFrame(tab_preparation)
     preparation_frame_description.pack()
 
     lbl_hello_preparation = Label(preparation_frame_description,
-                                  text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
-                                       'Очистка от лишних пробелов и символов; поиск пропущенных значений\n в колонках с персональными данными,'
+                                  text='Очистка от лишних пробелов и символов; поиск пропущенных значений\n в колонках с персональными данными,'
                                        '(ФИО,паспортные данные,\nтелефон,e-mail,дата рождения,ИНН)\n преобразование СНИЛС в формат ХХХ-ХХХ-ХХХ ХХ.\n'
-                                       'Создание списка дубликатов по каждой колонке\n'
+                                       'Создание списка дубликатов по каждой колонке.\n'
+                                       'Поиск со смешаным написанием русских и английских букв.\n'
+                                       'ПРИМЕЧАНИЯ\n'
                                        'Данные обрабатываются С ПЕРВОГО ЛИСТА В ФАЙЛЕ !!!\n'
+                                       'Заголовок таблицы должен занимать только первую строку!\n'
                                        'Для корректной работы программы уберите из таблицы\nобъединенные ячейки',
                                   width=60)
     lbl_hello_preparation.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
@@ -841,6 +844,20 @@ if __name__ == '__main__':
                                   offvalue='No',
                                   onvalue='Yes')
     chbox_mode_dupl.pack(padx=10, pady=10)
+
+    # Создаем переменную для хранения результа переключения чекбокса поиска смешения
+    mode_mix_alphabets = StringVar()
+
+    # Устанавливаем значение по умолчанию для этой переменной. По умолчанию будет вестись подсчет числовых данных
+    mode_mix_alphabets.set('No')
+    # Создаем чекбокс для выбора режима подсчета
+
+    chbox_mode_mix_alphabets = Checkbutton(frame_data_prep,
+                                           text='Проверить каждую ячейку таблицы на смешение русских и английских букв',
+                                           variable=mode_mix_alphabets,
+                                           offvalue='No',
+                                           onvalue='Yes')
+    chbox_mode_mix_alphabets.pack(padx=10, pady=10)
 
     # Создаем кнопку очистки
     btn_choose_processing_prep = Button(tab_preparation, text='3) Выполнить обработку', font=('Arial Bold', 20),

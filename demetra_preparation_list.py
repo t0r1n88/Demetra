@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl.utils import get_column_letter
+import xlsxwriter
 import datetime
 import re
 from tkinter import messagebox
@@ -23,9 +23,10 @@ logging.basicConfig(
     datefmt='%H:%M:%S',
 )
 import warnings
-warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
+# warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 warnings.simplefilter(action='ignore', category=DeprecationWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
+warnings.simplefilter(action='ignore', category=FutureWarning)
 pd.options.mode.chained_assignment = None
 
 class ExceedingQuantity(Exception):
@@ -74,7 +75,7 @@ def find_english_letter(value):
     result = re.findall(r'[a-zA-Z]',value)
     if result:
         english_let = ';'.join(result)
-        return f'Обнаружены символы латиницы: {english_let} в слове {value}'
+        return f'Обнаружены символы английского алфавита: {english_let} в слове {value}'
     else:
         return value
 
@@ -97,7 +98,6 @@ def prepare_fio_text_columns(df:pd.DataFrame,lst_columns:list)->pd.DataFrame:
     df[prepared_columns_lst] = df[prepared_columns_lst].applymap(lambda x: x.strip() if isinstance(x, str) else x)  # применяем strip, чтобы все данные корректно вставлялись
     df[prepared_columns_lst] = df[prepared_columns_lst].applymap(lambda x:' '.join(x.split())) # убираем лишние пробелы между словами
     df[prepared_columns_lst] = df[prepared_columns_lst].applymap(capitalize_fio)  # делаем заглавными первые буквы слов а остальыне строчными
-    df[prepared_columns_lst] = df[prepared_columns_lst].applymap(find_english_letter)  # делаем заглавными первые буквы слов а остальыне строчными
 
     return df
 
@@ -336,17 +336,59 @@ def prepare_email_columns(df:pd.DataFrame,second_option:str)->pd.DataFrame:
     return df
 
 
-def prepare_list(file_data:str,path_end_folder:str,checkbox_dupl:str):
+def check_mixing(value:str):
+    """
+    Функция для проверки слова на смешение алфавитов
+    """
+    # ищем буквы русского и английского алфавита
+    russian_letters = re.findall(r'[а-яА-ЯёЁ]',value)
+    english_letters = re.findall(r'[a-zA-Z]',value)
+    # если найдены и те и те
+    if russian_letters and english_letters:
+        # если русских букв больше то указываем что в русском слове встречаются английские буквы
+        if len(russian_letters) > len(english_letters):
+            return (f'В слове {value} найдены английские буквы: {",".join(english_letters)}')
+        elif len(russian_letters) < len(english_letters):
+            # если английских букв больше то указываем что в английском слове встречаются русские буквы
+            return (f'В слове {value} найдены русские буквы: {",".join(russian_letters)}')
+        else:
+            # если букв поровну то просто выводим их список
+            return (f'В слове {value} найдены русские буквы: {",".join(russian_letters)} и английские буквы: {";".join(english_letters)}')
+    else:
+        # если слово состоит из букв одного алфавита
+        return False
+
+
+def find_mixing_alphabets(cell):
+    """
+    Функция для нахождения случаев смешения когда английские буквы используются в русском слове и наоборот
+    """
+    if isinstance(cell,str):
+        lst_word = re.split(r'\W',cell) # делим по не буквенным символам
+        lst_result = list(map(check_mixing,lst_word)) # ищем смешения
+        lst_result = [value for value in lst_result if value] # отбираем найденые смешения если они есть
+        if lst_result:
+            return f'В тексте {cell} найдено смешение русского и английского: {"; ".join(lst_result)}'
+        else:
+            return cell
+    else:
+        return cell
+
+
+def prepare_list(file_data:str,path_end_folder:str,checkbox_dupl:str,checkbox_mix_alphabets:str):
     """
     file_data : путь к файлу который нужно преобразовать
     path_end_folder :  путь к конечной папке
     checkbox_dupl: Проверять на дубликаты или нет. Yes or No
+    checkbox_mix_alphabets: Проверять на смешение русских и английских букв или нет. Yes or No
     """
     try:
         df = pd.read_excel(file_data,dtype=str) # считываем датафрейм
         df.columns = list(map(str,list(df.columns))) # делаем названия колонок строкововыми
         # очищаем все строковые значения от пробелов в начале и конце
         df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+        # заменяем пробельные символы на пробел, чтобы убрать лишние пробелы
+        df = df.applymap(lambda x: re.sub(r'\s+', ' ', x) if isinstance(x, str) else x)
         # обрабатываем колонки с фио
         part_fio_columns = ['фамилия','имя','отчество','фио'] # колонки с типичными названиями
         df = prepare_fio_text_columns(df,part_fio_columns) # очищаем колонки с фио
@@ -373,20 +415,25 @@ def prepare_list(file_data:str,path_end_folder:str,checkbox_dupl:str):
         # очищаем email от пробельных символов
         second_option = 'e-mail' # слова электрон и почта используются внутри функции
         df = prepare_email_columns(df,second_option)
+
+        # Ищем смешение английских и русских букв
+        df = df.applymap(find_mixing_alphabets)  # ищем смешения
+
         # получаем время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
 
         if checkbox_dupl == 'Yes':
             """
-            Создаем список дубликатов
-            """
+              Создаем список дубликатов
+              """
+            dct_dupl_df = dict() # создаем словарь для хранения названия и датафрейма
             lst_name_columns = list(df.columns)  # получаем список колонок
             used_name_sheet = []  # список для хранения значений которые уже были использованы
             if len(lst_name_columns) >= 253:  # проверяем количество колонок которые могут созданы
                 raise ExceedingQuantity
             #
-            wb = openpyxl.Workbook(write_only=True)  # создаем файл
+            wb = xlsxwriter.Workbook(f'{path_end_folder}/Дубликаты в каждой колонке {current_time}.xlsx',{'constant_memory': True,'nan_inf_to_errors': True})  # создаем файл
             for idx, value in enumerate(lst_name_columns):
                 temp_df = df[df[value].duplicated(keep=False)]  # получаем дубликаты
                 if temp_df.shape[0] == 0:
@@ -397,23 +444,73 @@ def prepare_list(file_data:str,path_end_folder:str,checkbox_dupl:str):
 
                 if short_value in used_name_sheet:
                     short_value = f'{short_value}_{idx}'  # добавляем окончание
-                wb.create_sheet(short_value, index=idx)  # создаем лист
-                used_name_sheet.append(short_value)
 
                 temp_df = temp_df.sort_values(by=value)
                 #     # Добавляем +2 к индексу чтобы отобразить точную строку
                 temp_df.insert(0, '№ строки дубликата ', list(map(lambda x: x + 2, list(temp_df.index))))
+                temp_df.replace(np.nan, None,inplace=True) # для того чтобы в пустых ячейках ничего не отображалось
+                dct_dupl_df[short_value] = temp_df
 
-                for row in dataframe_to_rows(temp_df, index=False, header=True):
-                    wb[short_value].append(row)
+            for name_sheet, dupl_df in dct_dupl_df.items():
+                data_lst = dupl_df.values.tolist() # преобразуем в список
+                wb_name_sheet = wb.add_worksheet(name_sheet) # создаем лист
+                used_name_sheet.append(name_sheet) # добавляем в список использованных названий
+                # Запись заголовков
+                headers = list(dupl_df.columns)
+                for col, header in enumerate(headers):
+                    wb_name_sheet.write(0, col, header)
 
-            wb.save(f'{path_end_folder}/Дубликаты в каждой колонке {current_time}.xlsx')
-            # очищаем
+                # Запись данных
+                for row, data_row in enumerate(data_lst):
+                    for col, cell_value in enumerate(data_row):
+                        wb_name_sheet.write(row + 1, col, cell_value)
+
+            # закрываем
             wb.close()
-            del wb
-            gc.collect()
 
-        # сохраняем
+        if checkbox_mix_alphabets == 'Yes':
+            dct_mix_df = dict()
+            check_word = 'найдено смешение русского и английского:' # фраза по которой будет производится отбор
+            lst_name_columns = list(df.columns)  # получаем список колонок
+            used_name_sheet = []  # список для хранения значений которые уже были использованы
+            if len(lst_name_columns) >= 253:  # проверяем количество колонок которые могут созданы
+                raise ExceedingQuantity
+            #
+            wb_mix = xlsxwriter.Workbook(f'{path_end_folder}/Смешения русских и английских букв в словах {current_time}.xlsx',{'constant_memory': True,'nan_inf_to_errors': True})  # создаем файл
+
+            for idx, value in enumerate(lst_name_columns):
+                temp_df = df[df[value].astype(str).str.contains(check_word)]  # получаем строки где есть сочетание
+                if temp_df.shape[0] == 0:
+                    continue
+
+                short_value = value[:20]  # получаем обрезанное значение
+                short_value = re.sub(r'[\r\b\n\t\[\]\'+()<> :"?*|\\/]', '_', short_value)
+
+                if short_value in used_name_sheet:
+                    short_value = f'{short_value}_{idx}'  # добавляем окончание
+
+                temp_df = temp_df.sort_values(by=value)
+                #     # Добавляем +2 к индексу чтобы отобразить точную строку
+                temp_df.insert(0, '№ строки смешения ', list(map(lambda x: x + 2, list(temp_df.index))))
+                temp_df.replace(np.nan, None,inplace=True) # для того чтобы в пустых ячейках ничего не отображалось
+                dct_mix_df[short_value] = temp_df
+
+            for name_sheet, mix_df in dct_mix_df.items():
+                data_lst = mix_df.values.tolist() # преобразуем в список
+                wb_name_sheet = wb_mix.add_worksheet(name_sheet) # создаем лист
+                used_name_sheet.append(name_sheet) # добавляем в список использованных названий
+                # Запись заголовков
+                headers = list(mix_df.columns)
+                for col, header in enumerate(headers):
+                    wb_name_sheet.write(0, col, header)
+
+                # Запись данных
+                for row, data_row in enumerate(data_lst):
+                    for col, cell_value in enumerate(data_row):
+                        wb_name_sheet.write(row + 1, col, cell_value)
+
+            wb_mix.close()
+        # сохраняем основной файл
 
         dct_df = {'Лист1': df}
         write_index = False
@@ -442,10 +539,12 @@ def prepare_list(file_data:str,path_end_folder:str,checkbox_dupl:str):
 if __name__ == '__main__':
     # file_data_main = 'data/Обработка списка/Список студентов военкомат.xlsx'
     file_data_main = 'data/Обработка списка/Список студентов военкомат.xlsx'
+    # file_data_main = 'data/Обработка списка/Билет в будущее сводный отчет по ученикам 2021-2023.xlsx'
     path_end_main = 'data'
-    checkbox_main = 'Yes'
+    checkbox_main_dupl = 'Yes'
+    checkbox_main_mix_alphabets = 'Yes'
     start_time = time.time()
-    prepare_list(file_data_main,path_end_main,checkbox_main)
+    prepare_list(file_data_main,path_end_main,checkbox_main_dupl,checkbox_main_mix_alphabets)
     end_time = time.time()
     execution_time = end_time - start_time
     print(f"Время выполнения: {execution_time} секунд")
