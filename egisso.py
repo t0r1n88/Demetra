@@ -100,7 +100,7 @@ def processing_fio(value,pattern):
         error_str = re.sub(r'\s','Пробельный символ',value)
         return f'Ошибка: ФИО должно начинаться с большой буквы и содержать только буквы кириллицы и дефис. В ячейке указано - {error_str}'
 
-def processing_date(value, pattern):
+def comparison_date(value, pattern):
     """
     Функция для проверки соответсвия формата даты
     :param value:значение
@@ -182,7 +182,7 @@ def check_error_ben(df:pd.DataFrame):
     # проверяем колонку дату рождения
     date_pattern = re.compile(r'^\d{2}\.\d{2}\.\d{4}$') # созадем паттерн
     df['Дата_рождения'] = df['Дата_рождения'].astype(str)
-    df['Дата_рождения'] = df['Дата_рождения'].apply(lambda x:processing_date(x,date_pattern))
+    df['Дата_рождения'] = df['Дата_рождения'].apply(lambda x:comparison_date(x, date_pattern))
     # Проверяем колонку серия паспорта
     series_pattern = re.compile(r'^\d{4}$')
     df['Серия_паспорта'] = df['Серия_паспорта'].astype(str)
@@ -194,7 +194,7 @@ def check_error_ben(df:pd.DataFrame):
     # проверяем колонку дата выдачи паспорта
     date_pattern = re.compile(r'^\d{2}\.\d{2}.\d{4}$') # созадем паттерн
     df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].astype(str)
-    df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].apply(lambda x:processing_date(x,date_pattern))
+    df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].apply(lambda x:comparison_date(x, date_pattern))
     # Проверяем колонку Кем выдано
     df['Кем_выдан'] = df['Кем_выдан'].apply(lambda x: check_simple_str_column(x, 'Ошибка: не заполнено'))
     df['Ошибка'] = df.apply(find_error_in_row,axis=1)

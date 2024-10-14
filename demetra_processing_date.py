@@ -108,13 +108,14 @@ def calculation_maturity(value):
     except:
         return None
 
-def processing_date(value, pattern):
+def comparison_date(value, pattern):
     """
     Функция для проверки соответсвия формата даты
     :param value:значение
     :param pattern: объект re.compile
     :return:
     """
+    value = str(value)
     if re.fullmatch(pattern,value):
         return value
     else:
@@ -137,11 +138,12 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
 
         lst_create_date_columns =['Текущий_возраст','Совершеннолетие','Порядковый_номер_месяца_рождения','Название_месяца_рождения',
                                   'Год_рождения','Один_ПК','Один_ПО','СПО_Один','Росстат']
-        date_pattern = re.compile(r'^\d{2}\.\d{2}.\d{4}$')  # созадем паттерн
+        date_pattern = re.compile(r'^\d{2}\.\d{2}\.\d{4}$')  # создаем паттерн
         # создаем временную колонку которой в конце заменим исходную колонку
         df['temp'] = pd.to_datetime(df[name_column], dayfirst=True, errors='ignore')
         df['temp'] = df['temp'].fillna('Пустая ячейка')
-        df['temp'] = df['temp'].apply(lambda x:processing_date(x,date_pattern))
+        df['temp'] = df['temp'].apply(lambda x:comparison_date(x,date_pattern))
+        print(df['temp'])
 
 
         # В случае ошибок заменяем значение NaN

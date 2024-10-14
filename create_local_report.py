@@ -81,11 +81,11 @@ def convert_to_date(value):
             date_value  = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
             return date_value
     except ValueError:
-        result = re.search(r'\d{2}\.\d{2}\.\d{4}',value)
+        result = re.search(r'^\d{2}\.\d{2}\.\d{4}$',value)
         if result:
-            return datetime.datetime.strptime(result.group(), '%d.%m.%Y')
+            return datetime.datetime.strptime(result.group(0), '%d.%m.%Y')
         else:
-            return None
+            return f'Некорректный формат даты - {value}'
     except:
         return None
 
@@ -305,15 +305,6 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                                              write_index=False)
         custom_report_wb = del_sheet(custom_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         custom_report_wb.save(f'{path_end_folder}/Свод по выбранным колонкам Статусов от {current_time}.xlsx')
-
-        # Сохраняем лист со всеми данными
-        lst_date_columns = []  # список для колонок с датами
-        for column in main_df.columns:
-            if 'дата' in column.lower():
-                lst_date_columns.append(column)
-        main_df[lst_date_columns] = main_df[lst_date_columns].applymap(convert_to_date)  # Приводим к типу
-        main_df[lst_date_columns] = main_df[lst_date_columns].applymap(
-            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, pd.Timestamp) else x)
 
         main_df.replace('Нет статуса', '', inplace=True)
         main_wb = write_df_to_excel({'Общий список': main_df}, write_index=False)
