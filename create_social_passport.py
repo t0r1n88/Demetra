@@ -108,11 +108,11 @@ def convert_to_date(value):
             date_value  = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
             return date_value
     except ValueError:
-        result = re.search(r'\d{2}\.\d{2}\.\d{4}',value)
+        result = re.search(r'^\d{2}\.\d{2}\.\d{4}$',value)
         if result:
-            return datetime.datetime.strptime(result.group(), '%d.%m.%Y')
+            return datetime.datetime.strptime(result.group(0), '%d.%m.%Y')
         else:
-            return None
+            return f'Некорректный формат даты - {value}'
     except:
         return None
 

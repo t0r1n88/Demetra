@@ -110,8 +110,7 @@ def processing_date(value, pattern):
     if re.fullmatch(pattern,value):
         return value
     else:
-        error_str = re.sub(r'\s','Пробельный символ',value)
-        return f'Ошибка: Дата должна иметь формат ДД.ММ.ГГГГ, например 21.10.2024. В ячейке указано - {error_str}'
+        return f'Ошибка: Дата должна иметь формат ДД.ММ.ГГГГ, например 21.10.2024. В ячейке указано - {value}'
 
 
 def processing_series(value, pattern):
@@ -181,7 +180,7 @@ def check_error_ben(df:pd.DataFrame):
     df['Пол'] = df['Пол'].apply(lambda x:x if x in ('М','Ж') else f'Ошибка: Допустимые значения М и Ж. В ячейке указано {x}')
 
     # проверяем колонку дату рождения
-    date_pattern = re.compile(r'^\d{2}\.\d{2}.\d{4}$') # созадем паттерн
+    date_pattern = re.compile(r'^\d{2}\.\d{2}\.\d{4}$') # созадем паттерн
     df['Дата_рождения'] = df['Дата_рождения'].astype(str)
     df['Дата_рождения'] = df['Дата_рождения'].apply(lambda x:processing_date(x,date_pattern))
     # Проверяем колонку серия паспорта

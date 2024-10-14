@@ -108,7 +108,17 @@ def calculation_maturity(value):
     except:
         return None
 
-
+def processing_date(value, pattern):
+    """
+    Функция для проверки соответсвия формата даты
+    :param value:значение
+    :param pattern: объект re.compile
+    :return:
+    """
+    if re.fullmatch(pattern,value):
+        return value
+    else:
+        return f'Ошибка: Дата должна иметь формат ДД.ММ.ГГГГ, например 21.10.2024. В ячейке указано - {value}'
 
 
 def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_end_folder_date: str):
@@ -127,13 +137,12 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
 
         lst_create_date_columns =['Текущий_возраст','Совершеннолетие','Порядковый_номер_месяца_рождения','Название_месяца_рождения',
                                   'Год_рождения','Один_ПК','Один_ПО','СПО_Один','Росстат']
-
+        date_pattern = re.compile(r'^\d{2}\.\d{2}.\d{4}$')  # созадем паттерн
         # создаем временную колонку которой в конце заменим исходную колонку
         df['temp'] = pd.to_datetime(df[name_column], dayfirst=True, errors='ignore')
         df['temp'] = df['temp'].fillna('Пустая ячейка')
-        df['temp'] = df['temp'].apply(
-            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp, datetime.datetime)) and pd.notna(
-                x) else f'Некорректное значение - {str(x)}')
+        df['temp'] = df['temp'].apply(lambda x:processing_date(x,date_pattern))
+
 
         # В случае ошибок заменяем значение NaN
         df[name_column] = pd.to_datetime(df[name_column], dayfirst=True, errors='coerce')
