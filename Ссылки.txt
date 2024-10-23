@@ -7,7 +7,7 @@ https://fips.ru/EGD/96ddb2d2-0a2c-4f12-a2e9-f4de13a6f4c3
 https://itdarhan.ru/files/demetra/Руководство%20пользователя%20программы%20Деметра.docx
 
 Инструкция по установке и началу работы
-https://itdarhan.ru/files/demetra/Решение%20проблем%20при%20запуске.docx
+https://itdarhan.ru/files/demetra/Инструкция по установке и началу работы.docx
 
 Материалы для внедрения
 https://itdarhan.ru/files/demetra/Материалы%20для%20внедрения.zip

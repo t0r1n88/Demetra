@@ -519,6 +519,70 @@ def generate_docs_other():
         logging.exception('AN ERROR HAS OCCURRED')
 
 
+"""
+Создание нового окна
+"""
+def open_list_changes():
+    # Создание нового окна
+    new_window = Toplevel(window)
+
+    # Настройка нового окна
+    new_window.title("Список изменений")
+    text_area = Text(new_window, width=90, height=50)
+
+    with open(list_changes_path, 'r', encoding='utf-8') as file:
+        text = file.read()
+        text_area.insert(END, text)
+    text_area.configure(state='normal')
+    text_area.pack(side=LEFT)
+
+    scroll = Scrollbar(new_window, command=text_area.yview)
+    scroll.pack(side=LEFT, fill=Y)
+
+    text_area.config(yscrollcommand=scroll.set)
+
+def open_license():
+    # Создание нового окна
+    new_window = Toplevel(window)
+
+    # Настройка нового окна
+    new_window.title("Лицензия")
+    text_area = Text(new_window, width=90, height=50)
+
+    with open(license_path, 'r', encoding='utf-8') as file:
+        text = file.read()
+        text_area.insert(END, text)
+    text_area.configure(state='normal')
+    text_area.pack(side=LEFT)
+
+    scroll = Scrollbar(new_window, command=text_area.yview)
+    scroll.pack(side=LEFT, fill=Y)
+
+    text_area.config(yscrollcommand=scroll.set)
+
+
+def open_libraries():
+    # Создание нового окна
+    new_window = Toplevel(window)
+
+    # Настройка нового окна
+    new_window.title("Дополнительные библиотеки Python")
+    text_area = Text(new_window, width=90, height=50)
+
+    with open(license_library, 'r', encoding='utf-8') as file:
+        text = file.read()
+        text_area.insert(END, text)
+    text_area.configure(state='normal')
+    text_area.pack(side=LEFT)
+
+    scroll = Scrollbar(new_window, command=text_area.yview)
+    scroll.pack(side=LEFT, fill=Y)
+
+    text_area.config(yscrollcommand=scroll.set)
+
+
+
+
 if __name__ == '__main__':
     window = Tk()
     window.title('Деметра Отчеты  ver 1.4')
@@ -1088,6 +1152,76 @@ if __name__ == '__main__':
                                     command=generate_docs_other
                                     )
     btn_create_files_other.pack(padx=10, pady=10)
+
+    """
+    Создаем вкладку для размещения описания программы, руководства пользователя,лицензии.
+    """
+
+    tab_about = ttk.Frame(tab_control)
+    tab_control.add(tab_about, text='О ПРОГРАММЕ')
+
+    about_frame_description = LabelFrame(tab_about, text='О программе')
+    about_frame_description.pack()
+
+    lbl_about = Label(about_frame_description,
+                      text="""Деметра - Программа для обработки отчетности ПОО
+                           Версия 1.4
+                           Язык программирования - Python 3\n
+                           Используемая лицензия BSD-2-Clause\n
+                           Copyright (c) <2024> <Будаев Олег Тимурович>
+                           Адрес сайта программы: https://itdarhan.ru/demetra/demetra.html\n
+                           Свидетельство о государственной регистрации № 2024684356
+                           \n
+
+                           Чтобы скопировать ссылку или текст переключитесь на \n
+                           английскую раскладку. 
+                           """, width=60)
+
+    lbl_about.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+    # Картинка
+    path_to_img_about = resource_path('logo.png')
+    img_about = PhotoImage(file=path_to_img_about)
+    Label(about_frame_description,
+          image=img_about, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем поле для лицензий библиотек
+    guide_frame_description = LabelFrame(tab_about, text='Ссылки для скачивания и обучающие материалы')
+    guide_frame_description.pack()
+
+    text_area_url = Text(guide_frame_description, width=84, height=20)
+    list_url_path = resource_path('Ссылки.txt')  # путь к файлу лицензии
+    with open(list_url_path, 'r', encoding='utf-8') as file:
+        text = file.read()
+        text_area_url.insert(END, text)
+    text_area_url.configure(state='normal')
+    text_area_url.pack(side=LEFT)
+
+    scroll = Scrollbar(guide_frame_description, command=text_area_url.yview)
+    scroll.pack(side=LEFT, fill=Y)
+
+    text_area_url.config(yscrollcommand=scroll.set)
+
+    text_area_url.configure(state='normal')
+    text_area_url.pack(side=LEFT)
+
+    # Кнопка, для демонстрации в отдельном окне списка изменений
+    list_changes_path = resource_path('Список изменений.txt')  # путь к файлу лицензии
+    button_list_changes = Button(tab_about, text="Список изменений", command=open_list_changes)
+    button_list_changes.pack(padx=10, pady=10)
+
+    # Кнопка, для демонстрации в отдельном окне лицензии
+    license_path = resource_path('License.txt')  # путь к файлу лицензии
+    button_lic = Button(tab_about, text="Лицензия", command=open_license)
+    button_lic.pack(padx=10, pady=10)
+
+    # Кнопка, для демонстрации в отдельном окне используемых библиотек
+    license_library = resource_path('LibraryLicense.txt')  # путь к файлу с библиотеками
+    button_lib = Button(tab_about, text="Дополнительные библиотеки Python", command=open_libraries)
+    button_lib.pack(padx=10, pady=10)
+
+
+
 
     # Создаем виджет для управления полосой прокрутки
     canvas.create_window((0, 0), window=tab_control, anchor="nw")
