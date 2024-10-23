@@ -1,0 +1,162 @@
+Используемые библиотеки Python
+
+Python graph (network) package
+altgraph https://altgraph.readthedocs.io
+MIT license
+
+Internationalization utilities
+Babel https://babel.pocoo.org/
+BSD-3-Clause
+
+Cross-platform colored terminal text
+colorama https://pypi.org/project/colorama/
+BSD License
+
+
+Convert docx to pdf on Windows or macOS directly using Microsoft Word (must be installed).
+docx2pdf https://github.com/AlJohri/docx2pdf
+MIT license
+
+Compose .docx documents
+docxcompose https://github.com/4teamwork/docxcompose
+MIT license
+
+Python docx template engine
+docxtpl https://github.com/elapouya/python-docx-template
+LGPL 2.1
+
+An implementation of lxml.xmlfile for the standard library
+et-xmlfile https://foss.heptapod.net/openpyxl/et_xmlfile
+MIT license
+
+Read metadata from Python packages
+importlib_metadata  https://github.com/python/importlib_metadata
+Apache-2.0 license
+
+A very fast and expressive template engine.
+Jinja2 https://palletsprojects.com/p/jinja/
+BSD-3-Clause
+
+Powerful and Pythonic XML processing library combining libxml2/libxslt with the ElementTree API.
+lxml  https://lxml.de/
+BSD License
+
+Safely add untrusted strings to HTML/XML markup.
+MarkupSafe  https://palletsprojects.com/p/markupsafe/
+BSD-3-Clause
+
+NumPy is the fundamental package for array computing with Python.
+numpy https://www.numpy.org
+BSD License
+
+A Python library to read/write Excel 2010 xlsx/xlsm files
+openpyxl https://openpyxl.readthedocs.io
+MIT license
+
+Reusable core utilities for various Python Packaging
+packaging https://pypi.org/project/packaging/
+Apache Software License, BSD License
+
+Powerful data structures for data analysis, time series, and statistics
+pandas  https://pandas.pydata.org
+BSD-3-Clause
+
+Python PE parsing module
+pefile https://github.com/erocarrera/pefile
+MIT license
+
+PyInstaller bundles a Python application and all its dependencies into a single package.
+pyinstaller  http://www.pyinstaller.org/
+GPLv2
+
+Community maintained hooks for PyInstaller
+pyinstaller-hooks-contrib   https://github.com/pyinstaller/pyinstaller-hooks-contrib
+GPL
+
+Extensions to the standard Python datetime module
+python-dateutil   https://github.com/dateutil/dateutil
+Apache License 2.0
+
+Create and update Microsoft Word .docx files.
+python-docx   https://github.com/python-openxml/python-docx
+MIT license
+
+a Python port of an inflector for Russian anthroponyms developed by petrovich team: https://github.com/petrovich
+pytrovich  https://github.com/petrovich/pytrovich
+MIT license
+
+World timezone definitions, modern and historical
+pytz http://pythonhosted.org/pytz
+MIT license
+
+Python for Window Extensions
+pywin32 https://github.com/mhammond/pywin32
+PSF
+
+pywin32-ctypes https://github.com/enthought/pywin32-ctypes
+BSD License
+
+Python 2 and 3 compatibility utilities
+six  https://github.com/benjaminp/six
+MIT license
+
+Fast, Extensible Progress Meter
+tqdm  https://tqdm.github.io
+MPLv2.0, MIT Licences
+
+Backported and Experimental Type Hints for Python 3.8+
+typing-extensions https://pypi.org/project/typing-extensions/
+Python Software Foundation License
+
+Library for developers to extract data from Microsoft Excel (tm) .xls spreadsheet files
+xlrd  http://www.python-excel.org/
+BSD License
+
+A Python module for creating Excel XLSX files.
+XlsxWriter  https://github.com/jmcnamara/XlsxWriter
+BSD-2-Clause
+
+
+Backport of pathlib-compatible object wrapper for zip files
+zipp https://pypi.org/project/zipp/
+MIT license
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

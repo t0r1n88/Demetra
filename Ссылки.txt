@@ -1,0 +1,20 @@
+Ссылка на свидетельство:
+https://fips.ru/EGD/96ddb2d2-0a2c-4f12-a2e9-f4de13a6f4c3
+
+Обучающие материалы по программе Деметра
+
+Руководство пользователя
+https://itdarhan.ru/files/demetra/Руководство%20пользователя%20программы%20Деметра.docx
+
+Инструкция по установке и началу работы
+https://itdarhan.ru/files/demetra/Решение%20проблем%20при%20запуске.docx
+
+Материалы для внедрения
+https://itdarhan.ru/files/demetra/Материалы%20для%20внедрения.zip
+
+Ссылки для скачивания
+Windows x64
+https://itdarhan.ru/files/demetra/Деметра%20для%20Windows%20x64.zip
+
+Windows x32
+https://itdarhan.ru/files/demetra/Деметра%20для%20Windows%20x32.zip
