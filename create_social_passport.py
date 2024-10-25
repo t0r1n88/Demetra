@@ -1,7 +1,8 @@
 """
 Скрипт для создания  отчета по социальному паспорту студента БРИТ
 """
-from demetra_support_functions import write_df_to_excel,write_df_to_excel_report_brit,del_sheet,declension_fio_by_case
+from demetra_support_functions import (write_df_to_excel,write_df_to_excel_report_brit,del_sheet,declension_fio_by_case,
+                                       extract_parameters_egisso)
 from demetra_processing_date import proccessing_date
 from egisso import create_part_egisso_data
 from tkinter import messagebox
@@ -467,7 +468,7 @@ def create_report_brit(df:pd.DataFrame,path_end_folder:str)->None:
     lst_report_wb.save(f'{path_end_folder}/Списки для отчета по стандарту БРИТ от {current_time}.xlsx')
 
 
-def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,checkbox_expelled:int,raw_date)->None:
+def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str, path_end_folder:str,checkbox_expelled:int,raw_date)->None:
     """
     Функция для генерации отчета по социальному статусу студентов БРИТ
     """
@@ -582,11 +583,7 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
 
-        # Сохраняем лист с ошибками
-        error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
-        error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
-        if len(main_df) == 0:
-            raise NotGoodSheet
+
 
 
         main_df.rename(columns={'Группа':'Для переноса','Файл':'файл для переноса'},inplace=True) # переименовываем группу чтобы перенести ее в начало таблицы
@@ -623,14 +620,28 @@ def create_social_report(etalon_file:str,data_folder:str, path_end_folder:str,ch
 
         main_df.columns = list(map(str, list(main_df.columns)))
 
+
         # генерируем отчет по стандарту БРИТ
         create_report_brit(main_df.copy(),path_end_folder)
 
-        # Генерируем файлы егиссо
-        egisso_clean_wb, egisso_error_wb = create_part_egisso_data(main_df)
-        egisso_clean_wb.save(f'{path_end_folder}/ЕГИССО перс данные от {current_time}.xlsx')
-        egisso_error_wb.save(f'{path_end_folder}/ЕГИССО ОШИБКИ от {current_time}.xlsx')
 
+        # Генерируем файлы егиссо
+        # генерируем полный вариант
+        dct_params_egisso,temp_params_egisso_error_df = extract_parameters_egisso(path_egisso_params,list(main_df.columns))
+        raise ZeroDivisionError
+        if len(dct_params_egisso) != 0:
+            print('GF')
+        else:
+            # генерируем вариант только с персональными данными
+            egisso_clean_wb, egisso_error_wb = create_part_egisso_data(main_df)
+            egisso_clean_wb.save(f'{path_end_folder}/ЕГИССО перс данные от {current_time}.xlsx')
+            egisso_error_wb.save(f'{path_end_folder}/ЕГИССО перс данные ОШИБКИ от {current_time}.xlsx')
+
+        # Сохраняем лист с ошибками
+        error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
+        error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
+        if len(main_df) == 0:
+            raise NotGoodSheet
 
         # Создаем файл в котором будут сводные данные по колонкам с Подсчетом
         dct_counting_df = dict() # словарь в котором будут храниться датафреймы созданные для каждой колонки
@@ -808,13 +819,13 @@ if __name__ == '__main__':
     main_etalon_file = 'data/Эталон.xlsx'
     # main_etalon_file = 'data/Эталон подсчет.xlsx'
     main_data_folder = 'data/Данные'
-    # main_data_folder = 'data/Подсчет'
+    main_egisso_params = 'data/Параметры ЕГИССО.xlsx'
     main_end_folder = 'data/Результат'
     main_checkbox_expelled = 0
     main_raw_date = '05.09.2024'
     # main_checkbox_expelled = 1
 
-    create_social_report(main_etalon_file,main_data_folder,main_end_folder,main_checkbox_expelled,main_raw_date)
+    create_social_report(main_etalon_file,main_data_folder,main_egisso_params,main_end_folder,main_checkbox_expelled,main_raw_date)
 
     print('Lindy Booth !!!')
 

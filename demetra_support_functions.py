@@ -615,3 +615,51 @@ def write_to_excel_egisso(df:pd.DataFrame,type:str):
     wb[name_base].title = 'Общий список'
     return wb
 
+
+def extract_parameters_egisso(path_egisso_params: str, df_cols:list):
+    """
+    Функция для извлечения параметров из файла егиссо
+    """
+    dct_params = {} # словарь для хранения параметров ЕГИССО
+    # датафрейм для ошибок
+    error_df = pd.DataFrame(
+        columns=['Название файла', 'Название листа', 'Значение ошибки', 'Описание ошибки'])  # датафрейм для ошибок
+    df_params = pd.read_excel(path_egisso_params, dtype=str)
+    required_cols_set = {'Название колонки с льготой','Наименование категории','LMSZID','categoryID','ONMSZCode',
+                         'LMSZProviderCode','providerCode','usingSign','criteria','criteriaCode','FormCode','amount',
+                         'measuryCode','monetization','content','comment','equivalentAmount'}
+
+    diff_cols = required_cols_set.difference(set(df_params.columns))
+    # проверяем на наличие обязательных колонок
+    if len(diff_cols) != 0:
+        temp_error_df = pd.DataFrame(
+            data=[[f'{path_egisso_params}', f'Первый лист по порядку', f'{";".join(diff_cols)}',
+                   'В файле на указанном листе не найдены указанные обязательные колонки. ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
+            columns=['Название файла', 'Название листа', 'Значение ошибки',
+                     'Описание ошибки'])
+        error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+        return dct_params,error_df
+    else:
+        df_params.dropna(thresh=3,inplace=True) # очищаем от пустых строк где менее 3 заполненных колонок
+        # Обрабатываем незаполненные значения в главных колонках
+        df_params[['Название колонки с льготой','Наименование категории']] = df_params[['Название колонки с льготой','Наименование категории']].fillna('Не заполнено название колонки с льготой или наименование категории')
+        # Проверяем наличие колонок в датафрейме
+        for idx,ben_col in enumerate(df_params['Название колонки с льготой'].tolist(),2):
+            if ben_col not in df_cols:
+                temp_error_df = pd.DataFrame(
+                    data=[[f'{path_egisso_params}', f'Первый лист по порядку', f'{ben_col}',
+                           f'Колонка с льготой {ben_col} указанная на строке {idx} в файле с параметрами ЕГИССО отсутствует в эталонном файле. Параметры в данной строке не будут обрабатываться']],
+                    columns=['Название файла', 'Название листа', 'Значение ошибки',
+                             'Описание ошибки'])
+                error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+
+        # Добавляем данные в словарь параметров
+        for row in df_params.itertuples(index=False):
+            if row[0] in df_cols: # если такая колонка есть в эталоне то добавляем в словарь
+                if row[0] not in dct_params:
+                    dct_params[row[0]] = {row[1]:list(row)}
+                else:
+                    dct_params[row[0]][row[1]] = list(row)
+
+
+        return dct_params,error_df
