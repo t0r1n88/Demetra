@@ -251,10 +251,44 @@ def create_part_egisso_data(df:pd.DataFrame):
     return main_wb,error_wb
 
 
-def create_full_egisso_data(df:pd.DataFrame, dct_params:dict):
+def create_full_egisso_data(df:pd.DataFrame, params_egisso_dft):
     """
     Функция для создания полного файла ЕГИССО
     """
+    main_df = pd.DataFrame(
+        columns=['Льгота', 'Статус льготы', 'Реквизиты', 'Дата окончания льготы', 'Файл', 'СНИЛС', 'Фамилия', 'Имя',
+                 'Отчество', 'Пол', 'Дата_рождения', 'Тип документа', 'Серия_паспорта', 'Номер_паспорта',
+                 'Дата_выдачи_паспорта', 'Кем_выдан'])
+    error_df = pd.DataFrame(
+        columns=['Льгота', 'Статус льготы', 'Реквизиты', 'Дата окончания льготы', 'Файл', 'СНИЛС', 'Фамилия', 'Имя',
+                 'Отчество', 'Пол', 'Дата_рождения', 'Тип документа', 'Серия_паспорта', 'Номер_паспорта',
+                 'Дата_выдачи_паспорта', 'Кем_выдан'])
+    lst_cols_df = list(df.columns)  # создаем список
+
+    # ищем колонки со льготами
+    benefits_cols_dct = find_cols_benefits(lst_cols_df)
+
+    # список требуемых колонок для персональных данных
+    req_lst_personal_data_cols = ['Файл', 'СНИЛС', 'Фамилия', 'Имя', 'Отчество', 'Пол', 'Дата_рождения',
+                                  'Серия_паспорта', 'Номер_паспорта',
+                                  'Дата_выдачи_паспорта', 'Кем_выдан']
+
+    # Собираем датафреймы
+    for name_benefit,ben_cols in benefits_cols_dct.items():
+        if name_benefit == 'Статус_Уровень_здоровья':
+            health_df = df.copy() # костыль из-за того что в статус уровень здоровья для здоровых тоже указаны значения
+            health_df['Статус_Уровень_здоровья'] = health_df['Статус_Уровень_здоровья'].fillna('доров')
+            health_df = health_df[~health_df['Статус_Уровень_здоровья'].str.contains('доров')]
+            temp_df_full = add_cols_pers_data(health_df,ben_cols,req_lst_personal_data_cols,name_benefit) # получаем датафрейм по конкретной льготе
+        else:
+            temp_df_full = add_cols_pers_data(df.copy(),ben_cols,req_lst_personal_data_cols,name_benefit) # получаем датафрейм по конкретной льготе
+
+        temp_clean_df, temp_error_df =check_error_ben(temp_df_full)
+        main_df = pd.concat([main_df,temp_clean_df])
+        error_df = pd.concat([error_df,temp_error_df])
+
+
+
 
 
 

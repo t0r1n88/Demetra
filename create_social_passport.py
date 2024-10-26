@@ -796,7 +796,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # проверяем на наличие ошибок
         if error_df.shape[0] != 0:
             count_error = len(error_df['Название листа'].unique())
-            messagebox.showinfo('Деметра Отчеты социальный паспорт студента',
+            messagebox.showwarning('Деметра Отчеты социальный паспорт студента',
                                 f'Количество необработанных листов {count_error}\n'
                                 f'Проверьте файл Ошибки в файле')
     except FileNotFoundError:
