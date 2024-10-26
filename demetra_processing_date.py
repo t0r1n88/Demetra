@@ -140,9 +140,10 @@ def proccessing_date(raw_selected_date, name_column, df: pd.DataFrame, path_to_e
                                   'Год_рождения','Один_ПК','Один_ПО','СПО_Один','Росстат']
         date_pattern = re.compile(r'^\d{2}\.\d{2}\.\d{4}$')  # создаем паттерн
         # создаем временную колонку которой в конце заменим исходную колонку
-        df['temp'] = pd.to_datetime(df[name_column], dayfirst=True, errors='ignore')
+        df['temp'] = df['Дата_рождения']
         df['temp'] = df['temp'].fillna('Пустая ячейка')
         df['temp'] = df['temp'].apply(lambda x:comparison_date(x,date_pattern))
+
 
 
         # В случае ошибок заменяем значение NaN

@@ -4,7 +4,7 @@
 from demetra_support_functions import (write_df_to_excel,write_df_to_excel_report_brit,del_sheet,declension_fio_by_case,
                                        extract_parameters_egisso)
 from demetra_processing_date import proccessing_date
-from egisso import create_part_egisso_data
+from egisso import create_part_egisso_data, create_full_egisso_data
 from tkinter import messagebox
 
 import pandas as pd
@@ -630,7 +630,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         dct_params_egisso,temp_params_egisso_error_df = extract_parameters_egisso(path_egisso_params,list(main_df.columns))
         print(dct_params_egisso)
         if len(dct_params_egisso) != 0:
-            print('GF')
+            create_full_egisso_data(main_df,dct_params_egisso) # создаем полный набор данных
         else:
             # генерируем вариант только с персональными данными
             egisso_clean_wb, egisso_error_wb = create_part_egisso_data(main_df)

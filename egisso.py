@@ -251,6 +251,13 @@ def create_part_egisso_data(df:pd.DataFrame):
     return main_wb,error_wb
 
 
+def create_full_egisso_data(df:pd.DataFrame, dct_params:dict):
+    """
+    Функция для создания полного файла ЕГИССО
+    """
+
+
+
 
 
 
