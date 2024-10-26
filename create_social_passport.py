@@ -628,7 +628,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # Генерируем файлы егиссо
         # генерируем полный вариант
         dct_params_egisso,temp_params_egisso_error_df = extract_parameters_egisso(path_egisso_params,list(main_df.columns))
-        raise ZeroDivisionError
+        print(dct_params_egisso)
         if len(dct_params_egisso) != 0:
             print('GF')
         else:
@@ -638,6 +638,8 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
             egisso_error_wb.save(f'{path_end_folder}/ЕГИССО перс данные ОШИБКИ от {current_time}.xlsx')
 
         # Сохраняем лист с ошибками
+
+        error_df = pd.concat([error_df, temp_params_egisso_error_df], axis=0, ignore_index=True)
         error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
         error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
         if len(main_df) == 0:

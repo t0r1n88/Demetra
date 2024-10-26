@@ -642,24 +642,32 @@ def extract_parameters_egisso(path_egisso_params: str, df_cols:list):
     else:
         df_params.dropna(thresh=3,inplace=True) # очищаем от пустых строк где менее 3 заполненных колонок
         # Обрабатываем незаполненные значения в главных колонках
-        df_params[['Название колонки с льготой','Наименование категории']] = df_params[['Название колонки с льготой','Наименование категории']].fillna('Не заполнено название колонки с льготой или наименование категории')
+        df_params[['Название колонки с льготой','Наименование категории']] = df_params[['Название колонки с льготой','Наименование категории']].fillna('Не заполнено')
         # Проверяем наличие колонок в датафрейме
         for idx,ben_col in enumerate(df_params['Название колонки с льготой'].tolist(),2):
             if ben_col not in df_cols:
                 temp_error_df = pd.DataFrame(
                     data=[[f'{path_egisso_params}', f'Первый лист по порядку', f'{ben_col}',
-                           f'Колонка с льготой {ben_col} указанная на строке {idx} в файле с параметрами ЕГИССО отсутствует в эталонном файле. Параметры в данной строке не будут обрабатываться']],
+                           f'Колонка {ben_col} на строке {idx} в файле с параметрами ЕГИССО отсутствует в эталонном файле. Параметры в данной строке не будут обрабатываться']],
                     columns=['Название файла', 'Название листа', 'Значение ошибки',
                              'Описание ошибки'])
                 error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
 
         # Добавляем данные в словарь параметров
         for row in df_params.itertuples(index=False):
+
+
             if row[0] in df_cols: # если такая колонка есть в эталоне то добавляем в словарь
-                if row[0] not in dct_params:
-                    dct_params[row[0]] = {row[1]:list(row)}
+                name_ben = row[0].replace('Статус_', '')  # Очищаем от Статус_
+
+                if name_ben not in dct_params:
+                    temp_lst = list(row)
+                    temp_lst[0] = name_ben
+                    dct_params[name_ben] = {row[1]: temp_lst}
                 else:
-                    dct_params[row[0]][row[1]] = list(row)
+                    temp_lst = list(row)
+                    temp_lst[0] = name_ben # очищаем первый элемент
+                    dct_params[name_ben][row[1]] = temp_lst
 
 
         return dct_params,error_df
