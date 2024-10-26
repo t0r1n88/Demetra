@@ -627,10 +627,9 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
 
         # Генерируем файлы егиссо
         # генерируем полный вариант
-        dct_params_egisso,temp_params_egisso_error_df = extract_parameters_egisso(path_egisso_params,list(main_df.columns))
-        print(dct_params_egisso)
-        if len(dct_params_egisso) != 0:
-            create_full_egisso_data(main_df,dct_params_egisso) # создаем полный набор данных
+        df_params_egisso,temp_params_egisso_error_df = extract_parameters_egisso(path_egisso_params,list(main_df.columns))
+        if len(df_params_egisso) != 0:
+            create_full_egisso_data(main_df,df_params_egisso) # создаем полный набор данных
         else:
             # генерируем вариант только с персональными данными
             egisso_clean_wb, egisso_error_wb = create_part_egisso_data(main_df)

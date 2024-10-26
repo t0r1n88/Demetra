@@ -251,7 +251,7 @@ def create_part_egisso_data(df:pd.DataFrame):
     return main_wb,error_wb
 
 
-def create_full_egisso_data(df:pd.DataFrame, params_egisso_dft):
+def create_full_egisso_data(df:pd.DataFrame, params_egisso_df:pd.DataFrame):
     """
     Функция для создания полного файла ЕГИССО
     """
@@ -287,6 +287,18 @@ def create_full_egisso_data(df:pd.DataFrame, params_egisso_dft):
         main_df = pd.concat([main_df,temp_clean_df])
         error_df = pd.concat([error_df,temp_error_df])
 
+
+    # main_df['Соединение_ID'] = main_df['Льгота'] + main_df['Статус льготы']
+    # params_egisso_df['Соединение_ID'] = params_egisso_df['Название колонки с льготой'] + params_egisso_df['Наименование категории']
+    union_df = pd.merge(left=main_df,right=params_egisso_df,how='outer',left_on=['Льгота','Статус льготы'],
+                       right_on=['Название колонки с льготой','Наименование категории'],indicator=True)
+
+    clean_df = union_df[union_df['_merge'] == 'both'] # отбираем те льготы для котороых найдены совпадения.
+    clean_df.drop(columns='_merge',inplace=True)
+    not_find_ben_df = union_df[union_df['_merge'] != 'both']
+    print(not_find_ben_df)
+
+    # Возвращаем льготы и параметры льгот для котороых не нашли совпадения. ну и сам файл с данными.
 
 
 

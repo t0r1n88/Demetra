@@ -653,21 +653,26 @@ def extract_parameters_egisso(path_egisso_params: str, df_cols:list):
                              'Описание ошибки'])
                 error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
 
-        # Добавляем данные в словарь параметров
-        for row in df_params.itertuples(index=False):
+        df_params = df_params[df_params['Название колонки с льготой'].isin(df_cols)]
+        df_params['Название колонки с льготой'] = df_params['Название колонки с льготой'].apply(lambda x:str.replace(x,'Статус_',''))
 
 
-            if row[0] in df_cols: # если такая колонка есть в эталоне то добавляем в словарь
-                name_ben = row[0].replace('Статус_', '')  # Очищаем от Статус_
 
-                if name_ben not in dct_params:
-                    temp_lst = list(row)
-                    temp_lst[0] = name_ben
-                    dct_params[name_ben] = {row[1]: temp_lst}
-                else:
-                    temp_lst = list(row)
-                    temp_lst[0] = name_ben # очищаем первый элемент
-                    dct_params[name_ben][row[1]] = temp_lst
+        # # Добавляем данные в словарь параметров
+        # for row in df_params.itertuples(index=False):
+        #
+        #
+        #     if row[0] in df_cols: # если такая колонка есть в эталоне то добавляем в словарь
+        #         name_ben = row[0].replace('Статус_', '')  # Очищаем от Статус_
+        #
+        #         if name_ben not in dct_params:
+        #             temp_lst = list(row)
+        #             temp_lst[0] = name_ben
+        #             dct_params[name_ben] = {row[1]: temp_lst}
+        #         else:
+        #             temp_lst = list(row)
+        #             temp_lst[0] = name_ben # очищаем первый элемент
+        #             dct_params[name_ben][row[1]] = temp_lst
 
 
-        return dct_params,error_df
+        return df_params,error_df
