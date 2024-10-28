@@ -2,7 +2,8 @@
 Скрипт для создания файла в котором будут содержаться частичные данные для загрузки в егиссо
 Паспортные данные ,снилс фио
 """
-from demetra_support_functions import write_to_excel_pers_egisso,write_to_excel_full_egisso
+from demetra_support_functions import write_to_excel_pers_egisso,write_to_excel_full_egisso,write_to_excel_non_find_ben_egisso
+
 import pandas as pd
 import re
 import warnings
@@ -333,10 +334,10 @@ def create_full_egisso_data(df:pd.DataFrame, params_egisso_df:pd.DataFrame):
     not_find_ben_df = union_df[union_df['_merge'] != 'both']
 
     main_wb = write_to_excel_full_egisso(clean_df, 'Чистый')
-    # not_find_ben_wb = write_to_excel_full_egisso(not_find_ben_df, 'Нет совпадений')
+    not_find_ben_wb = write_to_excel_non_find_ben_egisso(not_find_ben_df) # записываем через отдельную функцию
     error_wb = write_to_excel_full_egisso(error_df, 'Ошибки')
 
-    return main_wb,error_wb
+    return main_wb,not_find_ben_wb,error_wb
 
 
 

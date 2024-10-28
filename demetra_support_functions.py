@@ -642,8 +642,9 @@ def write_to_excel_full_egisso(df:pd.DataFrame, type:str):
             wb[name_base].column_dimensions[column_name].width = adjusted_width
         wb[name_base].column_dimensions['C'].width = 40
     else:
-        wb[name_base].column_dimensions['B'].width = 15
-        wb[name_base].column_dimensions['F'].width = 15
+        wb[name_base].column_dimensions['A'].width = 15
+        wb[name_base].column_dimensions['B'].width = 25
+        wb[name_base].column_dimensions['F'].width = 20
         wb[name_base].column_dimensions['G'].width = 16
         wb[name_base].column_dimensions['H'].width = 16
         wb[name_base].column_dimensions['I'].width = 16
@@ -724,6 +725,45 @@ def write_to_excel_full_egisso(df:pd.DataFrame, type:str):
 
     wb[name_base].title = 'Общий список'
     return wb
+
+
+def write_to_excel_non_find_ben_egisso(df:pd.DataFrame):
+    """
+    Функция для создания файла openpyxl с листами по льготам для которых не найдены совпадения
+    :param df: датафрейм с данными
+    :return: файл openpyxl WOrkbook
+    """
+    wb = openpyxl.Workbook()
+    name_base = wb.sheetnames[0] # Получаем название листа
+    pers_df = df[df['_merge'] =='left_only'] # получаем получателей льгот у которых нет совпадений
+    pers_df.drop(columns=['Название колонки с льготой','Наименование категории','LMSZID','categoryID','ONMSZCode',
+                          'LMSZProviderCode','providerCode','usingSign','criteria','criteriaCode',
+                          'FormCode','amount','measuryCode','monetization','content','comment','equivalentAmount','_merge'],inplace=True)
+
+    # Записываем льготников
+    for row in dataframe_to_rows(pers_df, index=False, header=True):
+        wb[name_base].append(row)
+
+    wb[name_base].column_dimensions['A'].width = 15
+    wb[name_base].column_dimensions['B'].width = 25
+    wb[name_base].column_dimensions['G'].width = 15
+
+    ben_df = df[df['_merge'] == 'right_only']
+    ben_df.drop(columns=['Льгота','Статус льготы','Реквизиты','Дата окончания льготы','Файл',
+                          'СНИЛС','Фамилия','Имя','Отчество','Пол',
+                          'Дата_рождения','Тип документа','Серия_паспорта','Номер_паспорта','Дата_выдачи_паспорта','Кем_выдан','_merge'],inplace=True)
+    wb.create_sheet('Льготы без получателей',index=1)
+    # Записываем льготы для которых не найдены получатели
+    for row in dataframe_to_rows(ben_df, index=False, header=True):
+        wb['Льготы без получателей'].append(row)
+    wb['Льготы без получателей'].column_dimensions['A'].width = 15
+    wb['Льготы без получателей'].column_dimensions['B'].width = 25
+
+    wb[name_base].title = 'Получатели без льгот'
+    return wb
+
+
+
 
 
 
