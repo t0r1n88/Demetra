@@ -2,7 +2,7 @@
 Скрипт для создания файла в котором будут содержаться частичные данные для загрузки в егиссо
 Паспортные данные ,снилс фио
 """
-from demetra_support_functions import write_to_excel_egisso
+from demetra_support_functions import write_to_excel_pers_egisso,write_to_excel_full_egisso
 import pandas as pd
 import re
 import warnings
@@ -245,8 +245,8 @@ def create_part_egisso_data(df:pd.DataFrame):
         error_df = pd.concat([error_df,temp_error_df])
 
 
-    main_wb = write_to_excel_egisso(main_df,'Чистый')
-    error_wb = write_to_excel_egisso(error_df,'Ошибки')
+    main_wb = write_to_excel_pers_egisso(main_df, 'Чистый')
+    error_wb = write_to_excel_pers_egisso(error_df, 'Ошибки')
 
     return main_wb,error_wb
 
@@ -328,14 +328,15 @@ def create_full_egisso_data(df:pd.DataFrame, params_egisso_df:pd.DataFrame):
 
     clean_df = clean_df.reindex(columns=lst_out_order_cols)
     clean_df['doctype_recip'] = '03'
-    clean_df.to_excel('data/fdxz.xlsx',index=False)
 
     # Обрабатываем те строки для которых не найдены совпадения
     not_find_ben_df = union_df[union_df['_merge'] != 'both']
-    print(not_find_ben_df)
 
+    main_wb = write_to_excel_full_egisso(clean_df, 'Чистый')
+    # not_find_ben_wb = write_to_excel_full_egisso(not_find_ben_df, 'Нет совпадений')
+    error_wb = write_to_excel_full_egisso(error_df, 'Ошибки')
 
-    # Возвращаем льготы и параметры льгот для котороых не нашли совпадения. ну и сам файл с данными.
+    return main_wb,error_wb
 
 
 

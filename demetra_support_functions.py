@@ -512,7 +512,7 @@ def write_group_df_to_excel(wb:openpyxl.Workbook,name_sheet:str,df:pd.DataFrame,
     return wb
 
 
-def write_to_excel_egisso(df:pd.DataFrame,type:str):
+def write_to_excel_pers_egisso(df:pd.DataFrame, type:str):
     """
     Функция для создания файла openpyxl  с листами по льготам
     :param df: датафрейм с данными
@@ -614,6 +614,121 @@ def write_to_excel_egisso(df:pd.DataFrame,type:str):
 
     wb[name_base].title = 'Общий список'
     return wb
+
+def write_to_excel_full_egisso(df:pd.DataFrame, type:str):
+    """
+    Функция для создания файла openpyxl с листами по льготам
+    :param df: датафрейм с данными
+    :param type: для выбора параметров автоширины колонок Чистый или Ошибки
+    :return: файл openpyxl WOrkbook
+    """
+    wb = openpyxl.Workbook()
+    name_base = wb.sheetnames[0] # Получаем название листа
+    # Записываем общий список
+    for row in dataframe_to_rows(df, index=False, header=True):
+        wb[name_base].append(row)
+    # Устанавливаем автоширину колонок
+    if type == 'Чистый':
+        for column in wb[name_base].columns:
+            max_length = 0
+            column_name = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            wb[name_base].column_dimensions[column_name].width = adjusted_width
+        wb[name_base].column_dimensions['C'].width = 40
+    else:
+        wb[name_base].column_dimensions['B'].width = 15
+        wb[name_base].column_dimensions['F'].width = 15
+        wb[name_base].column_dimensions['G'].width = 16
+        wb[name_base].column_dimensions['H'].width = 16
+        wb[name_base].column_dimensions['I'].width = 16
+        wb[name_base].column_dimensions['K'].width = 16
+        wb[name_base].column_dimensions['N'].width = 16
+        wb[name_base].column_dimensions['O'].width = 16
+
+    # Создаем лист для дубликатов получателей льгот
+    wb.create_sheet('Несколько льгот',1)
+
+    if type == 'Чистый':
+        dupl_df = df[df['SNILS_recip'].duplicated(keep=False)] # получаем дубликаты по СНИЛС
+        dupl_df['SNILS_recip'] = dupl_df['SNILS_recip'].astype(str)
+        dupl_df.sort_values(by='SNILS_recip',inplace=True)
+        for row in dataframe_to_rows(dupl_df, index=False, header=True):
+            wb['Несколько льгот'].append(row)
+    else:
+        dupl_df = df[df['СНИЛС'].duplicated(keep=False)] # получаем дубликаты по СНИЛС
+        dupl_df['СНИЛС'] = dupl_df['СНИЛС'].astype(str)
+        dupl_df.sort_values(by='СНИЛС',inplace=True)
+        for row in dataframe_to_rows(dupl_df, index=False, header=True):
+            wb['Несколько льгот'].append(row)
+    # Устанавливаем автоширину колонок
+    if type == 'Чистый':
+        for column in wb['Несколько льгот'].columns:
+            max_length = 0
+            column_name = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            wb['Несколько льгот'].column_dimensions[column_name].width = adjusted_width
+        wb['Несколько льгот'].column_dimensions['C'].width = 40
+    else:
+        wb['Несколько льгот'].column_dimensions['B'].width = 15
+        wb['Несколько льгот'].column_dimensions['F'].width = 15
+        wb['Несколько льгот'].column_dimensions['G'].width = 16
+        wb['Несколько льгот'].column_dimensions['H'].width = 16
+        wb['Несколько льгот'].column_dimensions['I'].width = 16
+        wb['Несколько льгот'].column_dimensions['K'].width = 16
+        wb['Несколько льгот'].column_dimensions['N'].width = 16
+        wb['Несколько льгот'].column_dimensions['O'].width = 16
+
+    lst_ben = df['Льгота'].unique() # Список льгот
+    for idx,benefit in enumerate(lst_ben,2):
+        temp_df = df[df['Льгота'] == benefit] # фильтруем датафрейм по названию льготы
+        short_value = benefit[:25]  # получаем обрезанное значение
+        short_value = re.sub(r'[\[\]\'+()<> :"?*|\\/]', '_', short_value)
+        wb.create_sheet(short_value,idx) # создаем лист
+        for row in dataframe_to_rows(temp_df, index=False, header=True):
+            wb[short_value].append(row)
+        # Устанавливаем автоширину колонок
+        if type == 'Чистый':
+            for column in wb[short_value].columns:
+                max_length = 0
+                column_name = get_column_letter(column[0].column)
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(cell.value)
+                    except:
+                        pass
+                adjusted_width = (max_length + 2)
+                wb[short_value].column_dimensions[column_name].width = adjusted_width
+            wb[short_value].column_dimensions['C'].width = 40
+        else:
+            wb[short_value].column_dimensions['B'].width = 15
+            wb[short_value].column_dimensions['F'].width = 15
+            wb[short_value].column_dimensions['G'].width = 16
+            wb[short_value].column_dimensions['H'].width = 16
+            wb[short_value].column_dimensions['I'].width = 16
+            wb[short_value].column_dimensions['K'].width = 16
+            wb[short_value].column_dimensions['N'].width = 16
+            wb[short_value].column_dimensions['O'].width = 16
+
+    wb[name_base].title = 'Общий список'
+    return wb
+
+
+
+
+
 
 
 def extract_parameters_egisso(path_egisso_params: str, df_cols:list):
