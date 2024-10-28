@@ -585,7 +585,7 @@ def open_libraries():
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты  ver 1.5')
+    window.title('Деметра Отчеты  ver 1.6')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')

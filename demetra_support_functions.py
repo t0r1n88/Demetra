@@ -754,7 +754,7 @@ def write_to_excel_non_find_ben_egisso(df:pd.DataFrame):
         wb[name_base].append(row)
 
     wb[name_base].column_dimensions['A'].width = 15
-    wb[name_base].column_dimensions['B'].width = 25
+    wb[name_base].column_dimensions['B'].width = 35
     wb[name_base].column_dimensions['G'].width = 15
 
     ben_df = df[df['_merge'] == 'right_only']
@@ -766,7 +766,8 @@ def write_to_excel_non_find_ben_egisso(df:pd.DataFrame):
     for row in dataframe_to_rows(ben_df, index=False, header=True):
         wb['Льготы без получателей'].append(row)
     wb['Льготы без получателей'].column_dimensions['A'].width = 15
-    wb['Льготы без получателей'].column_dimensions['B'].width = 25
+    wb['Льготы без получателей'].column_dimensions['B'].width = 35
+    wb['Льготы без получателей'].column_dimensions['G'].width = 15
 
     wb[name_base].title = 'Получатели без льгот'
     return wb
@@ -786,8 +787,31 @@ def write_to_excel_print_group_egisso(df:pd.DataFrame,path_end_folder:str):
         raise ExceedingQuantity
 
     wb = openpyxl.Workbook()  # создаем файл
-    for idx, value in enumerate(lst_group):
+    name_base = wb.sheetnames[0] # базовый лист
+    df['№ п/п'] = range(1,len(df)+1)
+    # Записываем общий лист
+    for row in dataframe_to_rows(df, index=False, header=True):
+        wb[name_base].append(row)
+    # Устанавливаем автоширину для каждой колонки
+    for column in wb[name_base].columns:
+        max_length = 0
+        column_name = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        wb[name_base].column_dimensions[column_name].width = adjusted_width
+
+
+
+
+    # Записываем остальные листы
+    for idx, value in enumerate(lst_group,1):
         temp_df = df[df['Группа'] == value]  # отфильтровываем по значению
+        temp_df['№ п/п'] = range(1,len(temp_df)+1)
         short_value = value[:20]  # получаем обрезанное значение
         short_value = re.sub(r'[\[\]\'+()<> :"?*|\\/]', '_', short_value)
 
@@ -810,8 +834,7 @@ def write_to_excel_print_group_egisso(df:pd.DataFrame,path_end_folder:str):
                     pass
             adjusted_width = (max_length + 2)
             wb[short_value].column_dimensions[column_name].width = adjusted_width
-    if 'Sheet' in wb.sheetnames:
-        del wb['Sheet']
+    wb[name_base].title = 'Общий список льготников'
     wb.save(f'{path_end_folder}/Льготники {current_time}.xlsx')
     wb.close()
 
@@ -823,6 +846,7 @@ def write_to_excel_print_group_egisso(df:pd.DataFrame,path_end_folder:str):
     for idx, value in enumerate(lst_group):
         wb = openpyxl.Workbook()  # создаем файл
         temp_df = df[df['Группа'] == value]  # отфильтровываем по значению
+        temp_df['№ п/п'] = range(1, len(temp_df) + 1)
         short_name = value[:40]  # получаем обрезанное значение
         short_name = re.sub(r'[\r\b\n\t\'+()<> :"?*|\\/]', '_', short_name)
         if short_name in used_name_file:

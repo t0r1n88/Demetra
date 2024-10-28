@@ -346,21 +346,12 @@ def create_full_egisso_data(df:pd.DataFrame, params_egisso_df:pd.DataFrame,path_
     main_wb = write_to_excel_full_egisso(clean_df, 'Чистый')
     not_find_ben_wb = write_to_excel_non_find_ben_egisso(not_find_ben_df) # записываем через отдельную функцию
     error_wb = write_to_excel_full_egisso(error_df, 'Ошибки')
-    lists_print_ben = write_to_excel_print_group_egisso(df_print,path_end_folder)
+
+    df_print.sort_values(by='Группа',inplace=True)
+    write_to_excel_print_group_egisso(df_print,path_end_folder) # сохраняем списки льготников
 
 
     return main_wb,not_find_ben_wb,error_wb
-
-
-
-
-
-
-
-
-
-
-
 
 if __name__ == '__main__':
     main_df = pd.read_excel('data/Свод.xlsx')
