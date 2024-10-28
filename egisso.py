@@ -287,16 +287,53 @@ def create_full_egisso_data(df:pd.DataFrame, params_egisso_df:pd.DataFrame):
         main_df = pd.concat([main_df,temp_clean_df])
         error_df = pd.concat([error_df,temp_error_df])
 
-
-    # main_df['Соединение_ID'] = main_df['Льгота'] + main_df['Статус льготы']
-    # params_egisso_df['Соединение_ID'] = params_egisso_df['Название колонки с льготой'] + params_egisso_df['Наименование категории']
     union_df = pd.merge(left=main_df,right=params_egisso_df,how='outer',left_on=['Льгота','Статус льготы'],
                        right_on=['Название колонки с льготой','Наименование категории'],indicator=True)
 
     clean_df = union_df[union_df['_merge'] == 'both'] # отбираем те льготы для котороых найдены совпадения.
-    clean_df.drop(columns='_merge',inplace=True)
+    # удаляем лишние колонки
+    clean_df.drop(columns=['_merge','Название колонки с льготой','Наименование категории'],inplace=True)
+    clean_df.rename(columns={'СНИЛС':'SNILS_recip','Фамилия':'FamilyName_recip','Имя':'Name_recip','Отчество':'Patronymic_recip',
+                             'Пол':'Gender_recip','Дата_рождения':'BirthDate_recip',
+                             'Тип документа':'doctype_recip','Серия_паспорта':'doc_Series_recip','Номер_паспорта':'doc_Number_recip',
+                             'Дата_выдачи_паспорта':'doc_IssueDate_recip',
+                             'Кем_выдан':'doc_Issuer_recip'},inplace=True)
+    clean_df['RecType'] = 'Fact'
+    clean_df['assignmentFactUuid'] = None
+    clean_df['SNILS_reason'] = None
+    clean_df['FamilyName_reason'] = None
+    clean_df['Name_reason'] = None
+    clean_df['Patronymic_reason'] = None
+    clean_df['Gender_reason'] = None
+    clean_df['BirthDate_reason'] = None
+    clean_df['kinshipTypeCode'] = None
+    clean_df['doctype_reason'] = None
+    clean_df['doc_Series_reason'] = None
+    clean_df['doc_Number_reason'] = None
+    clean_df['doc_IssueDate_reason'] = None
+    clean_df['doc_Issuer_reason'] = None
+    clean_df['decision_date'] = None
+    clean_df['dateStart'] = None
+    clean_df['dateFinish'] = None
+
+    # новый порядок
+    lst_out_order_cols = ['Льгота','Статус льготы','Реквизиты','Дата окончания льготы','Файл',
+                          'RecType','assignmentFactUuid','LMSZID','categoryID','ONMSZCode','LMSZProviderCode','providerCode',
+                          'SNILS_recip','FamilyName_recip','Name_recip','Patronymic_recip','Gender_recip','BirthDate_recip',
+                          'doctype_recip','doc_Series_recip','doc_Number_recip','doc_IssueDate_recip','doc_Issuer_recip',
+                          'SNILS_reason','FamilyName_reason','Name_reason','Patronymic_reason','Gender_reason','BirthDate_reason',
+                          'kinshipTypeCode','doctype_reason','doc_Series_reason','doc_Number_reason','doc_IssueDate_reason',
+                          'doc_Issuer_reason','decision_date','dateStart','dateFinish','usingSign','criteria','criteriaCode',
+                          'FormCode','amount','measuryCode','monetization','content','comment','equivalentAmount']
+
+    clean_df = clean_df.reindex(columns=lst_out_order_cols)
+    clean_df['doctype_recip'] = '03'
+    clean_df.to_excel('data/fdxz.xlsx',index=False)
+
+    # Обрабатываем те строки для которых не найдены совпадения
     not_find_ben_df = union_df[union_df['_merge'] != 'both']
     print(not_find_ben_df)
+
 
     # Возвращаем льготы и параметры льгот для котороых не нашли совпадения. ну и сам файл с данными.
 
