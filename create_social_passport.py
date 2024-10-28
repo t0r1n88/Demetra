@@ -585,13 +585,6 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                         main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True) # добавляем в общий файл
                         quantity_sheets +=1
 
-        # получаем текущее время
-        t = time.localtime()
-        current_time = time.strftime('%H_%M_%S', t)
-
-
-
-
         main_df.rename(columns={'Группа':'Для переноса','Файл':'файл для переноса'},inplace=True) # переименовываем группу чтобы перенести ее в начало таблицы
         main_df.insert(0,'Файл',main_df['файл для переноса'])
         main_df.insert(1,'Группа',main_df['Для переноса'])
