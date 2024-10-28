@@ -845,6 +845,7 @@ def write_to_excel_print_group_egisso(df:pd.DataFrame,path_end_folder:str):
     used_name_file = set()  # множество для уже использованных имен файлов
     for idx, value in enumerate(lst_group):
         wb = openpyxl.Workbook()  # создаем файл
+        name_base = wb.sheetnames[0]
         temp_df = df[df['Группа'] == value]  # отфильтровываем по значению
         temp_df['№ п/п'] = range(1, len(temp_df) + 1)
         short_name = value[:40]  # получаем обрезанное значение
@@ -852,10 +853,10 @@ def write_to_excel_print_group_egisso(df:pd.DataFrame,path_end_folder:str):
         if short_name in used_name_file:
             short_name = f'{short_name}_{idx}'  # добавляем окончание
         for row in dataframe_to_rows(temp_df, index=False, header=True):
-            wb['Sheet'].append(row)
+            wb[name_base].append(row)
 
         # Устанавливаем автоширину для каждой колонки
-        for column in wb['Sheet'].columns:
+        for column in wb[name_base].columns:
             max_length = 0
             column_name = get_column_letter(column[0].column)
             for cell in column:
@@ -865,8 +866,35 @@ def write_to_excel_print_group_egisso(df:pd.DataFrame,path_end_folder:str):
                 except:
                     pass
             adjusted_width = (max_length + 2)
-            wb['Sheet'].column_dimensions[column_name].width = adjusted_width
+            wb[name_base].column_dimensions[column_name].width = adjusted_width
 
+        # Создаем листы по льготам
+        lst_ben = temp_df['Льгота'].unique() # список имеющихся льгот
+        for idx, value in enumerate(lst_ben, 1):
+            ben_df = temp_df[temp_df['Льгота'] == value]  # отфильтровываем по значению
+            ben_df['№ п/п'] = range(1, len(ben_df) + 1)
+            short_value = value[:20]  # получаем обрезанное значение
+            short_value = re.sub(r'[\[\]\'+()<> :"?*|\\/]', '_', short_value)
+
+            wb.create_sheet(short_value, index=idx)  # создаем лист
+            used_name_sheet.add(short_value)
+            for row in dataframe_to_rows(ben_df, index=False, header=True):
+                wb[short_value].append(row)
+
+            # Устанавливаем автоширину для каждой колонки
+            for column in wb[short_value].columns:
+                max_length = 0
+                column_name = get_column_letter(column[0].column)
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(cell.value)
+                    except:
+                        pass
+                adjusted_width = (max_length + 2)
+                wb[short_value].column_dimensions[column_name].width = adjusted_width
+
+        wb[name_base].title = 'Общий список'
         wb.save(f'{path_group_file}/{short_name}.xlsx')
         used_name_file.add(short_name)
         wb.close()
