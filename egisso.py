@@ -2,7 +2,8 @@
 Скрипт для создания файла в котором будут содержаться частичные данные для загрузки в егиссо
 Паспортные данные ,снилс фио
 """
-from demetra_support_functions import write_to_excel_pers_egisso,write_to_excel_full_egisso,write_to_excel_non_find_ben_egisso
+from demetra_support_functions import (write_to_excel_pers_egisso,write_to_excel_full_egisso,
+                                       write_to_excel_non_find_ben_egisso,write_to_excel_print_group_egisso)
 
 import pandas as pd
 import re
@@ -252,7 +253,7 @@ def create_part_egisso_data(df:pd.DataFrame):
     return main_wb,error_wb
 
 
-def create_full_egisso_data(df:pd.DataFrame, params_egisso_df:pd.DataFrame):
+def create_full_egisso_data(df:pd.DataFrame, params_egisso_df:pd.DataFrame,path_end_folder:str):
     """
     Функция для создания полного файла ЕГИССО
     """
@@ -292,6 +293,15 @@ def create_full_egisso_data(df:pd.DataFrame, params_egisso_df:pd.DataFrame):
                        right_on=['Название колонки с льготой','Наименование категории'],indicator=True)
 
     clean_df = union_df[union_df['_merge'] == 'both'] # отбираем те льготы для котороых найдены совпадения.
+
+    # Делаем копию для создания списков по льготам
+    df_print = clean_df.copy()
+    df_print['ФИО'] = df_print['Фамилия'] + ' ' + df_print['Имя'] + ' '+ df_print['Отчество']
+    df_print = df_print[['Льгота','Статус льготы','Файл','ФИО','Реквизиты','Дата окончания льготы']]
+    df_print.insert(0,'№ п/п',range(1,len(df_print)+1))
+    df_print.columns = ['№ п/п','Льгота','Статус_льготы','Группа','ФИО','Справка','Дата_окончания_справки']
+    df_print.fillna('',inplace=True)
+
     # удаляем лишние колонки
     clean_df.drop(columns=['_merge','Название колонки с льготой','Наименование категории'],inplace=True)
     clean_df.rename(columns={'СНИЛС':'SNILS_recip','Фамилия':'FamilyName_recip','Имя':'Name_recip','Отчество':'Patronymic_recip',
@@ -336,6 +346,8 @@ def create_full_egisso_data(df:pd.DataFrame, params_egisso_df:pd.DataFrame):
     main_wb = write_to_excel_full_egisso(clean_df, 'Чистый')
     not_find_ben_wb = write_to_excel_non_find_ben_egisso(not_find_ben_df) # записываем через отдельную функцию
     error_wb = write_to_excel_full_egisso(error_df, 'Ошибки')
+    lists_print_ben = write_to_excel_print_group_egisso(df_print,path_end_folder)
+
 
     return main_wb,not_find_ben_wb,error_wb
 

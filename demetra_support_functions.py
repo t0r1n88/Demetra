@@ -5,6 +5,7 @@ import pandas as pd
 from tkinter import filedialog
 from tkinter import messagebox
 import re
+import os
 import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Alignment
@@ -14,6 +15,14 @@ from openpyxl.styles import Font, PatternFill
 from pytrovich.detector import PetrovichGenderDetector
 from pytrovich.enums import NamePart, Gender, Case
 from pytrovich.maker import PetrovichDeclinationMaker
+
+import time
+
+class ExceedingQuantity(Exception):
+    """
+    Исключение для случаев когда числа уникальных значений больше 255
+    """
+    pass
 
 def capitalize_double_name(word):
     """
@@ -763,6 +772,89 @@ def write_to_excel_non_find_ben_egisso(df:pd.DataFrame):
     return wb
 
 
+def write_to_excel_print_group_egisso(df:pd.DataFrame,path_end_folder:str):
+    """
+    Функция для создания файла openpyxl с листами по льготам для которых не найдены совпадения
+    :param df: датафрейм с данными
+    :return: файл openpyxl WOrkbook
+    """
+    lst_group = df['Группа'].unique() # список групп
+    used_name_sheet = set()  # множество для хранения значений которые уже были использованы
+    t = time.localtime()
+    current_time = time.strftime('%H_%M_%S', t)
+    if len(lst_group) >= 253:
+        raise ExceedingQuantity
+
+    wb = openpyxl.Workbook()  # создаем файл
+    for idx, value in enumerate(lst_group):
+        temp_df = df[df['Группа'] == value]  # отфильтровываем по значению
+        short_value = value[:20]  # получаем обрезанное значение
+        short_value = re.sub(r'[\[\]\'+()<> :"?*|\\/]', '_', short_value)
+
+        if short_value in used_name_sheet:
+            short_value = f'{short_value}_{idx}'  # добавляем окончание
+        wb.create_sheet(short_value, index=idx)  # создаем лист
+        used_name_sheet.add(short_value)
+        for row in dataframe_to_rows(temp_df, index=False, header=True):
+            wb[short_value].append(row)
+
+        # Устанавливаем автоширину для каждой колонки
+        for column in wb[short_value].columns:
+            max_length = 0
+            column_name = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            wb[short_value].column_dimensions[column_name].width = adjusted_width
+    if 'Sheet' in wb.sheetnames:
+        del wb['Sheet']
+    wb.save(f'{path_end_folder}/Льготники {current_time}.xlsx')
+    wb.close()
+
+    # Сохраняем по отдельным файлам в папку
+    path_group_file =f'{path_end_folder}/Льготники по группам'
+    if not os.path.exists(path_group_file):
+        os.makedirs(path_group_file)
+    used_name_file = set()  # множество для уже использованных имен файлов
+    for idx, value in enumerate(lst_group):
+        wb = openpyxl.Workbook()  # создаем файл
+        temp_df = df[df['Группа'] == value]  # отфильтровываем по значению
+        short_name = value[:40]  # получаем обрезанное значение
+        short_name = re.sub(r'[\r\b\n\t\'+()<> :"?*|\\/]', '_', short_name)
+        if short_name in used_name_file:
+            short_name = f'{short_name}_{idx}'  # добавляем окончание
+        for row in dataframe_to_rows(temp_df, index=False, header=True):
+            wb['Sheet'].append(row)
+
+        # Устанавливаем автоширину для каждой колонки
+        for column in wb['Sheet'].columns:
+            max_length = 0
+            column_name = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            wb['Sheet'].column_dimensions[column_name].width = adjusted_width
+
+        wb.save(f'{path_group_file}/{short_name}.xlsx')
+        used_name_file.add(short_name)
+        wb.close()
+
+
+
+
+
+
+
+
+
 
 
 
@@ -810,24 +902,6 @@ def extract_parameters_egisso(path_egisso_params: str, df_cols:list):
 
         df_params = df_params[df_params['Название колонки с льготой'].isin(df_cols)]
         df_params['Название колонки с льготой'] = df_params['Название колонки с льготой'].apply(lambda x:str.replace(x,'Статус_',''))
-
-
-
-        # # Добавляем данные в словарь параметров
-        # for row in df_params.itertuples(index=False):
-        #
-        #
-        #     if row[0] in df_cols: # если такая колонка есть в эталоне то добавляем в словарь
-        #         name_ben = row[0].replace('Статус_', '')  # Очищаем от Статус_
-        #
-        #         if name_ben not in dct_params:
-        #             temp_lst = list(row)
-        #             temp_lst[0] = name_ben
-        #             dct_params[name_ben] = {row[1]: temp_lst}
-        #         else:
-        #             temp_lst = list(row)
-        #             temp_lst[0] = name_ben # очищаем первый элемент
-        #             dct_params[name_ben][row[1]] = temp_lst
 
 
         return df_params,error_df

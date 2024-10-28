@@ -38,6 +38,12 @@ class NotGoodSheet(Exception):
     """
     pass
 
+class ExceedingQuantity(Exception):
+    """
+    Исключение для случаев когда числа уникальных значений больше 255
+    """
+    pass
+
 def set_rus_locale():
     """
     Функция чтобы можно было извлечь русские названия месяцев
@@ -629,7 +635,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # генерируем полный вариант
         df_params_egisso,temp_params_egisso_error_df = extract_parameters_egisso(path_egisso_params,list(main_df.columns))
         if len(df_params_egisso) != 0:
-            egisso_full_wb,egisso_not_find_wb, egisso_error_wb =create_full_egisso_data(main_df,df_params_egisso) # создаем полный набор данных
+            egisso_full_wb,egisso_not_find_wb, egisso_error_wb =create_full_egisso_data(main_df,df_params_egisso,path_end_folder) # создаем полный набор данных
             egisso_full_wb.save(f'{path_end_folder}/ЕГИССО полные данные от {current_time}.xlsx')
             egisso_not_find_wb.save(f'{path_end_folder}/ЕГИССО Не найденные льготы {current_time}.xlsx')
             egisso_error_wb.save(f'{path_end_folder}/ЕГИССО перс данные ОШИБКИ от {current_time}.xlsx')
@@ -817,6 +823,10 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                              f'Заголовки ни одного листа не соответствуют эталонному файлу,\n'
                              f'Откройте файл с ошибками и устраните проблему'
                              )
+    except ExceedingQuantity:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Количество групп превышает 253 !\n'
+                             f'Сократите количество обрабатываемых файлов')
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
 
