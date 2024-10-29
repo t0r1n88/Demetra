@@ -937,6 +937,13 @@ def write_to_excel_print_group_egisso(df:pd.DataFrame,path_end_folder:str):
 
 
 
+def replace_point(value):
+    if value is np.nan:
+        return None
+    try:
+        return float(value)
+    except:
+        return None
 
 
 
@@ -981,6 +988,7 @@ def extract_parameters_egisso(path_egisso_params: str, df_cols:list):
         df_params[['decision_date','dateStart','dateFinish']] = df_params[['decision_date','dateStart','dateFinish']].applymap(convert_to_date)
         df_params[['decision_date', 'dateStart', 'dateFinish']] = df_params[
             ['decision_date', 'dateStart', 'dateFinish']].applymap(create_doc_convert_date)
+        df_params[['amount', 'equivalentAmount']] = df_params[['amount','equivalentAmount']].applymap(replace_point)
         # Проверяем наличие колонок в датафрейме
         for idx,ben_col in enumerate(df_params['Название колонки с льготой'].tolist(),2):
             if ben_col not in df_cols:
