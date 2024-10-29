@@ -2,6 +2,7 @@
 Скрипт для проверки истекающих лицензий
 """
 from demetra_support_functions import *
+from tkinter import messagebox
 import pandas as pd
 import time
 import re
