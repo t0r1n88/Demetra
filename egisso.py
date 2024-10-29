@@ -323,9 +323,6 @@ def create_full_egisso_data(df:pd.DataFrame, params_egisso_df:pd.DataFrame,path_
     clean_df['doc_Number_reason'] = None
     clean_df['doc_IssueDate_reason'] = None
     clean_df['doc_Issuer_reason'] = None
-    clean_df['decision_date'] = None
-    clean_df['dateStart'] = None
-    clean_df['dateFinish'] = None
 
     # новый порядок
     lst_out_order_cols = ['Льгота','Статус льготы','Реквизиты','Дата окончания льготы','Файл',

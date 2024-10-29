@@ -2,8 +2,8 @@
 Вспомогательные функции
 """
 import pandas as pd
-from tkinter import filedialog
-from tkinter import messagebox
+import numpy as np
+import datetime
 import re
 import os
 import openpyxl
@@ -23,6 +23,42 @@ class ExceedingQuantity(Exception):
     Исключение для случаев когда числа уникальных значений больше 255
     """
     pass
+
+def convert_to_date(value):
+    """
+    Функция для конвертации строки в текст
+    :param value: значение для конвертации
+    :return:
+    """
+    try:
+        if value == 'Нет статуса':
+            return None
+        else:
+            date_value  = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            return date_value
+    except ValueError:
+        result = re.search(r'^\d{2}\.\d{2}\.\d{4}$',value)
+        if result:
+            return datetime.datetime.strptime(result.group(0), '%d.%m.%Y')
+        else:
+            return f'Некорректный формат даты - {value}'
+    except:
+        return None
+
+def create_doc_convert_date(cell):
+    """
+    Функция для конвертации даты при создании документов
+    :param cell:
+    :return:
+    """
+    try:
+        if cell is np.nan:
+            return 'Не заполнено'
+        string_date = datetime.datetime.strftime(cell, '%d.%m.%Y')
+        return string_date
+    except:
+        return None
+
 
 def capitalize_double_name(word):
     """
@@ -925,7 +961,7 @@ def extract_parameters_egisso(path_egisso_params: str, df_cols:list):
         columns=['Название файла', 'Название листа', 'Значение ошибки', 'Описание ошибки'])  # датафрейм для ошибок
     df_params = pd.read_excel(path_egisso_params, dtype=str)
     required_cols_set = {'Название колонки с льготой','Наименование категории','LMSZID','categoryID','ONMSZCode',
-                         'LMSZProviderCode','providerCode','usingSign','criteria','criteriaCode','FormCode','amount',
+                         'LMSZProviderCode','providerCode','decision_date','dateStart','dateFinish','usingSign','criteria','criteriaCode','FormCode','amount',
                          'measuryCode','monetization','content','comment','equivalentAmount'}
 
     diff_cols = required_cols_set.difference(set(df_params.columns))
@@ -942,6 +978,9 @@ def extract_parameters_egisso(path_egisso_params: str, df_cols:list):
         df_params.dropna(thresh=3,inplace=True) # очищаем от пустых строк где менее 3 заполненных колонок
         # Обрабатываем незаполненные значения в главных колонках
         df_params[['Название колонки с льготой','Наименование категории']] = df_params[['Название колонки с льготой','Наименование категории']].fillna('Не заполнено')
+        df_params[['decision_date','dateStart','dateFinish']] = df_params[['decision_date','dateStart','dateFinish']].applymap(convert_to_date)
+        df_params[['decision_date', 'dateStart', 'dateFinish']] = df_params[
+            ['decision_date', 'dateStart', 'dateFinish']].applymap(create_doc_convert_date)
         # Проверяем наличие колонок в датафрейме
         for idx,ben_col in enumerate(df_params['Название колонки с льготой'].tolist(),2):
             if ben_col not in df_cols:
