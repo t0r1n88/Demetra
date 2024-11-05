@@ -584,7 +584,13 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
 
                         main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True) # добавляем в общий файл
                         quantity_sheets +=1
-
+        # генерируем текущее время
+        t = time.localtime()
+        current_time = time.strftime('%H_%M_%S', t)
+        # Проверяем есть ли данные в общем файле, если нет то вызываем исключение
+        if len(main_df) == 0:
+            error_df.to_excel(f'{path_end_folder}/Ошибки от {current_time}.xlsx',index=False)
+            raise NotGoodSheet
         main_df.rename(columns={'Группа':'Для переноса','Файл':'файл для переноса'},inplace=True) # переименовываем группу чтобы перенести ее в начало таблицы
         main_df.insert(0,'Файл',main_df['файл для переноса'])
         main_df.insert(1,'Группа',main_df['Для переноса'])
@@ -592,9 +598,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
 
         main_df.fillna('Нет статуса', inplace=True) # заполняем пустые ячейки
 
-        # генерируем текущее время
-        t = time.localtime()
-        current_time = time.strftime('%H_%M_%S', t)
+
 
         # Сохраняем лист со всеми данными
         lst_date_columns = []  # список для колонок с датами
@@ -645,8 +649,6 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         error_df = pd.concat([error_df, temp_params_egisso_error_df], axis=0, ignore_index=True)
         error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
         error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
-        if len(main_df) == 0:
-            raise NotGoodSheet
 
         # Создаем файл в котором будут сводные данные по колонкам с Подсчетом
         dct_counting_df = dict() # словарь в котором будут храниться датафреймы созданные для каждой колонки
