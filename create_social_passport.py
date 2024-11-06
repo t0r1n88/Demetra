@@ -677,21 +677,21 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 temp_col_value_lst = main_df[name_lst_column].tolist() # создаем список
                 temp_col_value_lst = [value for value in temp_col_value_lst if value] # отбрасываем пустые значения
                 unwrap_lst = []
+                temp_col_value_lst = list(map(str,temp_col_value_lst)) # делаем строковым каждый элемент
                 for value in temp_col_value_lst:
                     unwrap_lst.extend(value.split(','))
                 unwrap_lst = list(map(str.strip,unwrap_lst)) # получаем список
                 dct_value_list = dict(Counter(unwrap_lst)) # Превращаем в словарь
                 sorted_dct_value_lst = dict(sorted(dct_value_list.items())) # сортируем словарь
-
-
-
-
+                # создаем датафрейм
+                temp_df =  pd.DataFrame(list(sorted_dct_value_lst.items()), columns=['Показатель', 'Значение'])
+                dct_list_columns[name_lst_column] = temp_df
 
 
         # Создаем Свод по статусам
         main_df.replace('','Нет статуса',inplace=True)
         # Собираем колонки содержащие слово Статус_ и Подсчет_
-        lst_status = [name_column for name_column in main_df.columns if 'Статус_' in name_column or 'Подсчет_' in name_column]
+        lst_status = [name_column for name_column in main_df.columns if 'Статус_' in name_column or 'Подсчет_' in name_column or 'Список_' in name_column]
         # Создаем датафрейм с данными по статусам
         soc_df = pd.DataFrame(columns=['Показатель','Значение']) # датафрейм для сбора данных отчета
         soc_df.loc[len(soc_df)] = ['Количество учебных групп',quantity_sheets] # добавляем количество учебных групп
@@ -737,7 +737,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
                 new_value_df['Показатель'] = new_value_df['Показатель'].astype(str)
                 new_value_df.sort_values(by='Показатель',inplace=True)
-            elif 'Подсчет' in name_column:
+            elif 'Подсчет_' in name_column:
                 new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
                                            data=[[name_column, None]])  # создаем строку с заголовком
                 main_df[name_column] = main_df[name_column].apply(convert_number)
@@ -747,6 +747,11 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 dct_describe = {'Среднее':round(_dct_describe['mean'],2),'Сумма': round(sum_column,2),'Медиана':_dct_describe['50%'],
                                 'Минимум':_dct_describe['min'],'Максимум':_dct_describe['max'],'Количество':_dct_describe['count'],}
                 new_value_df = pd.DataFrame(list(dct_describe.items()),columns=['Показатель', 'Значение'])
+            elif 'Список_' in name_column:
+                new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
+                                           data=[[name_column, None]])  # создаем строку с заголовком
+                new_value_df = dct_list_columns[name_column]
+
 
             new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
             soc_df = pd.concat([soc_df, new_part_df], axis=0)
@@ -769,7 +774,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         fill = PatternFill(fill_type='solid', fgColor='ffa500')  # Оранжевый цвет
         for row in soc_wb['Свод по статусам'].iter_rows(min_row=1, max_row=soc_wb['Свод по статусам'].max_row,
                                                         min_col=column_number, max_col=column_number):  # Перебираем строки
-            if 'Статус_' in str(row[column_number].value) or 'Подсчет_' in str(row[column_number].value): # делаем ячейку строковой и проверяем наличие слова Статус_
+            if 'Статус_' in str(row[column_number].value) or 'Подсчет_' in str(row[column_number].value) or 'Список_' in str(row[column_number].value): # делаем ячейку строковой и проверяем наличие слова Статус_
                 for cell in row: # применяем стиль если условие сработало
                     cell.font = font
                     cell.fill = fill
