@@ -687,6 +687,9 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 temp_df =  pd.DataFrame(list(sorted_dct_value_lst.items()), columns=['Показатель', 'Значение'])
                 dct_list_columns[name_lst_column] = temp_df
 
+            # Создаем датафреймы для подтверждения цифр
+
+
 
         # Создаем Свод по статусам
         main_df.replace('','Нет статуса',inplace=True)
