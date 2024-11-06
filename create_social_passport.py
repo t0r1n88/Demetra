@@ -671,8 +671,12 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
 
         # Создаем файл в котором будут данные по колонкам Список_
         dct_list_columns= {} # словарь в котором будут храниться датафреймы созданные для каждой колонки со списокм
+        dct_values_in_list_columns = {} # словарь в котором будут храниться названия колонок и все значения которые там встречались
+        dct_df_list_in_columns = {} # словарь где будут храниться значения в колонках и датафреймы где в указанных колонках есть соответствующее значение
+
         lst_list_name_columns = [name_column for name_column in main_df.columns if 'Список_' in name_column]
         if len(lst_list_name_columns) != 0:
+            main_df[lst_list_name_columns] = main_df[lst_list_name_columns].astype(str)
             for name_lst_column in lst_list_name_columns:
                 temp_col_value_lst = main_df[name_lst_column].tolist() # создаем список
                 temp_col_value_lst = [value for value in temp_col_value_lst if value] # отбрасываем пустые значения
@@ -681,6 +685,9 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 for value in temp_col_value_lst:
                     unwrap_lst.extend(value.split(','))
                 unwrap_lst = list(map(str.strip,unwrap_lst)) # получаем список
+                # убираем повторения и сортируем
+                dct_values_in_list_columns[name_lst_column] = sorted(list(set(unwrap_lst)))
+
                 dct_value_list = dict(Counter(unwrap_lst)) # Превращаем в словарь
                 sorted_dct_value_lst = dict(sorted(dct_value_list.items())) # сортируем словарь
                 # создаем датафрейм
@@ -688,7 +695,18 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 dct_list_columns[name_lst_column] = temp_df
 
             # Создаем датафреймы для подтверждения цифр
+            for key,lst in dct_values_in_list_columns.items():
+                for value in lst:
+                    temp_list_df = main_df[main_df[key].str.contains(value)]
+                    name_sheet = key.replace('Список_','')
 
+                    dct_df_list_in_columns[f'{name_sheet}_{value}'] = temp_list_df
+
+                # Сохраняем
+            dct_df_list_in_columns['Занятость_Асториум'].to_excel('data/fdd.xlsx')
+            # list_columns_report_wb = write_df_to_excel(dct_df_list_in_columns, write_index=False)
+            # list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+            # list_columns_report_wb.save(f'{path_end_folder}/Свод по колонкам Списков {current_time}.xlsx')
 
 
         # Создаем Свод по статусам
