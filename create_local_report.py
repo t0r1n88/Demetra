@@ -2,7 +2,7 @@
 Скрипт для обработки списка студентов на отделении и создания отчетности по нему
 """
 from demetra_support_functions import write_df_to_excel, del_sheet, \
-    declension_fio_by_case,extract_parameters_egisso
+    declension_fio_by_case,extract_parameters_egisso,write_df_big_dct_to_excel
 from demetra_processing_date import proccessing_date
 from egisso import create_part_egisso_data, create_full_egisso_data
 from tkinter import messagebox
@@ -354,10 +354,50 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
             counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
             counting_report_wb.save(f'{path_end_folder}/Свод по колонкам Подсчета от {current_time}.xlsx')
 
+        # Создаем файл в котором будут данные по колонкам Список_
+        dct_list_columns= {} # словарь в котором будут храниться датафреймы созданные для каждой колонки со списокм
+        dct_values_in_list_columns = {} # словарь в котором будут храниться названия колонок и все значения которые там встречались
+        dct_df_list_in_columns = {} # словарь где будут храниться значения в колонках и датафреймы где в указанных колонках есть соответствующее значение
+
+        lst_list_name_columns = [name_column for name_column in main_df.columns if 'Список_' in name_column]
+        if len(lst_list_name_columns) != 0:
+            main_df[lst_list_name_columns] = main_df[lst_list_name_columns].astype(str)
+            for name_lst_column in lst_list_name_columns:
+                temp_col_value_lst = main_df[name_lst_column].tolist() # создаем список
+                temp_col_value_lst = [value for value in temp_col_value_lst if value] # отбрасываем пустые значения
+                unwrap_lst = []
+                temp_col_value_lst = list(map(str,temp_col_value_lst)) # делаем строковым каждый элемент
+                for value in temp_col_value_lst:
+                    unwrap_lst.extend(value.split(','))
+                unwrap_lst = list(map(str.strip,unwrap_lst)) # получаем список
+                # убираем повторения и сортируем
+                dct_values_in_list_columns[name_lst_column] = sorted(list(set(unwrap_lst)))
+
+                dct_value_list = dict(Counter(unwrap_lst)) # Превращаем в словарь
+                sorted_dct_value_lst = dict(sorted(dct_value_list.items())) # сортируем словарь
+                # создаем датафрейм
+                temp_df =  pd.DataFrame(list(sorted_dct_value_lst.items()), columns=['Показатель', 'Значение'])
+                dct_list_columns[name_lst_column] = temp_df
+
+            # Создаем датафреймы для подтверждения цифр
+            for key,lst in dct_values_in_list_columns.items():
+                for value in lst:
+                    temp_list_df = main_df[main_df[key].str.contains(value)]
+                    name_sheet = key.replace('Список_','')
+
+                    dct_df_list_in_columns[f'{name_sheet}_{value}'] = temp_list_df
+
+                # Сохраняем
+            list_columns_report_wb = write_df_big_dct_to_excel(dct_df_list_in_columns, write_index=False)
+            list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+            list_columns_report_wb.save(f'{path_end_folder}/Данные по своду Списков {current_time}.xlsx')
+
+
+
         # Создаем Свод по статусам
-        # Собираем колонки содержащие слово Статус_ и Подсчет_
+        # Собираем колонки содержащие слово Статус_ и Подсчет_ и Список
         lst_status = [name_column for name_column in main_df.columns if
-                      'Статус_' in name_column or 'Подсчет_' in name_column]
+                      'Статус_' in name_column or 'Подсчет_' in name_column or 'Список_' in name_column]
 
         # Создаем датафрейм с данными по статусам
         soc_df = pd.DataFrame(columns=['Показатель', 'Значение'])  # датафрейм для сбора данных отчета
@@ -416,6 +456,10 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                                 'Минимум': _dct_describe['min'], 'Максимум': _dct_describe['max'],
                                 'Количество': _dct_describe['count'], }
                 new_value_df = pd.DataFrame(list(dct_describe.items()), columns=['Показатель', 'Значение'])
+            elif 'Список_' in name_column:
+                new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
+                                           data=[[name_column, None]])  # создаем строку с заголовком
+                new_value_df = dct_list_columns[name_column]
             new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
             soc_df = pd.concat([soc_df, new_part_df], axis=0)
         # Создаем раскладку по группам
@@ -439,6 +483,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                                                         min_col=column_number,
                                                         max_col=column_number):  # Перебираем строки
             if 'Статус_' in str(row[column_number].value) or 'Подсчет_' in str(
+                    row[column_number].value) or 'Список_' in str(
                     row[column_number].value):  # делаем ячейку строковой и проверяем наличие слова Статус_
                 for cell in row:  # применяем стиль если условие сработало
                     cell.font = font
