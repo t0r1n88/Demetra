@@ -707,6 +707,44 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
             list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
             list_columns_report_wb.save(f'{path_end_folder}/Данные по своду Списков {current_time}.xlsx')
 
+            # Создаем свод по каждой группе
+            dct_svod_list_df = {} # словарь в котором будут храниться датафреймы по названию колонок
+            for name_lst_column in lst_list_name_columns:
+                file_cols = dct_values_in_list_columns[name_lst_column]
+                file_cols.insert(0,'Файл')
+                dct_svod_list_df[name_lst_column] = pd.DataFrame(columns=file_cols)
+
+
+            lst_file = main_df['Файл'].unique() # список файлов
+            for name in lst_file:
+                temp_df = main_df[main_df['Файл'] == name]
+                for name_lst_column in lst_list_name_columns:
+
+                    temp_col_value_lst = temp_df[name_lst_column].tolist()  # создаем список
+                    temp_col_value_lst = [value for value in temp_col_value_lst if value]  # отбрасываем пустые значения
+                    temp_unwrap_lst = []
+                    temp_col_value_lst = list(map(str, temp_col_value_lst))  # делаем строковым каждый элемент
+                    for value in temp_col_value_lst:
+                        temp_unwrap_lst.extend(value.split(','))
+                    temp_unwrap_lst = list(map(str.strip, temp_unwrap_lst))  # получаем список
+                    # убираем повторения и сортируем
+                    dct_values_in_list_columns[name_lst_column] = sorted(list(set(temp_unwrap_lst)))
+
+                    dct_value_list = dict(Counter(temp_unwrap_lst))  # Превращаем в словарь
+                    sorted_dct_value_lst = dict(sorted(dct_value_list.items()))  # сортируем словарь
+                    # создаем датафрейм
+                    temp_svod_df = pd.DataFrame(list(sorted_dct_value_lst.items()), columns=['Показатель', 'Значение']).transpose()
+                    new_temp_cols = temp_svod_df.iloc[0] # получаем первую строку для названий
+                    temp_svod_df = temp_svod_df[1:] # удаляем первую строку
+                    temp_svod_df.columns = new_temp_cols
+                    temp_svod_df.insert(0,'Файл',name)
+                    # добавляем значение в датафрейм
+                    dct_svod_list_df[name_lst_column] = pd.concat([dct_svod_list_df[name_lst_column],temp_svod_df])
+                # Сохраняем
+            list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
+            list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+            list_columns_svod_wb.save(f'{path_end_folder}/Свод по колонкам Списков {current_time}.xlsx')
+
         # Создаем Свод по статусам
         main_df.replace('','Нет статуса',inplace=True)
         # Создаем раскладку по колонкам статусов
