@@ -740,6 +740,13 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                     temp_svod_df.insert(0,'Файл',name)
                     # добавляем значение в датафрейм
                     dct_svod_list_df[name_lst_column] = pd.concat([dct_svod_list_df[name_lst_column],temp_svod_df])
+
+            for key,value_df in dct_svod_list_df.items():
+                dct_svod_list_df[key].fillna(0, inplace=True)  # заполняем наны
+                dct_svod_list_df[key] = dct_svod_list_df[key].astype(int,errors='ignore')
+                sum_row = dct_svod_list_df[key].sum(axis=0)  # суммируем колонки
+                dct_svod_list_df[key].loc['Итого'] = sum_row  # добавляем суммирующую колонку
+                dct_svod_list_df[key].iloc[-1,0] = 'ИТОГО'
                 # Сохраняем
             list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
             list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
