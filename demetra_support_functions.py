@@ -435,6 +435,17 @@ def write_df_big_dct_to_excel(dct_df: dict, write_index: bool) -> openpyxl.Workb
             wb[short_name_sheet].column_dimensions[column_name].width = adjusted_width
         count_index += 1
 
+        column_number = 0  # номер колонки
+        # Создаем стиль шрифта и заливки
+        font = Font(color='FF000000')  # Черный цвет
+        fill = PatternFill(fill_type='solid', fgColor='ffa500')  # Оранжевый цвет
+        for row in wb[short_name_sheet].iter_rows(min_row=1, max_row=wb[short_name_sheet].max_row,
+                                            min_col=column_number, max_col=df.shape[1] + 1):  # Перебираем строки
+            if 'Итого' in str(row[column_number].value):  # делаем ячейку строковой и проверяем наличие слова Статус_
+                for cell in row:  # применяем стиль если условие сработало
+                    cell.font = font
+                    cell.fill = fill
+
     return wb
 
 
