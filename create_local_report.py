@@ -398,7 +398,8 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         dct_status = {}  # словарь для хранения сводных датафреймов
         for name_column in lst_status_columns:
             svod_df = pd.pivot_table(main_df, index='Файл', columns=name_column, values='ФИО',
-                                     aggfunc='count', fill_value=0).reset_index()
+                                     aggfunc='count', fill_value=0, margins=True,
+              margins_name='Итого').reset_index()
             name_sheet = name_column.replace('Статус_', '')
             dct_status[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
 
