@@ -2,7 +2,7 @@
 Скрипт для создания  отчета по социальному паспорту студента БРИТ
 """
 from demetra_support_functions import (write_df_to_excel,write_df_to_excel_report_brit,del_sheet,declension_fio_by_case,
-                                       extract_parameters_egisso)
+                                       extract_parameters_egisso,write_df_big_dct_to_excel)
 from demetra_processing_date import proccessing_date
 from egisso import create_part_egisso_data, create_full_egisso_data
 from tkinter import messagebox
@@ -703,10 +703,9 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                     dct_df_list_in_columns[f'{name_sheet}_{value}'] = temp_list_df
 
                 # Сохраняем
-            dct_df_list_in_columns['Занятость_Асториум'].to_excel('data/fdd.xlsx')
-            # list_columns_report_wb = write_df_to_excel(dct_df_list_in_columns, write_index=False)
-            # list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            # list_columns_report_wb.save(f'{path_end_folder}/Свод по колонкам Списков {current_time}.xlsx')
+            list_columns_report_wb = write_df_big_dct_to_excel(dct_df_list_in_columns, write_index=False)
+            list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+            list_columns_report_wb.save(f'{path_end_folder}/Данные по своду Списков {current_time}.xlsx')
 
 
         # Создаем Свод по статусам
@@ -865,8 +864,9 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                              )
     except ExceedingQuantity:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
-                             f'Количество групп превышает 253 !\n'
-                             f'Сократите количество обрабатываемых файлов')
+                             f'Количество групп или вариантов в колонках начинающихся с Список_ превышает 253 !\n'
+                             f'Программа не может создать больше 253 листов в файле xlsx'
+                             f'Сократите количество обрабатываемых значений')
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
 
