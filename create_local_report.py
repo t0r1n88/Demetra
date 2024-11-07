@@ -392,7 +392,20 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
             list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
             list_columns_report_wb.save(f'{path_end_folder}/Данные по своду Списков {current_time}.xlsx')
 
+        main_df.replace('', 'Нет статуса', inplace=True)
+        # Создаем раскладку по колонкам статусов
+        lst_status_columns = [column for column in main_df.columns if 'Статус_' in column]
+        dct_status = {}  # словарь для хранения сводных датафреймов
+        for name_column in lst_status_columns:
+            svod_df = pd.pivot_table(main_df, index='Файл', columns=name_column, values='ФИО',
+                                     aggfunc='count', fill_value=0).reset_index()
+            name_sheet = name_column.replace('Статус_', '')
+            dct_status[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
 
+        # Сохраняем
+        svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
+        svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        svod_status_wb.save(f'{path_end_folder}/Полный свод по статусам {current_time}.xlsx')
 
         # Создаем Свод по статусам
         # Собираем колонки содержащие слово Статус_ и Подсчет_ и Список
