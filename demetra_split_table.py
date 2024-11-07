@@ -91,10 +91,10 @@ def split_table(file_data_split:str,number_column:int,checkbox_split:int,path_to
                 short_value = value[:20] # получаем обрезанное значение
                 short_value = re.sub(r'[\[\]\'+()<> :"?*|\\/]', '_', short_value)
 
-                if short_value in used_name_sheet:
+                if short_value.lower() in used_name_sheet:
                     short_value = f'{short_value}_{idx}' # добавляем окончание
                 wb.create_sheet(short_value,index=idx) # создаем лист
-                used_name_sheet.add(short_value)
+                used_name_sheet.add(short_value.lower())
                 for row in dataframe_to_rows(temp_df,index=False,header=True):
                     wb[short_value].append(row)
 
@@ -121,7 +121,7 @@ def split_table(file_data_split:str,number_column:int,checkbox_split:int,path_to
                 temp_df = df[df[name_column] == value] # отфильтровываем по значению
                 short_name = value[:40] # получаем обрезанное значение
                 short_name = re.sub(r'[\r\b\n\t\'+()<> :"?*|\\/]', '_', short_name)
-                if short_name in used_name_file:
+                if short_name.lower() in used_name_file:
                     short_name = f'{short_name}_{idx}' # добавляем окончание
                 for row in dataframe_to_rows(temp_df,index=False,header=True):
                     wb['Sheet'].append(row)
@@ -140,7 +140,7 @@ def split_table(file_data_split:str,number_column:int,checkbox_split:int,path_to
                     wb['Sheet'].column_dimensions[column_name].width = adjusted_width
 
                 wb.save(f'{path_to_end_folder}/{short_name}.xlsx')
-                used_name_file.add(short_name)
+                used_name_file.add(short_name.lower())
                 wb.close()
     except NameError as e:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
