@@ -176,7 +176,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
     try:
         set_rus_locale()  # устанавливаем русскую локаль что категоризация по месяцам работала
         # обязательные колонки
-        name_columns_set = {'Статус_ОП', 'Статус_Учёба', 'ФИО', 'Дата_рождения'}
+        name_columns_set = {'Статус_ОП', 'Статус_Учёба', 'ФИО', 'Дата_рождения','СНИЛС', 'Пол','Серия_паспорта', 'Номер_паспорта','Дата_выдачи_паспорта', 'Кем_выдан'}
         error_df = pd.DataFrame(
             columns=['Название файла', 'Название листа', 'Значение ошибки', 'Описание ошибки'])  # датафрейм для ошибок
         wb = openpyxl.load_workbook(etalon_file)  # загружаем эталонный файл
@@ -258,6 +258,10 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         # получаем текущее время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
+        # Создаем папку для хранения дополнительных сводов
+        path_svod_file = f'{path_end_folder}/ДопСводы' #
+        if not os.path.exists(path_svod_file):
+            os.makedirs(path_svod_file)
 
 
         main_df.rename(columns={'Группа': 'Для переноса', 'Файл': 'файл для переноса'},
@@ -278,7 +282,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
         main_df.replace('Нет статуса', '', inplace=True)
         # Добавляем разбиение по датам
-        main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_end_folder)
+        main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_svod_file)
 
         # Добавляем склонение по падежам и создание инициалов
         main_df = declension_fio_by_case(main_df)
@@ -325,7 +329,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         all_custom_report_df.columns = ['Наименование параметра', 'Количество']
         # сохраняем файл с данными по выбранным колонкам
 
-        custom_report_wb = write_df_to_excel({'Общий свод': all_custom_report_df, 'Свод по листам': custom_report_df},
+        custom_report_wb = write_df_to_excel({'Общий свод': all_custom_report_df, 'Свод по файлам': custom_report_df},
                                              write_index=False)
         custom_report_wb = del_sheet(custom_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         custom_report_wb.save(f'{path_end_folder}/Свод по выбранным колонкам Статусов от {current_time}.xlsx')
@@ -355,7 +359,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
             # Сохраняем
             counting_report_wb = write_df_to_excel(dct_counting_df, write_index=False)
             counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            counting_report_wb.save(f'{path_end_folder}/Свод по колонкам Подсчета от {current_time}.xlsx')
+            counting_report_wb.save(f'{path_svod_file}/Свод по колонкам Подсчета от {current_time}.xlsx')
 
         # Создаем файл в котором будут данные по колонкам Список_
         dct_list_columns= {} # словарь в котором будут храниться датафреймы созданные для каждой колонки со списокм
@@ -393,7 +397,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                 # Сохраняем
             list_columns_report_wb = write_df_big_dct_to_excel(dct_df_list_in_columns, write_index=False)
             list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            list_columns_report_wb.save(f'{path_end_folder}/Данные по своду Списков {current_time}.xlsx')
+            list_columns_report_wb.save(f'{path_svod_file}/Данные по своду Списков {current_time}.xlsx')
 
             # Создаем свод по каждой группе
             dct_svod_list_df = {} # словарь в котором будут храниться датафреймы по названию колонок
@@ -438,7 +442,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                 # Сохраняем
             list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
             list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            list_columns_svod_wb.save(f'{path_end_folder}/Свод по колонкам Списков {current_time}.xlsx')
+            list_columns_svod_wb.save(f'{path_svod_file}/Свод по колонкам Списков {current_time}.xlsx')
 
         main_df.replace('', 'Нет статуса', inplace=True)
         # Создаем раскладку по колонкам статусов
@@ -454,7 +458,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         # Сохраняем
         svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
         svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_wb.save(f'{path_end_folder}/Статусы в разрезе групп {current_time}.xlsx')
+        svod_status_wb.save(f'{path_svod_file}/Статусы в разрезе групп {current_time}.xlsx')
 
 
         # Статусы в разрезе возрастов
@@ -469,7 +473,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         # Сохраняем
         svod_status_age_wb = write_df_big_dct_to_excel(dct_status_age, write_index=False)
         svod_status_age_wb = del_sheet(svod_status_age_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_age_wb.save(f'{path_end_folder}/Статусы в разрезе возрастов {current_time}.xlsx')
+        svod_status_age_wb.save(f'{path_svod_file}/Статусы в разрезе возрастов {current_time}.xlsx')
 
         # Статусы в разрезе образовательных программ
         dct_status_op = {}  # словарь для хранения сводных датафреймов
@@ -486,7 +490,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         # Сохраняем
         svod_status_op_wb = write_df_big_dct_to_excel(dct_status_op, write_index=False)
         svod_status_op_wb = del_sheet(svod_status_op_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_op_wb.save(f'{path_end_folder}/Статусы в разрезе ОП {current_time}.xlsx')
+        svod_status_op_wb.save(f'{path_svod_file}/Статусы в разрезе ОП {current_time}.xlsx')
 
 
 
@@ -630,7 +634,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         # Удаляем листы
         wb = del_sheet(wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         # Сохраняем итоговый файл
-        wb.save(f'{path_end_folder}/Свод по каждой колонке таблицы от {current_time}.xlsx')
+        wb.save(f'{path_svod_file}/Свод по каждой колонке таблицы от {current_time}.xlsx')
 
         if error_df.shape[0] != 0:
             count_error = len(error_df['Название листа'].unique())

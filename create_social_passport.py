@@ -481,14 +481,14 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
     try:
         set_rus_locale() # устанавливаем русскую локаль что категоризация по месяцам работала
         # обязательные колонки
-        name_columns_set = {'ФИО','Дата_рождения','Статус_ОП','Статус_Бюджет','Статус_Общежитие','Статус_Учёба','Статус_Всеобуч', 'Статус_Национальность',
+        name_columns_set = {'ФИО','Дата_рождения','Статус_ОП','Статус_Бюджет','Статус_Общежитие','Статус_Учёба','Статус_Всеобуч',
                             'Статус_Соц_стипендия', 'Статус_Соц_положение_семьи',
+                            'СНИЛС', 'Пол','Серия_паспорта', 'Номер_паспорта','Дата_выдачи_паспорта', 'Кем_выдан',
                             'Статус_Питание',
                             'Статус_Состав_семьи', 'Статус_Уровень_здоровья', 'Статус_Сиротство',
                             'Статус_Место_регистрации', 'Статус_Студенческая_семья',
                             'Статус_Воинский_учет','Статус_Родитель_СВО','Статус_Участник_СВО',
-                            'Статус_ПДН','Статус_КДН','Статус_Внутр_учет','Статус_Спорт', 'Статус_Творчество',
-                            'Статус_Волонтерство', 'Статус_Клуб', 'Статус_Самовольный_уход','Статус_Выпуск'}
+                            'Статус_ПДН','Статус_КДН','Статус_Внутр_учет', 'Статус_Самовольный_уход','Статус_Выпуск'}
         error_df = pd.DataFrame(
             columns=['Название файла', 'Название листа', 'Значение ошибки', 'Описание ошибки'])  # датафрейм для ошибок
         wb = openpyxl.load_workbook(etalon_file) # загружаем эталонный файл
@@ -587,6 +587,12 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # генерируем текущее время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
+        # Создаем папку для хранения дополнительных сводов
+        path_svod_file = f'{path_end_folder}/ДопСводы' #
+        if not os.path.exists(path_svod_file):
+            os.makedirs(path_svod_file)
+
+
         # Проверяем есть ли данные в общем файле, если нет то вызываем исключение
         if len(main_df) == 0:
             error_df.to_excel(f'{path_end_folder}/Ошибки от {current_time}.xlsx',index=False)
@@ -611,7 +617,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
 
         main_df.replace('Нет статуса','',inplace=True)
         # Добавляем разбиение по датам
-        main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_end_folder)
+        main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_svod_file)
 
         # Добавляем колонки со склоненными ФИО
         main_df = declension_fio_by_case(main_df)
@@ -671,7 +677,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
             # Сохраняем
             counting_report_wb = write_df_to_excel(dct_counting_df, write_index=False)
             counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            counting_report_wb.save(f'{path_end_folder}/Свод по колонкам Подсчета от {current_time}.xlsx')
+            counting_report_wb.save(f'{path_svod_file}/Свод по колонкам Подсчета от {current_time}.xlsx')
 
         # Создаем файл в котором будут данные по колонкам Список_
         dct_list_columns= {} # словарь в котором будут храниться датафреймы созданные для каждой колонки со списокм
@@ -709,7 +715,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 # Сохраняем
             list_columns_report_wb = write_df_big_dct_to_excel(dct_df_list_in_columns, write_index=False)
             list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            list_columns_report_wb.save(f'{path_end_folder}/Данные по своду Списков {current_time}.xlsx')
+            list_columns_report_wb.save(f'{path_svod_file}/Данные по своду Списков {current_time}.xlsx')
 
             # Создаем свод по каждой группе
             dct_svod_list_df = {} # словарь в котором будут храниться датафреймы по названию колонок
@@ -754,7 +760,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 # Сохраняем
             list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
             list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            list_columns_svod_wb.save(f'{path_end_folder}/Свод по колонкам Списков {current_time}.xlsx')
+            list_columns_svod_wb.save(f'{path_svod_file}/Свод по колонкам Списков {current_time}.xlsx')
 
         # Создаем Свод по статусам
         main_df.replace('','Нет статуса',inplace=True)
@@ -773,7 +779,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # Сохраняем
         svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
         svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_wb.save(f'{path_end_folder}/Статусы в разрезе групп {current_time}.xlsx')
+        svod_status_wb.save(f'{path_svod_file}/Статусы в разрезе групп {current_time}.xlsx')
 
 
         # Статусы в разрезе возрастов
@@ -788,7 +794,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # Сохраняем
         svod_status_age_wb = write_df_big_dct_to_excel(dct_status_age, write_index=False)
         svod_status_age_wb = del_sheet(svod_status_age_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_age_wb.save(f'{path_end_folder}/Статусы в разрезе возрастов {current_time}.xlsx')
+        svod_status_age_wb.save(f'{path_svod_file}/Статусы в разрезе возрастов {current_time}.xlsx')
 
 
         # Статусы в разрезе образовательных программ
@@ -806,7 +812,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # Сохраняем
         svod_status_op_wb = write_df_big_dct_to_excel(dct_status_op, write_index=False)
         svod_status_op_wb = del_sheet(svod_status_op_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_op_wb.save(f'{path_end_folder}/Статусы в разрезе ОП {current_time}.xlsx')
+        svod_status_op_wb.save(f'{path_svod_file}/Статусы в разрезе ОП {current_time}.xlsx')
 
 
 
@@ -940,7 +946,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # Удаляем листы
         wb = del_sheet(wb,['Sheet','Sheet1','Для подсчета'])
         # Сохраняем итоговый файл
-        wb.save(f'{path_end_folder}/Свод по каждой колонке таблицы от {current_time}.xlsx')
+        wb.save(f'{path_svod_file}/Свод по каждой колонке таблицы от {current_time}.xlsx')
 
         # проверяем на наличие ошибок
         if error_df.shape[0] != 0:
