@@ -12,9 +12,15 @@ https://itdarhan.ru/files/demetra/Инструкция по установке �
 Материалы для внедрения
 https://itdarhan.ru/files/demetra/Материалы%20для%20внедрения.zip
 
+Обучающие ролики
+https://disk.yandex.ru/d/-Rupequq-syj6A
+
 Ссылки для скачивания
 Windows x64
 https://itdarhan.ru/files/demetra/Деметра%20для%20Windows%20x64.zip
 
 Windows x32
 https://itdarhan.ru/files/demetra/Деметра%20для%20Windows%20x32.zip
+
+Linux x64
+https://itdarhan.ru/files/demetra/Деметра%20для%20Linux%20x64.zip
