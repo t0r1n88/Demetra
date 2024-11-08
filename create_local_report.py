@@ -471,6 +471,27 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         svod_status_age_wb = del_sheet(svod_status_age_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         svod_status_age_wb.save(f'{path_end_folder}/Статусы в разрезе возрастов {current_time}.xlsx')
 
+        # Статусы в разрезе образовательных программ
+        dct_status_op = {}  # словарь для хранения сводных датафреймов
+        lst_status_not_op = lst_status_columns.copy()
+        lst_status_not_op.remove('Статус_ОП')
+
+        for name_column in lst_status_not_op:
+            svod_df = pd.pivot_table(main_df, index='Статус_ОП', columns=name_column, values='ФИО',
+                                     aggfunc='count', fill_value=0, margins=True,
+                                     margins_name='Итого').reset_index()
+            name_sheet = name_column.replace('Статус_', '')
+            dct_status_op[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
+
+        # Сохраняем
+        svod_status_op_wb = write_df_big_dct_to_excel(dct_status_op, write_index=False)
+        svod_status_op_wb = del_sheet(svod_status_op_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        svod_status_op_wb.save(f'{path_end_folder}/Статусы в разрезе ОП {current_time}.xlsx')
+
+
+
+
+
         # Создаем Свод по статусам
         # Собираем колонки содержащие слово Статус_ и Подсчет_ и Список
         lst_status = [name_column for name_column in main_df.columns if
