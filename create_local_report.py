@@ -287,6 +287,12 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         # Добавляем склонение по падежам и создание инициалов
         main_df = declension_fio_by_case(main_df)
 
+        # Приводим колонки с подсчетом к правильному формату с запятой
+        lst_counting_name_columns = [name_column for name_column in main_df.columns if 'Подсчет_' in name_column]
+        if len(lst_counting_name_columns) != 0:
+            for name_counting_column in lst_counting_name_columns:
+                main_df[name_counting_column] = main_df[name_counting_column].apply(convert_number)
+
         # Создаем списки на основе которых мы создаем настраиваемый отчет
         lst_custom_wb = create_for_custom_report(main_df, params_df)
         lst_custom_wb.save(f'{path_end_folder}/Списки для свода по выбранным колонкам от {current_time}.xlsx')
@@ -335,9 +341,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         custom_report_wb.save(f'{path_end_folder}/Свод по выбранным колонкам Статусов от {current_time}.xlsx')
 
         main_df.replace('Нет статуса', '', inplace=True)
-        main_wb = write_df_to_excel({'Общий список': main_df}, write_index=False)
-        main_wb = del_sheet(main_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
+
 
         main_df.columns = list(map(str, list(main_df.columns)))
 
@@ -346,7 +350,6 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         lst_counting_name_columns = [name_column for name_column in main_df.columns if 'Подсчет_' in name_column]
         if len(lst_counting_name_columns) != 0:
             for name_counting_column in lst_counting_name_columns:
-                main_df[name_counting_column] = main_df[name_counting_column].apply(convert_number)
                 temp_svod_df = (pd.pivot_table(main_df, index=['Файл', 'Группа'],
                                                values=[name_counting_column],
                                                aggfunc=[np.mean, np.sum, np.median, np.min, np.max, len]))
@@ -443,6 +446,11 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
             list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
             list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
             list_columns_svod_wb.save(f'{path_svod_file}/Свод по колонкам Списков {current_time}.xlsx')
+
+
+        main_wb = write_df_to_excel({'Общий список': main_df}, write_index=False)
+        main_wb = del_sheet(main_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
 
         main_df.replace('', 'Нет статуса', inplace=True)
         # Создаем раскладку по колонкам статусов

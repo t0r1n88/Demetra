@@ -622,12 +622,12 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # Добавляем колонки со склоненными ФИО
         main_df = declension_fio_by_case(main_df)
 
-
-        main_wb = write_df_to_excel({'Общий список':main_df},write_index=False)
-        main_wb = del_sheet(main_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
-
         main_df.columns = list(map(str, list(main_df.columns)))
+        # Приводим колонки с подсчетом к правильному формату с запятой
+        lst_counting_name_columns = [name_column for name_column in main_df.columns if 'Подсчет_' in name_column]
+        if len(lst_counting_name_columns) != 0:
+            for name_counting_column in lst_counting_name_columns:
+                main_df[name_counting_column] = main_df[name_counting_column].apply(convert_number)
 
 
         # генерируем отчет по стандарту БРИТ
@@ -662,10 +662,8 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
 
         # Создаем файл в котором будут сводные данные по колонкам с Подсчетом
         dct_counting_df = dict() # словарь в котором будут храниться датафреймы созданные для каждой колонки
-        lst_counting_name_columns = [name_column for name_column in main_df.columns if 'Подсчет_' in name_column]
         if len(lst_counting_name_columns) != 0:
             for name_counting_column in lst_counting_name_columns:
-                main_df[name_counting_column] = main_df[name_counting_column].apply(convert_number)
                 temp_svod_df = (pd.pivot_table(main_df,index=['Файл','Группа'],
                                      values=[name_counting_column],
                                      aggfunc=[np.mean,np.sum,np.median,np.min,np.max,len]))
@@ -761,6 +759,14 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
             list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
             list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
             list_columns_svod_wb.save(f'{path_svod_file}/Свод по колонкам Списков {current_time}.xlsx')
+
+
+        # Сохраняем общий файл
+        main_wb = write_df_to_excel({'Общий список':main_df},write_index=False)
+        main_wb = del_sheet(main_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
+
+
 
         # Создаем Свод по статусам
         main_df.replace('','Нет статуса',inplace=True)
