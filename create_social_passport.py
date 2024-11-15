@@ -322,20 +322,25 @@ def create_duple_report_brit(df:pd.DataFrame,dct_slice:dict,path_end_folder:str)
         group_main_df = group_main_df.join(release_invalid_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Выпуск инвалиды'}, inplace=True)
 
-        if slice_column == 'Текущий_возраст':
-            group_main_df.index = group_main_df.index.astype(str)
-            group_main_df.sort_index(inplace=True)
-
 
         group_main_df.fillna(0, inplace=True)  # заполняем наны
         group_main_df = group_main_df.astype(int)  # приводим к инту
         sum_row = group_main_df.sum(axis=0)  # суммируем колонки
+
+
+
+        if slice_column == 'Текущий возраст':
+            group_main_df = group_main_df.reset_index()
+            group_main_df.rename(columns={'index': slice_column}, inplace=True)
+            group_main_df['Текущий_возраст'] = group_main_df['Текущий_возраст'].astype(str)
+            group_main_df['Текущий_возраст'] = group_main_df['Текущий_возраст'].replace('Ошибочное значение!!!','100000000')
+            group_main_df['Текущий_возраст'] = group_main_df['Текущий_возраст'].astype(int)
+            group_main_df.sort_values(by='Текущий_возраст')
+            group_main_df['Текущий_возраст'] = group_main_df['Текущий_возраст'].astype(str)
+            group_main_df['Текущий_возраст'] = group_main_df['Текущий_возраст'].replace('100000000','Ошибочное значение!!!')
+
         group_main_df.loc['Итого'] = sum_row  # добавляем суммирующую колонку
-
-
-
-
-
+        # group_main_df.iloc[-1,0] = 'Итого'
 
 
         group_orphans_main_df = pd.DataFrame(index=list(df[slice_column].unique()))  # Базовый датафрейм для сирот
