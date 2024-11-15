@@ -327,20 +327,13 @@ def create_duple_report_brit(df:pd.DataFrame,dct_slice:dict,path_end_folder:str)
         group_main_df = group_main_df.astype(int)  # приводим к инту
         sum_row = group_main_df.sum(axis=0)  # суммируем колонки
 
-
-
-        if slice_column == 'Текущий возраст':
-            group_main_df = group_main_df.reset_index()
-            group_main_df.rename(columns={'index': slice_column}, inplace=True)
-            group_main_df['Текущий_возраст'] = group_main_df['Текущий_возраст'].astype(str)
-            group_main_df['Текущий_возраст'] = group_main_df['Текущий_возраст'].replace('Ошибочное значение!!!','100000000')
-            group_main_df['Текущий_возраст'] = group_main_df['Текущий_возраст'].astype(int)
-            group_main_df.sort_values(by='Текущий_возраст')
-            group_main_df['Текущий_возраст'] = group_main_df['Текущий_возраст'].astype(str)
-            group_main_df['Текущий_возраст'] = group_main_df['Текущий_возраст'].replace('100000000','Ошибочное значение!!!')
+        if slice_column == 'Текущий_возраст':
+            # для проведения сортировки
+            group_main_df.rename(index={'Ошибочное значение!!!': 100000000},inplace=True)
+            group_main_df.sort_index(inplace=True)
+            group_main_df.rename(index={100000000:'Ошибочное значение!!!'}, inplace=True)
 
         group_main_df.loc['Итого'] = sum_row  # добавляем суммирующую колонку
-        # group_main_df.iloc[-1,0] = 'Итого'
 
 
         group_orphans_main_df = pd.DataFrame(index=list(df[slice_column].unique()))  # Базовый датафрейм для сирот
@@ -429,6 +422,11 @@ def create_duple_report_brit(df:pd.DataFrame,dct_slice:dict,path_end_folder:str)
         group_orphans_main_df.fillna(0, inplace=True)  # заполняем наны
         group_orphans_main_df = group_orphans_main_df.astype(int)  # приводим к инту
         sum_row = group_orphans_main_df.sum(axis=0)  # суммируем колонки
+        if slice_column == 'Текущий_возраст':
+            # для проведения сортировки
+            group_orphans_main_df.rename(index={'Ошибочное значение!!!': 100000000},inplace=True)
+            group_orphans_main_df.sort_index(inplace=True)
+            group_orphans_main_df.rename(index={100000000:'Ошибочное значение!!!'}, inplace=True)
         group_orphans_main_df.loc['Итого'] = sum_row  # добавляем суммирующую колонку
 
 
@@ -478,6 +476,12 @@ def create_duple_report_brit(df:pd.DataFrame,dct_slice:dict,path_end_folder:str)
         group_accounting_main_df.fillna(0, inplace=True)  # заполняем наны
         group_accounting_main_df = group_accounting_main_df.astype(int)  # приводим к инту
         sum_row = group_accounting_main_df.sum(axis=0)  # суммируем колонки
+        if slice_column == 'Текущий_возраст':
+            # для проведения сортировки
+            group_accounting_main_df.rename(index={'Ошибочное значение!!!': 100000000},inplace=True)
+            group_accounting_main_df.sort_index(inplace=True)
+            group_accounting_main_df.rename(index={100000000:'Ошибочное значение!!!'}, inplace=True)
+
         group_accounting_main_df.loc['Итого'] = sum_row  # добавляем суммирующую колонку
 
         # Добавляем в словарь
