@@ -44,6 +44,12 @@ class ExceedingQuantity(Exception):
     """
     pass
 
+class BadEtalonFile(Exception):
+    """
+    Исключение для обработки случая когда эталонный файл поврежден и его нельзя открыть
+    """
+    pass
+
 def set_rus_locale():
     """
     Функция чтобы можно было извлечь русские названия месяцев
@@ -491,10 +497,15 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                             'Статус_ПДН','Статус_КДН','Статус_Внутр_учет', 'Статус_Самовольный_уход','Статус_Выпуск'}
         error_df = pd.DataFrame(
             columns=['Название файла', 'Название листа', 'Значение ошибки', 'Описание ошибки'])  # датафрейм для ошибок
-        wb = openpyxl.load_workbook(etalon_file) # загружаем эталонный файл
-        quantity_sheets = 0  # считаем количество групп
-        main_sheet = wb.sheetnames[0] # получаем название первого листа с которым и будем сравнивать новые файлы
-        main_df = pd.read_excel(etalon_file,sheet_name=main_sheet,nrows=0) # загружаем датафрейм чтобы получить эталонные колонки
+        try:
+            wb = openpyxl.load_workbook(etalon_file) # загружаем эталонный файл
+            quantity_sheets = 0  # считаем количество групп
+            main_sheet = wb.sheetnames[0]  # получаем название первого листа с которым и будем сравнивать новые файлы
+            main_df = pd.read_excel(etalon_file, sheet_name=main_sheet,
+                                    nrows=0)  # загружаем датафрейм чтобы получить эталонные колонки
+        except:
+            raise BadEtalonFile
+
         # Проверяем на обязательные колонки
         etallon_always_cols = name_columns_set.difference(set(main_df.columns))
         if len(etallon_always_cols) != 0:
@@ -513,12 +524,29 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
             if not file.startswith('~$') and file.endswith('.xlsx'):
                 name_file = file.split('.xlsx')[0]
                 print(f'Файл: {name_file}')
-                temp_wb = openpyxl.load_workbook(f'{data_folder}/{file}') # открываем
+                try:
+                    temp_wb = openpyxl.load_workbook(f'{data_folder}/{file}') # открываем
+                except:
+                    temp_error_df = pd.DataFrame(
+                        data=[[f'{name_file}', f'', f'',
+                               'Не удалось обработать файл.']],
+                        columns=['Название файла', 'Название листа', 'Значение ошибки',
+                                 'Описание ошибки'])
+                    error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+                    continue  # не обрабатываем лист, где найдены ошибки
                 lst_sheets_temp_wb = temp_wb.sheetnames # получаем список листов в файле
                 for name_sheet in lst_sheets_temp_wb:
                     if name_sheet != 'Данные для выпадающих списков': # отбрасываем лист с даннными выпадающих списков
-                        temp_df = pd.read_excel(f'{data_folder}/{file}',sheet_name=name_sheet,dtype=str) # получаем колонки которые есть на листе
-
+                        try:
+                            temp_df = pd.read_excel(f'{data_folder}/{file}',sheet_name=name_sheet,dtype=str) # получаем колонки которые есть на листе
+                        except:
+                            temp_error_df = pd.DataFrame(
+                                data=[[f'{name_file}', f'', f'',
+                                       'Не удалось обработать файл.']],
+                                columns=['Название файла', 'Название листа', 'Значение ошибки',
+                                         'Описание ошибки'])
+                            error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+                            continue  # не обрабатываем лист, где найдены ошибки
                         # Проверяем на обязательные колонки
                         always_cols = name_columns_set.difference(set(temp_df.columns))
                         if len(always_cols) != 0:
@@ -999,6 +1027,10 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                              f'Количество групп или вариантов в колонках начинающихся с Список_ превышает 253 !\n'
                              f'Программа не может создать больше 253 листов в файле xlsx'
                              f'Сократите количество обрабатываемых значений')
+    except BadEtalonFile:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Эталонный файл поврежден, скачайте заново или пересохраните его с помощью Excel'
+                             )
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
 
