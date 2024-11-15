@@ -453,6 +453,9 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
 
         main_df.replace('', 'Нет статуса', inplace=True)
+        # Заменяем название колонки Пол на Статус_Пол чтобы обработка проходила нормально
+        main_df.rename(columns={'Пол':'Статус_Пол'},inplace=True)
+
         # Создаем раскладку по колонкам статусов
         lst_status_columns = [column for column in main_df.columns if 'Статус_' in column]
         dct_status = {}  # словарь для хранения сводных датафреймов
@@ -499,6 +502,24 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         svod_status_op_wb = write_df_big_dct_to_excel(dct_status_op, write_index=False)
         svod_status_op_wb = del_sheet(svod_status_op_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         svod_status_op_wb.save(f'{path_svod_file}/Статусы в разрезе ОП {current_time}.xlsx')
+
+        # Статусы в разрезе полов
+        if 'Статус_Пол' in lst_status_columns:
+            dct_status_sex = {}  # словарь для хранения сводных датафреймов
+            lst_status_sex = lst_status_columns.copy()
+            lst_status_sex.remove('Статус_Пол')
+
+            for name_column in lst_status_sex:
+                svod_df = pd.pivot_table(main_df, index='Статус_Пол', columns=name_column, values='ФИО',
+                                         aggfunc='count', fill_value=0, margins=True,
+                                         margins_name='Итого').reset_index()
+                name_sheet = name_column.replace('Статус_', '')
+                dct_status_sex[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
+
+            # Сохраняем
+            svod_status_sex_wb = write_df_big_dct_to_excel(dct_status_sex, write_index=False)
+            svod_status_sex_wb = del_sheet(svod_status_sex_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+            svod_status_sex_wb.save(f'{path_svod_file}/Статусы в разрезе полов {current_time}.xlsx')
 
 
 
