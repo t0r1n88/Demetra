@@ -160,9 +160,9 @@ def create_for_custom_report(df: pd.DataFrame, params_df: pd.DataFrame) -> openp
         value_column = row[2]  # значение которое нужно подсчитать
         temp_df = df[df[name_column] == value_column]
         name_sheet = f'{name_column}'[:30]  # для того чтобы не было слишком длинного названия
-        if name_sheet not in used_name:
+        if name_sheet.lower() not in used_name:
             dct_df[name_sheet] = temp_df
-            used_name.add(name_sheet)
+            used_name.add(name_sheet.lower())
         else:
             dct_df[f'{name_sheet}_{idx}'] = temp_df
             used_name.add(f'{name_sheet}_{idx}')
@@ -210,9 +210,15 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         for key, value in dct_params.items():
             for name_gen_column in value.keys():
                 lst_generate_name_columns.append(name_gen_column)
+        # Создаем свод по файлам
         custom_report_df = pd.DataFrame(columns=lst_generate_name_columns)
         custom_report_df.insert(0, 'Файл', None)
         custom_report_df.insert(1, 'Лист', None)
+
+        # Создаем свод по полам
+        custom_sex_report_df = pd.DataFrame(columns=lst_generate_name_columns)
+        custom_sex_report_df.insert(0, 'Пол', None)
+
 
         for idx, file in enumerate(os.listdir(data_folder)):
             if not file.startswith('~$') and not file.endswith('.xlsx'):
@@ -271,6 +277,8 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                                 temp_df['Статус_Учёба'] != 'Отчислен']  # отбрасываем отчисленных если поставлен чекбокс
 
                         main_df = pd.concat([main_df, temp_df], axis=0, ignore_index=True)  # добавляем в общий файл
+
+                        # Создаем свод по файлам
                         row_dct = {key: 0 for key in lst_generate_name_columns}  # создаем словарь для хранения данных
                         row_dct['Файл'] = name_file
                         row_dct['Лист'] = name_sheet  # добавляем колонки для листа
@@ -279,6 +287,16 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                                 row_dct[key] = temp_df[temp_df[name_column] == value].shape[0]
                         new_row = pd.DataFrame(row_dct, index=[0])
                         custom_report_df = pd.concat([custom_report_df, new_row], axis=0)
+
+                        # Создаем свод по полам
+                        row_dct_sex = {key: 0 for key in lst_generate_name_columns}  # создаем словарь для хранения данных
+
+
+                        row_dct_sex['Пол'] = name_file
+
+
+
+
 
                         quantity_sheets += 1
         # получаем текущее время
