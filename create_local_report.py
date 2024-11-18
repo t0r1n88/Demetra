@@ -172,6 +172,39 @@ def create_for_custom_report(df: pd.DataFrame, params_df: pd.DataFrame) -> openp
     return lst_custom_wb
 
 
+def create_slice_report(df:pd.DataFrame,slice_column:str,dct_params:dict):
+    """
+    Функция для создания отчета-среза по выбранной колонке по показателям указанным в словаре
+    :param df:датафрейм с объединенными данными
+    :param slice_column: колонка по которой нужно произвести срез
+    :param dct_params:словарь в котором указаны колонки по которым нужны данные и данные которые надо считать
+    :return:датафрейм
+    """
+    value_for_index = df[slice_column].unique() # создаем индекс из уникальных значений в колонке
+    out_df = pd.DataFrame(index=value_for_index) # создаем базовый датафрейм
+
+    # Перебираем словарь с параметрами создавая датафреймы для каждого значения
+    for name_column, dct_columns in dct_params.items():
+        for name_and_target,target_value in dct_columns.items():
+            temp_df = df[df[name_column] == target_value] # получаем датафрейм где есть указанные значения
+            svod_df = pd.pivot_table(temp_df,index=slice_column,
+                                     values='ФИО',
+                                     aggfunc='count').rename(columns={'ФИО':name_and_target})
+            # если нет то добавляем колонку с нулями
+            if len(svod_df) == 0:
+                svod_df[name_and_target] = 0
+            out_df = pd.concat([out_df,svod_df],axis=1) # добавляем в общий датафрейм
+
+    out_df.fillna(0,inplace=True) # заполняем наны
+    out_df = out_df.astype(int) # приводим к инту
+    out_df.loc['Итого'] = out_df.sum(axis=0) # создаем результирующую строку
+    out_df = out_df.reset_index().rename(columns={'index':slice_column})
+
+    return out_df
+
+
+
+
 def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str, params_report: str,path_egisso_params,
                         checkbox_expelled: int, raw_date) -> None:
     """
@@ -368,9 +401,34 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
         all_custom_report_df = all_custom_report_df.reset_index()
         all_custom_report_df.columns = ['Наименование параметра', 'Количество']
+
+        # Добавляем в разрез по файлам результирующую строку
+        custom_report_df.loc['Итого'] = custom_report_df.sum(axis=0)  # создаем результирующую строку
+        custom_report_df.iloc[-1,0] = 'Итого'
+        custom_report_df.iloc[-1,1] = ''
+
+        # отчет в разрезе возрастов
+        custom_report_age_df = create_slice_report(main_df.copy(),'Текущий_возраст',dct_params)
+
+
+
+        # отчет в разрезе полов
+        custom_report_sex_df = create_slice_report(main_df.copy(),'Пол',dct_params)
+
+        # отчет в разрезе статусов ОП
+        custom_report_op_df = create_slice_report(main_df.copy(),'Статус_ОП',dct_params)
+
+
+
+
+
+
+
         # сохраняем файл с данными по выбранным колонкам
 
-        custom_report_wb = write_df_to_excel({'Общий свод': all_custom_report_df, 'Свод по файлам': custom_report_df},
+        custom_report_wb = write_df_to_excel({'Общий свод': all_custom_report_df, 'Свод по файлам': custom_report_df,
+                                              'Свод по возрастам':custom_report_age_df,'Свод по полам':custom_report_sex_df,'Свод по ОП':custom_report_op_df,
+                                              },
                                              write_index=False)
         custom_report_wb = del_sheet(custom_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         custom_report_wb.save(f'{path_end_folder}/Свод по выбранным колонкам Статусов от {current_time}.xlsx')
