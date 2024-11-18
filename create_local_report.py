@@ -197,6 +197,12 @@ def create_slice_report(df:pd.DataFrame,slice_column:str,dct_params:dict):
 
     out_df.fillna(0,inplace=True) # заполняем наны
     out_df = out_df.astype(int) # приводим к инту
+    if slice_column == 'Текущий_возраст':
+        # для проведения сортировки с учетом слова ошибочное значение
+        out_df.rename(index={'Ошибочное значение!!!': 100000000}, inplace=True)
+        out_df.sort_index(inplace=True)
+        out_df.rename(index={100000000: 'Ошибочное значение!!!'}, inplace=True)
+
     out_df.loc['Итого'] = out_df.sum(axis=0) # создаем результирующую строку
     out_df = out_df.reset_index().rename(columns={'index':slice_column})
 
