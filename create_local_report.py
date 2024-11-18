@@ -215,10 +215,6 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         custom_report_df.insert(0, 'Файл', None)
         custom_report_df.insert(1, 'Лист', None)
 
-        # Создаем свод по полам
-        custom_sex_report_df = pd.DataFrame(columns=lst_generate_name_columns)
-        custom_sex_report_df.insert(0, 'Пол', None)
-
 
         for idx, file in enumerate(os.listdir(data_folder)):
             if not file.startswith('~$') and not file.endswith('.xlsx'):
@@ -288,11 +284,6 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                         new_row = pd.DataFrame(row_dct, index=[0])
                         custom_report_df = pd.concat([custom_report_df, new_row], axis=0)
 
-                        # Создаем свод по полам
-                        row_dct_sex = {key: 0 for key in lst_generate_name_columns}  # создаем словарь для хранения данных
-
-
-                        row_dct_sex['Пол'] = name_file
 
 
 
