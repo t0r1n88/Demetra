@@ -560,7 +560,7 @@ def create_svod_counting(df: pd.DataFrame, name_column: str, postfix_file: str, 
     # Сохраняем
     counting_report_wb = write_df_big_dct_to_excel(dct_counting_df, write_index=False)
     counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-    counting_report_wb.save(f'{path}/Срез по {postfix_file} от {current_time}.xlsx')
+    counting_report_wb.save(f'{path}/Свод по {postfix_file} от {current_time}.xlsx')
 
 def create_svod_list(df: pd.DataFrame, name_column: str, postfix_file: str, lst_list_name_columns: list,
                          path: str, current_time, dct_values_in_list_columns:dict):
@@ -627,7 +627,40 @@ def create_svod_list(df: pd.DataFrame, name_column: str, postfix_file: str, lst_
         # Сохраняем
     list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
     list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-    list_columns_svod_wb.save(f'{path}/Срез по {postfix_file} {current_time}.xlsx')
+    list_columns_svod_wb.save(f'{path}/Свод по {postfix_file} {current_time}.xlsx')
+
+
+def create_svod_status(df: pd.DataFrame, name_column: str, postfix_file: str, lst_status: list,
+                         path: str, current_time):
+    """
+    Функция для создания сводов по колонкам подсчета
+    :param df: основной датафрейм
+    :param name_column: название колонки
+    :param postfix_file: дополнение к имени файла
+    :param lst_counting_name_columns: список колонок типа Список
+    :param path: путь куда сохранять файлы
+    :param current_time: время под которым будет сохраняться файл
+    """
+    dct_status = {}  # словарь для хранения сводных датафреймов
+    lst_status_columns = lst_status.copy()
+
+    if name_column == 'Статус_Пол':
+        lst_status_columns.remove('Статус_Пол')
+    if name_column == 'Статус_ОП':
+        lst_status_columns.remove('Статус_ОП')
+
+    for name_status_column in lst_status_columns:
+        svod_df = pd.pivot_table(df, index=name_column, columns=name_status_column, values='ФИО',
+                                 aggfunc='count', fill_value=0, margins=True,
+                                 margins_name='Итого').reset_index()
+        name_sheet = name_status_column.replace('Статус_', '')
+        dct_status[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
+
+    # Сохраняем
+    svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
+    svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+    svod_status_wb.save(f'{path}/Свод по {postfix_file} {current_time}.xlsx')
+
 
 
 
@@ -773,7 +806,7 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
         # Создаем папку для хранения дополнительных сводов
-        path_svod_file = f'{path_end_folder}/Своды по колонкам Статуса'  #
+        path_svod_file = f'{path_end_folder}/Своды по колонкам Статусов'  #
         if not os.path.exists(path_svod_file):
             os.makedirs(path_svod_file)
 
@@ -814,7 +847,7 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
             dct_counting_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Статус_ОП': 'по ОП',
                                       'Пол': 'по полам'}  # словарь для названий колонок по которым будут создаваться файлы
             # Создаем папку для хранения сводов по колонкам подсчета
-            path_counting_file = f'{path_end_folder}/Своды по колонкам Подсчета'  #
+            path_counting_file = f'{path_end_folder}/Своды по колонкам Подсчетов'  #
             if not os.path.exists(path_counting_file):
                 os.makedirs(path_counting_file)
             # приводим к числовому формату
@@ -921,66 +954,75 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
 
         # Создаем раскладку по колонкам статусов
         lst_status_columns = [column for column in main_df.columns if 'Статус_' in column]
-        dct_status = {}  # словарь для хранения сводных датафреймов
-        for name_column in lst_status_columns:
-            svod_df = pd.pivot_table(main_df, index='Файл', columns=name_column, values='ФИО',
-                                     aggfunc='count', fill_value=0, margins=True,
-                                     margins_name='Итого').reset_index()
-            name_sheet = name_column.replace('Статус_', '')
-            dct_status[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
+        dct_status_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Статус_ОП': 'по ОП',
+                              'Статус_Пол': 'по полам'}  # словарь для названий колонок по которым будут создаваться срезы
 
-        # Сохраняем
-        svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
-        svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_wb.save(f'{path_svod_file}/Статусы в разрезе групп {current_time}.xlsx')
+        for name_column, prefix_file in dct_status_save_name.items():
+            create_svod_status(main_df.copy(), name_column, prefix_file, lst_status_columns,
+                             path_svod_file, current_time)
 
-        # Статусы в разрезе возрастов
-        dct_status_age = {}  # словарь для хранения сводных датафреймов
-        for name_column in lst_status_columns:
-            svod_df = pd.pivot_table(main_df, index='Текущий_возраст', columns=name_column, values='ФИО',
-                                     aggfunc='count', fill_value=0, margins=True,
-                                     margins_name='Итого').reset_index()
-            name_sheet = name_column.replace('Статус_', '')
-            dct_status_age[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
 
-        # Сохраняем
-        svod_status_age_wb = write_df_big_dct_to_excel(dct_status_age, write_index=False)
-        svod_status_age_wb = del_sheet(svod_status_age_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_age_wb.save(f'{path_svod_file}/Статусы в разрезе возрастов {current_time}.xlsx')
 
-        # Статусы в разрезе образовательных программ
-        dct_status_op = {}  # словарь для хранения сводных датафреймов
-        lst_status_not_op = lst_status_columns.copy()
-        lst_status_not_op.remove('Статус_ОП')
-
-        for name_column in lst_status_not_op:
-            svod_df = pd.pivot_table(main_df, index='Статус_ОП', columns=name_column, values='ФИО',
-                                     aggfunc='count', fill_value=0, margins=True,
-                                     margins_name='Итого').reset_index()
-            name_sheet = name_column.replace('Статус_', '')
-            dct_status_op[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
-
-        # Сохраняем
-        svod_status_op_wb = write_df_big_dct_to_excel(dct_status_op, write_index=False)
-        svod_status_op_wb = del_sheet(svod_status_op_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_op_wb.save(f'{path_svod_file}/Статусы в разрезе ОП {current_time}.xlsx')
-
-        # Статусы в разрезе полов
-        dct_status_sex = {}  # словарь для хранения сводных датафреймов
-        lst_status_sex = lst_status_columns.copy()
-        lst_status_sex.remove('Статус_Пол')
-
-        for name_column in lst_status_sex:
-            svod_df = pd.pivot_table(main_df, index='Статус_Пол', columns=name_column, values='ФИО',
-                                     aggfunc='count', fill_value=0, margins=True,
-                                     margins_name='Итого').reset_index()
-            name_sheet = name_column.replace('Статус_', '')
-            dct_status_sex[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
-
-        # Сохраняем
-        svod_status_sex_wb = write_df_big_dct_to_excel(dct_status_sex, write_index=False)
-        svod_status_sex_wb = del_sheet(svod_status_sex_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_sex_wb.save(f'{path_svod_file}/Статусы в разрезе полов {current_time}.xlsx')
+        # dct_status = {}  # словарь для хранения сводных датафреймов
+        # for name_column in lst_status_columns:
+        #     svod_df = pd.pivot_table(main_df, index='Файл', columns=name_column, values='ФИО',
+        #                              aggfunc='count', fill_value=0, margins=True,
+        #                              margins_name='Итого').reset_index()
+        #     name_sheet = name_column.replace('Статус_', '')
+        #     dct_status[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
+        #
+        # # Сохраняем
+        # svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
+        # svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        # svod_status_wb.save(f'{path_svod_file}/Статусы в разрезе групп {current_time}.xlsx')
+        #
+        # # Статусы в разрезе возрастов
+        # dct_status_age = {}  # словарь для хранения сводных датафреймов
+        # for name_column in lst_status_columns:
+        #     svod_df = pd.pivot_table(main_df, index='Текущий_возраст', columns=name_column, values='ФИО',
+        #                              aggfunc='count', fill_value=0, margins=True,
+        #                              margins_name='Итого').reset_index()
+        #     name_sheet = name_column.replace('Статус_', '')
+        #     dct_status_age[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
+        #
+        # # Сохраняем
+        # svod_status_age_wb = write_df_big_dct_to_excel(dct_status_age, write_index=False)
+        # svod_status_age_wb = del_sheet(svod_status_age_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        # svod_status_age_wb.save(f'{path_svod_file}/Статусы в разрезе возрастов {current_time}.xlsx')
+        #
+        # # Статусы в разрезе образовательных программ
+        # dct_status_op = {}  # словарь для хранения сводных датафреймов
+        # lst_status_not_op = lst_status_columns.copy()
+        # lst_status_not_op.remove('Статус_ОП')
+        #
+        # for name_column in lst_status_not_op:
+        #     svod_df = pd.pivot_table(main_df, index='Статус_ОП', columns=name_column, values='ФИО',
+        #                              aggfunc='count', fill_value=0, margins=True,
+        #                              margins_name='Итого').reset_index()
+        #     name_sheet = name_column.replace('Статус_', '')
+        #     dct_status_op[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
+        #
+        # # Сохраняем
+        # svod_status_op_wb = write_df_big_dct_to_excel(dct_status_op, write_index=False)
+        # svod_status_op_wb = del_sheet(svod_status_op_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        # svod_status_op_wb.save(f'{path_svod_file}/Статусы в разрезе ОП {current_time}.xlsx')
+        #
+        # # Статусы в разрезе полов
+        # dct_status_sex = {}  # словарь для хранения сводных датафреймов
+        # lst_status_sex = lst_status_columns.copy()
+        # lst_status_sex.remove('Статус_Пол')
+        #
+        # for name_column in lst_status_sex:
+        #     svod_df = pd.pivot_table(main_df, index='Статус_Пол', columns=name_column, values='ФИО',
+        #                              aggfunc='count', fill_value=0, margins=True,
+        #                              margins_name='Итого').reset_index()
+        #     name_sheet = name_column.replace('Статус_', '')
+        #     dct_status_sex[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
+        #
+        # # Сохраняем
+        # svod_status_sex_wb = write_df_big_dct_to_excel(dct_status_sex, write_index=False)
+        # svod_status_sex_wb = del_sheet(svod_status_sex_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        # svod_status_sex_wb.save(f'{path_svod_file}/Статусы в разрезе полов {current_time}.xlsx')
 
         # Собираем колонки содержащие слово Статус_ и Подсчет_
         lst_status = [name_column for name_column in main_df.columns if
