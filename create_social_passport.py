@@ -786,13 +786,22 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
         error_wb = write_df_to_excel({'Ошибки': error_df}, write_index=False)
         error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
 
-        # Создаем файл в котором будут данные по колонкам Список_
-        dct_list_columns = {}  # словарь в котором будут храниться датафреймы созданные для каждой колонки со списокм
-        dct_values_in_list_columns = {}  # словарь в котором будут храниться названия колонок и все значения которые там встречались
-        dct_df_list_in_columns = {}  # словарь где будут храниться значения в колонках и датафреймы где в указанных колонках есть соответствующее значение
 
+        # Обрабатываем колонки типа Список
         lst_list_name_columns = [name_column for name_column in main_df.columns if 'Список_' in name_column]
         if len(lst_list_name_columns) != 0:
+            dct_list_columns = {}  # словарь в котором будут храниться датафреймы созданные для каждой колонки со списокм
+            dct_values_in_list_columns = {}  # словарь в котором будут храниться названия колонок и все значения которые там встречались
+            dct_df_list_in_columns = {}  # словарь где будут храниться значения в колонках и датафреймы где в указанных колонках есть соответствующее значение
+
+            dct_list_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Статус_ОП': 'по ОП',
+                                      'Пол': 'по полам'}  # словарь для названий колонок по которым будут создаваться срезы
+            # Создаем папку для хранения сводов по колонкам списков
+            path_list_file = f'{path_end_folder}/Своды по колонкам Списков'  #
+            if not os.path.exists(path_list_file):
+                os.makedirs(path_list_file)
+
+
             main_df[lst_list_name_columns] = main_df[lst_list_name_columns].astype(str)
             for name_lst_column in lst_list_name_columns:
                 temp_col_value_lst = main_df[name_lst_column].tolist()  # создаем список
@@ -822,7 +831,7 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
                 # Сохраняем
             list_columns_report_wb = write_df_big_dct_to_excel(dct_df_list_in_columns, write_index=False)
             list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            list_columns_report_wb.save(f'{path_svod_file}/Данные по своду Списков {current_time}.xlsx')
+            list_columns_report_wb.save(f'{path_list_file}/Данные по срезам Списков {current_time}.xlsx')
 
             # Создаем свод по каждой группе
             dct_svod_list_df = {}  # словарь в котором будут храниться датафреймы по названию колонок
