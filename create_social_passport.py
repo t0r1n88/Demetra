@@ -1,8 +1,9 @@
 """
 Скрипт для создания  отчета по социальному паспорту студента БРИТ
 """
-from demetra_support_functions import (write_df_to_excel,write_df_to_excel_report_brit,del_sheet,declension_fio_by_case,
-                                       extract_parameters_egisso,write_df_big_dct_to_excel)
+from demetra_support_functions import (write_df_to_excel, write_df_to_excel_report_brit, del_sheet,
+                                       declension_fio_by_case,
+                                       extract_parameters_egisso, write_df_big_dct_to_excel)
 from demetra_processing_date import proccessing_date
 from egisso import create_part_egisso_data, create_full_egisso_data
 from tkinter import messagebox
@@ -18,6 +19,7 @@ from collections import Counter
 import re
 import os
 import warnings
+
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 warnings.simplefilter(action='ignore', category=DeprecationWarning)
@@ -26,11 +28,13 @@ pd.options.mode.chained_assignment = None
 import sys
 import locale
 
+
 class NotColumn(Exception):
     """
     Исключение для обработки случая когда отсутствуют нужные колонки
     """
     pass
+
 
 class NotGoodSheet(Exception):
     """
@@ -38,17 +42,20 @@ class NotGoodSheet(Exception):
     """
     pass
 
+
 class ExceedingQuantity(Exception):
     """
     Исключение для случаев когда числа уникальных значений больше 255
     """
     pass
 
+
 class BadEtalonFile(Exception):
     """
     Исключение для обработки случая когда эталонный файл поврежден и его нельзя открыть
     """
     pass
+
 
 def set_rus_locale():
     """
@@ -57,7 +64,9 @@ def set_rus_locale():
     locale.setlocale(
         locale.LC_ALL,
         'rus_rus' if sys.platform == 'win32' else 'ru_RU.UTF-8')
-def create_value_str(df:pd.DataFrame,name_column:str,target_name_column:str,dct_str:dict)->pd.DataFrame:
+
+
+def create_value_str(df: pd.DataFrame, name_column: str, target_name_column: str, dct_str: dict) -> pd.DataFrame:
     """
     Функция для формирования строки нужного формата с использованием переменных
     :param df:датафрейм
@@ -71,30 +80,34 @@ def create_value_str(df:pd.DataFrame,name_column:str,target_name_column:str,dct_
     new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
     new_value_df['Показатель'] = new_value_df['Показатель'].astype(str)
     new_value_df.sort_values(by='Показатель', inplace=True)
-    for idx,row in enumerate(new_value_df.iterrows()):
-        name_op = row[1].values[0] # получаем название ОП
-        temp_df = df[df[name_column] == name_op] # отфильтровываем по названию ОП
-        quantity_study_student = temp_df[temp_df[target_name_column] == dct_str['Обучается']].shape[0]  # со статусом Обучается
+    for idx, row in enumerate(new_value_df.iterrows()):
+        name_op = row[1].values[0]  # получаем название ОП
+        temp_df = df[df[name_column] == name_op]  # отфильтровываем по названию ОП
+        quantity_study_student = temp_df[temp_df[target_name_column] == dct_str['Обучается']].shape[
+            0]  # со статусом Обучается
         quantity_academ_student = temp_df[temp_df[target_name_column].str.contains(dct_str['Академ'])].shape[
             0]
-        quantity_not_status_student = temp_df[temp_df[target_name_column].str.contains(dct_str['Не указан статус'])].shape[
+        quantity_not_status_student = \
+        temp_df[temp_df[target_name_column].str.contains(dct_str['Не указан статус'])].shape[
             0]
         quantity_except_deducted = temp_df[~temp_df[target_name_column].str.contains('Отчислен')].shape[
             0]
         out_str = f'Обучается - {quantity_study_student}, Академ - {quantity_academ_student},' \
                   f' Не указан статус - {quantity_not_status_student}, Всего {quantity_except_deducted} (включая академ. и без статуса)'
-        new_value_df.iloc[idx,1] = out_str # присваиваем значение
+        new_value_df.iloc[idx, 1] = out_str  # присваиваем значение
 
     return new_value_df
 
+
 def count_value(group: pd.Series, target_value: str):
-        """
-        Функция для группировки по конкретному значению
-        Возвращает количество значений target_value в группе
-        """
-        # считаем сколько значений подходят по условие
-        count_group = group.str.contains(target_value)
-        return sum(count_group)
+    """
+    Функция для группировки по конкретному значению
+    Возвращает количество значений target_value в группе
+    """
+    # считаем сколько значений подходят по условие
+    count_group = group.str.contains(target_value)
+    return sum(count_group)
+
 
 def convert_number(value):
     """
@@ -118,10 +131,10 @@ def convert_to_date(value):
         if value == 'Нет статуса':
             return None
         else:
-            date_value  = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            date_value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
             return date_value
     except ValueError:
-        result = re.search(r'^\d{2}\.\d{2}\.\d{4}$',value)
+        result = re.search(r'^\d{2}\.\d{2}\.\d{4}$', value)
         if result:
             return datetime.datetime.strptime(result.group(0), '%d.%m.%Y')
         else:
@@ -129,7 +142,8 @@ def convert_to_date(value):
     except:
         return None
 
-def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->None:
+
+def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) -> None:
     """
     Функция для создания отчета по стандарту БРИТ
     :param df: копия общего датафрейма
@@ -137,10 +151,10 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
     :param path_end_folder: куда сохранять результаты
     """
     dct_name_sheet = dict()  # словарь, где ключ это названия листа, а значение датафрейм на основе которого был произведен подсчет
-    dct_report_sheet = dict() # создаем словарь, где ключ это название листа, а содержимое сводный датафрейм
+    dct_report_sheet = dict()  # создаем словарь, где ключ это название листа, а содержимое сводный датафрейм
     df.fillna('Нет статуса', inplace=True)  # заполняем Наны
 
-    for slice_column,prefix in dct_slice.items():
+    for slice_column, prefix in dct_slice.items():
         group_main_df = pd.DataFrame(index=list(df[slice_column].unique()))
 
         # Считаем общее количество студентов
@@ -157,18 +171,18 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         group_main_df = group_main_df.join(akadem_df_group_df)  # добавляем в свод
         group_main_df.rename(columns={'ФИО': 'Академ. отпуск'}, inplace=True)
 
-
-
         # Совершеннолетние
         maturity_df = df[df['Совершеннолетие'] == 'совершеннолетний']
         dct_name_sheet['Совершеннолетние'] = maturity_df  # добавляем в словарь
-        maturity_df_group_df = maturity_df.groupby(by=[slice_column]).agg({'Совершеннолетие': 'count'})  # создаем базовый
+        maturity_df_group_df = maturity_df.groupby(by=[slice_column]).agg(
+            {'Совершеннолетие': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(maturity_df_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Совершеннолетие': 'Совершеннолетние'}, inplace=True)
         # Несовершеннолетние
         not_maturity_df = df[df['Совершеннолетие'] == 'несовершеннолетний']
         dct_name_sheet['Несовершеннолетние'] = not_maturity_df  # добавляем в словарь
-        not_maturity_df_group_df = not_maturity_df.groupby(by=[slice_column]).agg({'Совершеннолетие': 'count'})  # создаем базовый
+        not_maturity_df_group_df = not_maturity_df.groupby(by=[slice_column]).agg(
+            {'Совершеннолетие': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(not_maturity_df_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Совершеннолетие': 'Несовершеннолетние'}, inplace=True)
 
@@ -182,29 +196,30 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         group_main_df = group_main_df.join(orphans_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Сиротство': 'Дети-сироты'}, inplace=True)
 
-
         # Создаем датафрейм с инвалидами
         invalid_df = df[df['Статус_Уровень_здоровья'].isin(['Инвалид детства', 'Инвалид 1,2,3, группы'])]
 
         dct_name_sheet['Инвалиды'] = invalid_df  # добавляем в словарь
-        invalid_group_df = invalid_df.groupby(by=[slice_column]).agg({'Статус_Уровень_здоровья': 'count'})  # создаем базовый
+        invalid_group_df = invalid_df.groupby(by=[slice_column]).agg(
+            {'Статус_Уровень_здоровья': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(invalid_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Инвалиды'}, inplace=True)
 
         # Создаем датафрейм с совершеннолетними инвалидами
         maturity_invalid_df = invalid_df[invalid_df['Совершеннолетие'] == 'совершеннолетний']
         dct_name_sheet['Инвалиды_сов'] = maturity_invalid_df  # добавляем в словарь
-        maturity_invalid_group_df = maturity_invalid_df.groupby(by=[slice_column]).agg({'Статус_Уровень_здоровья': 'count'})  # создаем базовый
+        maturity_invalid_group_df = maturity_invalid_df.groupby(by=[slice_column]).agg(
+            {'Статус_Уровень_здоровья': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(maturity_invalid_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Инвалиды совер-ние'}, inplace=True)
 
         # Создаем датафрейм с несовершеннолетними инвалидами
         not_maturity_invalid_df = invalid_df[invalid_df['Совершеннолетие'] == 'несовершеннолетний']
         dct_name_sheet['Инвалиды_несов'] = not_maturity_invalid_df  # добавляем в словарь
-        not_maturity_invalid_group_df = not_maturity_invalid_df.groupby(by=[slice_column]).agg({'Статус_Уровень_здоровья': 'count'})  # создаем базовый
+        not_maturity_invalid_group_df = not_maturity_invalid_df.groupby(by=[slice_column]).agg(
+            {'Статус_Уровень_здоровья': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(not_maturity_invalid_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Инвалиды несов-ние'}, inplace=True)
-
 
         # Создаем датафрейм с получателями социальной стипендии
         soc_benefit_df = df[df['Статус_Соц_стипендия'].isin(['да'])]
@@ -213,7 +228,8 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         # получаем малоимущих
         poor_soc_benefit_df = soc_benefit_df[soc_benefit_df['Статус_Соц_положение_семьи'].isin(['Малоимущая'])]
         dct_name_sheet['Соц. стипендия малоим.'] = poor_soc_benefit_df
-        poor_soc_benefit_group_df = poor_soc_benefit_df.groupby(by=[slice_column]).agg({'Статус_Соц_положение_семьи': 'count'})
+        poor_soc_benefit_group_df = poor_soc_benefit_df.groupby(by=[slice_column]).agg(
+            {'Статус_Соц_положение_семьи': 'count'})
         group_main_df = group_main_df.join(poor_soc_benefit_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Соц_положение_семьи': 'Соц. стипендия малоимущие'}, inplace=True)
 
@@ -223,7 +239,8 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
              'дети-сироты, находящиеся на полном государственном обеспечении',
              'дети-сироты, находящиеся под опекой'])]
         dct_name_sheet['Соц. стипендия сироты'] = orphans_soc_benefit_df
-        orphans_soc_benefit_group_df = orphans_soc_benefit_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
+        orphans_soc_benefit_group_df = orphans_soc_benefit_df.groupby(by=[slice_column]).agg(
+            {'Статус_Сиротство': 'count'})
         group_main_df = group_main_df.join(orphans_soc_benefit_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Сиротство': 'Соц. стипендия дети-сироты'}, inplace=True)
 
@@ -231,12 +248,14 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         invalid_soc_benefit_df = soc_benefit_df[
             soc_benefit_df['Статус_Уровень_здоровья'].isin(['Инвалид детства', 'Инвалид 1,2,3, группы'])]
         dct_name_sheet['Соц. стипендия инвалиды'] = invalid_soc_benefit_df
-        invalid_soc_benefit_group_df = invalid_soc_benefit_df.groupby(by=[slice_column]).agg({'Статус_Уровень_здоровья': 'count'})
+        invalid_soc_benefit_group_df = invalid_soc_benefit_df.groupby(by=[slice_column]).agg(
+            {'Статус_Уровень_здоровья': 'count'})
         group_main_df = group_main_df.join(invalid_soc_benefit_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Соц. стипендия инвалиды'}, inplace=True)
 
         # Создаем датафрейм с получателями бесплатного питания
-        eating_df = df[df['Статус_Питание'].isin(['получает компенсацию за питание', 'питается в ПОО','получает компенсацию за питание + питается в ПОО'])]
+        eating_df = df[df['Статус_Питание'].isin(
+            ['получает компенсацию за питание', 'питается в ПОО', 'получает компенсацию за питание + питается в ПОО'])]
         dct_name_sheet['Питание все'] = eating_df  # добавляем в словарь
 
         # получаем малоимущих
@@ -247,9 +266,10 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         group_main_df.rename(columns={'Статус_Соц_положение_семьи': 'Питание малоимущие'}, inplace=True)
 
         # получаем сирот
-        orphans_eating_df = eating_df[eating_df['Статус_Сиротство'].isin(['гособеспечение + постинтернатное сопровождение',
-                                                                          'дети-сироты, находящиеся на полном государственном обеспечении',
-                                                                          'дети-сироты, находящиеся под опекой'])]
+        orphans_eating_df = eating_df[
+            eating_df['Статус_Сиротство'].isin(['гособеспечение + постинтернатное сопровождение',
+                                                'дети-сироты, находящиеся на полном государственном обеспечении',
+                                                'дети-сироты, находящиеся под опекой'])]
         dct_name_sheet['Питание сироты'] = orphans_eating_df
         orphans_eating_group_df = orphans_eating_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
         group_main_df = group_main_df.join(orphans_eating_group_df)  # добавляем в свод
@@ -320,24 +340,23 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         group_main_df = group_main_df.join(release_invalid_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Выпуск инвалиды'}, inplace=True)
 
-
         group_main_df.fillna(0, inplace=True)  # заполняем наны
         group_main_df = group_main_df.astype(int)  # приводим к инту
         sum_row = group_main_df.sum(axis=0)  # суммируем колонки
 
         if slice_column == 'Текущий_возраст':
             # для проведения сортировки
-            group_main_df.rename(index={'Ошибочное значение!!!': 100000000},inplace=True)
+            group_main_df.rename(index={'Ошибочное значение!!!': 100000000}, inplace=True)
             group_main_df.sort_index(inplace=True)
-            group_main_df.rename(index={100000000:'Ошибочное значение!!!'}, inplace=True)
+            group_main_df.rename(index={100000000: 'Ошибочное значение!!!'}, inplace=True)
 
         group_main_df.loc['Итого'] = sum_row  # добавляем суммирующую колонку
-
 
         group_orphans_main_df = pd.DataFrame(index=list(df[slice_column].unique()))  # Базовый датафрейм для сирот
 
         # Считаем общее количество
-        all_orphans_group_df = orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})  # создаем базовый
+        all_orphans_group_df = orphans_df.groupby(by=[slice_column]).agg(
+            {'Статус_Сиротство': 'count'})  # создаем базовый
         group_orphans_main_df = group_orphans_main_df.join(all_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Всего'}, inplace=True)
 
@@ -351,7 +370,8 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         # Считаем сирот несовершеннолетних
         not_maturity_orphans_df = orphans_df[orphans_df['Совершеннолетие'] == 'несовершеннолетний']
         dct_name_sheet['Сироты несовер-ние'] = not_maturity_orphans_df
-        not_maturity_orphans_group_df = not_maturity_orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
+        not_maturity_orphans_group_df = not_maturity_orphans_df.groupby(by=[slice_column]).agg(
+            {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(not_maturity_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Сироты несовершеннолетние'}, inplace=True)
 
@@ -363,16 +383,19 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Из них в академическом отпуске'}, inplace=True)
 
         # считаем постинтернатное сопровождение
-        postinternat_orphans_df = orphans_df[orphans_df['Статус_Сиротство'].str.contains('постинтернатное сопровождение')]
+        postinternat_orphans_df = orphans_df[
+            orphans_df['Статус_Сиротство'].str.contains('постинтернатное сопровождение')]
         dct_name_sheet['Сироты постинтернат'] = postinternat_orphans_df
-        postinternat_orphans_group_df = postinternat_orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
+        postinternat_orphans_group_df = postinternat_orphans_df.groupby(by=[slice_column]).agg(
+            {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(postinternat_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Из них постинтернат'}, inplace=True)
 
         # считаем сирот на гособеспечении
-        gos_orphans_df = orphans_df[orphans_df['Статус_Сиротство'].isin(['гособеспечение + постинтернатное сопровождение',
-                                                                         'дети-сироты, находящиеся на полном государственном обеспечении'
-                                                                         ])]
+        gos_orphans_df = orphans_df[
+            orphans_df['Статус_Сиротство'].isin(['гособеспечение + постинтернатное сопровождение',
+                                                 'дети-сироты, находящиеся на полном государственном обеспечении'
+                                                 ])]
         dct_name_sheet['Сироты гособеспечение'] = gos_orphans_df
         gos_orphans_group_df = gos_orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(gos_orphans_group_df)  # добавляем в свод
@@ -390,21 +413,24 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
             orphans_df['Статус_Питание'].isin(['питается в ПОО', 'получает компенсацию за питание',
                                                'получает компенсацию за питание + питается в ПОО'])]
         dct_name_sheet['Сироты питание все'] = all_eating_orphans_df
-        all_eating_orphans_group_df = all_eating_orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
+        all_eating_orphans_group_df = all_eating_orphans_df.groupby(by=[slice_column]).agg(
+            {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(all_eating_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Питается всего'}, inplace=True)
 
         # считаем сирот получающих питание в брит
         brit_eating_orphans_df = orphans_df[orphans_df['Статус_Питание'].isin(['питается в ПОО'])]
         dct_name_sheet['Сироты питание ПОО'] = brit_eating_orphans_df
-        brit_eating_orphans_group_df = brit_eating_orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
+        brit_eating_orphans_group_df = brit_eating_orphans_df.groupby(by=[slice_column]).agg(
+            {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(brit_eating_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Питается в ПОО'}, inplace=True)
 
         # считаем сирот получающих компенсацию
         compens_eating_orphans_df = orphans_df[orphans_df['Статус_Питание'].isin(['получает компенсацию за питание'])]
         dct_name_sheet['Сироты питание компенсация'] = compens_eating_orphans_df
-        compens_eating_orphans_group_df = compens_eating_orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
+        compens_eating_orphans_group_df = compens_eating_orphans_df.groupby(by=[slice_column]).agg(
+            {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(compens_eating_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Получает компенсацию'}, inplace=True)
 
@@ -422,11 +448,10 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         sum_row = group_orphans_main_df.sum(axis=0)  # суммируем колонки
         if slice_column == 'Текущий_возраст':
             # для проведения сортировки
-            group_orphans_main_df.rename(index={'Ошибочное значение!!!': 100000000},inplace=True)
+            group_orphans_main_df.rename(index={'Ошибочное значение!!!': 100000000}, inplace=True)
             group_orphans_main_df.sort_index(inplace=True)
-            group_orphans_main_df.rename(index={100000000:'Ошибочное значение!!!'}, inplace=True)
+            group_orphans_main_df.rename(index={100000000: 'Ошибочное значение!!!'}, inplace=True)
         group_orphans_main_df.loc['Итого'] = sum_row  # добавляем суммирующую колонку
-
 
         # отчет по учетам
 
@@ -460,14 +485,16 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         # Считаем самовольный уход
         awol_accounting_df = df[df['Статус_Самовольный_уход'].isin(['да'])]
         dct_name_sheet['Самовольный уход'] = awol_accounting_df
-        awol_group_accounting_df = awol_accounting_df.groupby(by=[slice_column]).agg({'Статус_Самовольный_уход': 'count'})
+        awol_group_accounting_df = awol_accounting_df.groupby(by=[slice_column]).agg(
+            {'Статус_Самовольный_уход': 'count'})
         group_accounting_main_df = group_accounting_main_df.join(awol_group_accounting_df)  # добавляем в свод
         group_accounting_main_df.rename(columns={'Статус_Самовольный_уход': 'Самовольный уход'}, inplace=True)
 
         # Считаем самовольный уход
         sop_accounting_df = df[df['Статус_Соц_положение_семьи'].isin(['СОП'])]
         dct_name_sheet['СОП'] = sop_accounting_df
-        sop_group_accounting_df = sop_accounting_df.groupby(by=[slice_column]).agg({'Статус_Соц_положение_семьи': 'count'})
+        sop_group_accounting_df = sop_accounting_df.groupby(by=[slice_column]).agg(
+            {'Статус_Соц_положение_семьи': 'count'})
         group_accounting_main_df = group_accounting_main_df.join(sop_group_accounting_df)  # добавляем в свод
         group_accounting_main_df.rename(columns={'Статус_Соц_положение_семьи': 'СОП'}, inplace=True)
 
@@ -476,9 +503,9 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         sum_row = group_accounting_main_df.sum(axis=0)  # суммируем колонки
         if slice_column == 'Текущий_возраст':
             # для проведения сортировки
-            group_accounting_main_df.rename(index={'Ошибочное значение!!!': 100000000},inplace=True)
+            group_accounting_main_df.rename(index={'Ошибочное значение!!!': 100000000}, inplace=True)
             group_accounting_main_df.sort_index(inplace=True)
-            group_accounting_main_df.rename(index={100000000:'Ошибочное значение!!!'}, inplace=True)
+            group_accounting_main_df.rename(index={100000000: 'Ошибочное значение!!!'}, inplace=True)
 
         group_accounting_main_df.loc['Итого'] = sum_row  # добавляем суммирующую колонку
 
@@ -486,7 +513,6 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
         dct_report_sheet[f'Соцпаспорт_{prefix}'] = group_main_df
         dct_report_sheet[f'Сироты_{prefix}'] = group_orphans_main_df
         dct_report_sheet[f'Учет_{prefix}'] = group_accounting_main_df
-
 
     # получаем текущее время
     t = time.localtime()
@@ -503,7 +529,8 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
     lst_report_wb.save(f'{path_end_folder}/Списки для отчета по стандарту БРИТ от {current_time}.xlsx')
 
 
-def create_svod_counting(df:pd.DataFrame,name_column:str, postfix_file:str, lst_counting_name_columns:list, path:str, current_time):
+def create_svod_counting(df: pd.DataFrame, name_column: str, postfix_file: str, lst_counting_name_columns: list,
+                         path: str, current_time):
     """
     Функция для создания сводов по колонкам подсчета
     :param df: основной датафрейм
@@ -513,7 +540,7 @@ def create_svod_counting(df:pd.DataFrame,name_column:str, postfix_file:str, lst_
     :param path: путь куда сохранять файлы
     :param current_time: время под которым будет сохраняться файл
     """
-    dct_counting_df = {} # словарь для хранения датафреймов
+    dct_counting_df = {}  # словарь для хранения датафреймов
     for name_counting_column in lst_counting_name_columns:
         temp_svod_df = (pd.pivot_table(df, index=[name_column],
                                        values=[name_counting_column],
@@ -524,9 +551,9 @@ def create_svod_counting(df:pd.DataFrame,name_column:str, postfix_file:str, lst_
                                 'Количество']
         if name_column == 'Текущий_возраст':
             # для проведения сортировки
-            temp_svod_df.rename(index={'Ошибочное значение!!!': 100000000},inplace=True)
+            temp_svod_df.rename(index={'Ошибочное значение!!!': 100000000}, inplace=True)
             temp_svod_df.sort_index(inplace=True)
-            temp_svod_df.rename(index={100000000:'Ошибочное значение!!!'}, inplace=True)
+            temp_svod_df.rename(index={100000000: 'Ошибочное значение!!!'}, inplace=True)
 
         dct_counting_df[name_counting_column] = temp_svod_df  # сохраняем в словарь
 
@@ -536,28 +563,27 @@ def create_svod_counting(df:pd.DataFrame,name_column:str, postfix_file:str, lst_
     counting_report_wb.save(f'{path}/Срез по {postfix_file} от {current_time}.xlsx')
 
 
-
-
-
-def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str, path_end_folder:str,checkbox_expelled:int,raw_date)->None:
+def create_social_report(etalon_file: str, data_folder: str, path_egisso_params: str, path_end_folder: str,
+                         checkbox_expelled: int, raw_date) -> None:
     """
     Функция для генерации отчета по социальному статусу студентов БРИТ
     """
     try:
-        set_rus_locale() # устанавливаем русскую локаль что категоризация по месяцам работала
+        set_rus_locale()  # устанавливаем русскую локаль что категоризация по месяцам работала
         # обязательные колонки
-        name_columns_set = {'ФИО','Дата_рождения','Статус_ОП','Статус_Бюджет','Статус_Общежитие','Статус_Учёба','Статус_Всеобуч',
+        name_columns_set = {'ФИО', 'Дата_рождения', 'Статус_ОП', 'Статус_Бюджет', 'Статус_Общежитие', 'Статус_Учёба',
+                            'Статус_Всеобуч',
                             'Статус_Соц_стипендия', 'Статус_Соц_положение_семьи',
-                            'СНИЛС', 'Пол','Серия_паспорта', 'Номер_паспорта','Дата_выдачи_паспорта', 'Кем_выдан',
+                            'СНИЛС', 'Пол', 'Серия_паспорта', 'Номер_паспорта', 'Дата_выдачи_паспорта', 'Кем_выдан',
                             'Статус_Питание',
                             'Статус_Состав_семьи', 'Статус_Уровень_здоровья', 'Статус_Сиротство',
                             'Статус_Место_регистрации', 'Статус_Студенческая_семья',
-                            'Статус_Воинский_учет','Статус_Родитель_СВО','Статус_Участник_СВО',
-                            'Статус_ПДН','Статус_КДН','Статус_Внутр_учет', 'Статус_Самовольный_уход','Статус_Выпуск'}
+                            'Статус_Воинский_учет', 'Статус_Родитель_СВО', 'Статус_Участник_СВО',
+                            'Статус_ПДН', 'Статус_КДН', 'Статус_Внутр_учет', 'Статус_Самовольный_уход', 'Статус_Выпуск'}
         error_df = pd.DataFrame(
             columns=['Название файла', 'Название листа', 'Значение ошибки', 'Описание ошибки'])  # датафрейм для ошибок
         try:
-            wb = openpyxl.load_workbook(etalon_file) # загружаем эталонный файл
+            wb = openpyxl.load_workbook(etalon_file)  # загружаем эталонный файл
             quantity_sheets = 0  # считаем количество групп
             main_sheet = wb.sheetnames[0]  # получаем название первого листа с которым и будем сравнивать новые файлы
             main_df = pd.read_excel(etalon_file, sheet_name=main_sheet,
@@ -569,12 +595,12 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         etallon_always_cols = name_columns_set.difference(set(main_df.columns))
         if len(etallon_always_cols) != 0:
             raise NotColumn
-        etalon_cols = set(main_df.columns) # эталонные колонки
+        etalon_cols = set(main_df.columns)  # эталонные колонки
 
         for idx, file in enumerate(os.listdir(data_folder)):
             if not file.startswith('~$') and not file.endswith('.xlsx'):
                 name_file = file.split('.xls')[0]
-                temp_error_df = pd.DataFrame(data=[[f'{name_file}','', '',
+                temp_error_df = pd.DataFrame(data=[[f'{name_file}', '', '',
                                                     'Расширение файла НЕ XLSX! Программа обрабатывает только XLSX ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
                                              columns=['Название файла', 'Строка или колонка с ошибкой',
                                                       'Описание ошибки'])
@@ -584,7 +610,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 name_file = file.split('.xlsx')[0]
                 print(f'Файл: {name_file}')
                 try:
-                    temp_wb = openpyxl.load_workbook(f'{data_folder}/{file}') # открываем
+                    temp_wb = openpyxl.load_workbook(f'{data_folder}/{file}')  # открываем
                 except:
                     temp_error_df = pd.DataFrame(
                         data=[[f'{name_file}', f'', f'',
@@ -593,11 +619,12 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                                  'Описание ошибки'])
                     error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
                     continue  # не обрабатываем лист, где найдены ошибки
-                lst_sheets_temp_wb = temp_wb.sheetnames # получаем список листов в файле
+                lst_sheets_temp_wb = temp_wb.sheetnames  # получаем список листов в файле
                 for name_sheet in lst_sheets_temp_wb:
-                    if name_sheet != 'Данные для выпадающих списков': # отбрасываем лист с даннными выпадающих списков
+                    if name_sheet != 'Данные для выпадающих списков':  # отбрасываем лист с даннными выпадающих списков
                         try:
-                            temp_df = pd.read_excel(f'{data_folder}/{file}',sheet_name=name_sheet,dtype=str) # получаем колонки которые есть на листе
+                            temp_df = pd.read_excel(f'{data_folder}/{file}', sheet_name=name_sheet,
+                                                    dtype=str)  # получаем колонки которые есть на листе
                         except:
                             temp_error_df = pd.DataFrame(
                                 data=[[f'{name_file}', f'', f'',
@@ -629,7 +656,8 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                             continue  # не обрабатываем лист, где найдены ошибки
 
                         # Проверяем на наличие колонок без названия Unnamed
-                        unnamed_lst = [f'{idx} колонка не имеет названия' for idx, name_column in enumerate(temp_df.columns, 1) if 'Unnamed' in name_column]
+                        unnamed_lst = [f'{idx} колонка не имеет названия' for idx, name_column in
+                                       enumerate(temp_df.columns, 1) if 'Unnamed' in name_column]
                         if len(unnamed_lst) != 0:
                             temp_error_df = pd.DataFrame(
                                 data=[[f'{name_file}', f'{name_sheet}', f'{";".join(unnamed_lst)}',
@@ -640,11 +668,11 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                             continue  # не обрабатываем лист, где найдены ошибки
 
                         # Проверяем порядок колонок
-                        order_main_columns = list(main_df.columns)# порядок колонок эталонного файла
-                        order_temp_df_columns = list(temp_df.columns)# порядок колонок проверяемого файла
-                        error_order_lst = []# список для несовпадающих пар
+                        order_main_columns = list(main_df.columns)  # порядок колонок эталонного файла
+                        order_temp_df_columns = list(temp_df.columns)  # порядок колонок проверяемого файла
+                        error_order_lst = []  # список для несовпадающих пар
                         # Сравниваем попарно колонки
-                        for main,temp in zip(order_main_columns,order_temp_df_columns):
+                        for main, temp in zip(order_main_columns, order_temp_df_columns):
                             if main != temp:
                                 error_order_lst.append(f'На месте колонки {main} находится колонка {temp}')
                         if len(error_order_lst) != 0:
@@ -656,45 +684,39 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                             error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
                             continue  # не обрабатываем лист, где найдены ошибки
 
-
-
                         temp_df.dropna(how='all', inplace=True)  # удаляем пустые строки
                         # проверяем наличие колонок Файл и Группа
                         if 'Файл' not in temp_df.columns:
                             temp_df.insert(0, 'Файл', name_file)
 
                         if 'Группа' not in temp_df.columns:
-                            temp_df.insert(0, 'Группа', name_sheet) # вставляем колонку с именем листа
+                            temp_df.insert(0, 'Группа', name_sheet)  # вставляем колонку с именем листа
 
                         if checkbox_expelled == 0:
-                            temp_df = temp_df[temp_df['Статус_Учёба'] != 'Отчислен'] # отбрасываем отчисленных если поставлен чекбокс
+                            temp_df = temp_df[
+                                temp_df['Статус_Учёба'] != 'Отчислен']  # отбрасываем отчисленных если поставлен чекбокс
 
-                        main_df = pd.concat([main_df,temp_df],axis=0,ignore_index=True) # добавляем в общий файл
-                        quantity_sheets +=1
+                        main_df = pd.concat([main_df, temp_df], axis=0, ignore_index=True)  # добавляем в общий файл
+                        quantity_sheets += 1
         # генерируем текущее время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
         # Создаем папку для хранения дополнительных сводов
-        path_svod_file = f'{path_end_folder}/ДопСводы' #
+        path_svod_file = f'{path_end_folder}/ДопСводы'  #
         if not os.path.exists(path_svod_file):
             os.makedirs(path_svod_file)
 
-
-
-
-
         # Проверяем есть ли данные в общем файле, если нет то вызываем исключение
         if len(main_df) == 0:
-            error_df.to_excel(f'{path_end_folder}/Ошибки от {current_time}.xlsx',index=False)
+            error_df.to_excel(f'{path_end_folder}/Ошибки от {current_time}.xlsx', index=False)
             raise NotGoodSheet
-        main_df.rename(columns={'Группа':'Для переноса','Файл':'файл для переноса'},inplace=True) # переименовываем группу чтобы перенести ее в начало таблицы
-        main_df.insert(0,'Файл',main_df['файл для переноса'])
-        main_df.insert(1,'Группа',main_df['Для переноса'])
-        main_df.drop(columns=['Для переноса','файл для переноса'],inplace=True)
+        main_df.rename(columns={'Группа': 'Для переноса', 'Файл': 'файл для переноса'},
+                       inplace=True)  # переименовываем группу чтобы перенести ее в начало таблицы
+        main_df.insert(0, 'Файл', main_df['файл для переноса'])
+        main_df.insert(1, 'Группа', main_df['Для переноса'])
+        main_df.drop(columns=['Для переноса', 'файл для переноса'], inplace=True)
 
-        main_df.fillna('Нет статуса', inplace=True) # заполняем пустые ячейки
-
-
+        main_df.fillna('Нет статуса', inplace=True)  # заполняем пустые ячейки
 
         # Сохраняем лист со всеми данными
         lst_date_columns = []  # список для колонок с датами
@@ -703,17 +725,18 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 lst_date_columns.append(column)
         main_df[lst_date_columns] = main_df[lst_date_columns].applymap(convert_to_date)  # Приводим к типу
         main_df[lst_date_columns] = main_df[lst_date_columns].applymap(
-            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp,datetime.datetime)) and pd.notna(x) else x)
+            lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp, datetime.datetime)) and pd.notna(x) else x)
 
-        main_df.replace('Нет статуса','',inplace=True)
+        main_df.replace('Нет статуса', '', inplace=True)
         # Добавляем разбиение по датам
-        main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_svod_file)
+        main_df = proccessing_date(raw_date, 'Дата_рождения', main_df, path_svod_file)
 
         # Добавляем колонки со склоненными ФИО
         main_df = declension_fio_by_case(main_df)
 
         main_df.columns = list(map(str, list(main_df.columns)))
-        # Приводим колонки с подсчетом к правильному формату с запятой
+
+        # Обрабатываем колонки типа Подсчет если они есть
         lst_counting_name_columns = [name_column for name_column in main_df.columns if 'Подсчет_' in name_column]
         if len(lst_counting_name_columns) != 0:
             # Создаем файл в котором будут сводные данные по колонкам с Подсчетом
@@ -726,26 +749,26 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
             # приводим к числовому формату
             for name_counting_column in lst_counting_name_columns:
                 main_df[name_counting_column] = main_df[name_counting_column].apply(convert_number)
-            # сохраняем в папку
+            # создаем своды
             for name_column, name_file in dct_counting_save_name.items():
                 create_svod_counting(main_df.copy(), name_column, name_file, lst_counting_name_columns,
-                                     path_counting_file,current_time)
-
+                                     path_counting_file, current_time)
 
         # генерируем отчет по стандарту БРИТ
         create_report_brit(main_df.copy(), {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам',
-                                                 'Пол':'по полам','Статус_ОП':'по ОП', }, path_end_folder)
-
+                                            'Пол': 'по полам', 'Статус_ОП': 'по ОП', }, path_end_folder)
 
         # Генерируем файлы егиссо
         # генерируем полный вариант
-        df_params_egisso,temp_params_egisso_error_df = extract_parameters_egisso(path_egisso_params,list(main_df.columns))
-        path_egisso_file = f'{path_end_folder}/ЕГИССО' # создаем папку для хранения файлов егиссо
+        df_params_egisso, temp_params_egisso_error_df = extract_parameters_egisso(path_egisso_params,
+                                                                                  list(main_df.columns))
+        path_egisso_file = f'{path_end_folder}/ЕГИССО'  # создаем папку для хранения файлов егиссо
         if not os.path.exists(path_egisso_file):
             os.makedirs(path_egisso_file)
 
         if len(df_params_egisso) != 0:
-            egisso_full_wb,egisso_not_find_wb, egisso_error_wb =create_full_egisso_data(main_df,df_params_egisso,path_egisso_file) # создаем полный набор данных
+            egisso_full_wb, egisso_not_find_wb, egisso_error_wb = create_full_egisso_data(main_df, df_params_egisso,
+                                                                                          path_egisso_file)  # создаем полный набор данных
             egisso_full_wb.save(f'{path_egisso_file}/ЕГИССО полные данные от {current_time}.xlsx')
             egisso_not_find_wb.save(f'{path_egisso_file}/ЕГИССО Не найденные льготы {current_time}.xlsx')
             egisso_error_wb.save(f'{path_egisso_file}/ЕГИССО перс данные ОШИБКИ от {current_time}.xlsx')
@@ -760,42 +783,39 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # Сохраняем лист с ошибками
 
         error_df = pd.concat([error_df, temp_params_egisso_error_df], axis=0, ignore_index=True)
-        error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
+        error_wb = write_df_to_excel({'Ошибки': error_df}, write_index=False)
         error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
 
-
-
-
         # Создаем файл в котором будут данные по колонкам Список_
-        dct_list_columns= {} # словарь в котором будут храниться датафреймы созданные для каждой колонки со списокм
-        dct_values_in_list_columns = {} # словарь в котором будут храниться названия колонок и все значения которые там встречались
-        dct_df_list_in_columns = {} # словарь где будут храниться значения в колонках и датафреймы где в указанных колонках есть соответствующее значение
+        dct_list_columns = {}  # словарь в котором будут храниться датафреймы созданные для каждой колонки со списокм
+        dct_values_in_list_columns = {}  # словарь в котором будут храниться названия колонок и все значения которые там встречались
+        dct_df_list_in_columns = {}  # словарь где будут храниться значения в колонках и датафреймы где в указанных колонках есть соответствующее значение
 
         lst_list_name_columns = [name_column for name_column in main_df.columns if 'Список_' in name_column]
         if len(lst_list_name_columns) != 0:
             main_df[lst_list_name_columns] = main_df[lst_list_name_columns].astype(str)
             for name_lst_column in lst_list_name_columns:
-                temp_col_value_lst = main_df[name_lst_column].tolist() # создаем список
-                temp_col_value_lst = [value for value in temp_col_value_lst if value] # отбрасываем пустые значения
+                temp_col_value_lst = main_df[name_lst_column].tolist()  # создаем список
+                temp_col_value_lst = [value for value in temp_col_value_lst if value]  # отбрасываем пустые значения
                 unwrap_lst = []
-                temp_col_value_lst = list(map(str,temp_col_value_lst)) # делаем строковым каждый элемент
+                temp_col_value_lst = list(map(str, temp_col_value_lst))  # делаем строковым каждый элемент
                 for value in temp_col_value_lst:
                     unwrap_lst.extend(value.split(','))
-                unwrap_lst = list(map(str.strip,unwrap_lst)) # получаем список
+                unwrap_lst = list(map(str.strip, unwrap_lst))  # получаем список
                 # убираем повторения и сортируем
                 dct_values_in_list_columns[name_lst_column] = sorted(list(set(unwrap_lst)))
 
-                dct_value_list = dict(Counter(unwrap_lst)) # Превращаем в словарь
-                sorted_dct_value_lst = dict(sorted(dct_value_list.items())) # сортируем словарь
+                dct_value_list = dict(Counter(unwrap_lst))  # Превращаем в словарь
+                sorted_dct_value_lst = dict(sorted(dct_value_list.items()))  # сортируем словарь
                 # создаем датафрейм
-                temp_df =  pd.DataFrame(list(sorted_dct_value_lst.items()), columns=['Показатель', 'Значение'])
+                temp_df = pd.DataFrame(list(sorted_dct_value_lst.items()), columns=['Показатель', 'Значение'])
                 dct_list_columns[name_lst_column] = temp_df
 
             # Создаем датафреймы для подтверждения цифр
-            for key,lst in dct_values_in_list_columns.items():
+            for key, lst in dct_values_in_list_columns.items():
                 for value in lst:
                     temp_list_df = main_df[main_df[key].str.contains(value)]
-                    name_sheet = key.replace('Список_','')
+                    name_sheet = key.replace('Список_', '')
 
                     dct_df_list_in_columns[f'{name_sheet}_{value}'] = temp_list_df
 
@@ -805,14 +825,13 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
             list_columns_report_wb.save(f'{path_svod_file}/Данные по своду Списков {current_time}.xlsx')
 
             # Создаем свод по каждой группе
-            dct_svod_list_df = {} # словарь в котором будут храниться датафреймы по названию колонок
+            dct_svod_list_df = {}  # словарь в котором будут храниться датафреймы по названию колонок
             for name_lst_column in lst_list_name_columns:
                 file_cols = dct_values_in_list_columns[name_lst_column]
-                file_cols.insert(0,'Файл')
+                file_cols.insert(0, 'Файл')
                 dct_svod_list_df[name_lst_column] = pd.DataFrame(columns=file_cols)
 
-
-            lst_file = main_df['Файл'].unique() # список файлов
+            lst_file = main_df['Файл'].unique()  # список файлов
             for name in lst_file:
                 temp_df = main_df[main_df['Файл'] == name]
                 for name_lst_column in lst_list_name_columns:
@@ -830,54 +849,50 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                     dct_value_list = dict(Counter(temp_unwrap_lst))  # Превращаем в словарь
                     sorted_dct_value_lst = dict(sorted(dct_value_list.items()))  # сортируем словарь
                     # создаем датафрейм
-                    temp_svod_df = pd.DataFrame(list(sorted_dct_value_lst.items()), columns=['Показатель', 'Значение']).transpose()
-                    new_temp_cols = temp_svod_df.iloc[0] # получаем первую строку для названий
-                    temp_svod_df = temp_svod_df[1:] # удаляем первую строку
+                    temp_svod_df = pd.DataFrame(list(sorted_dct_value_lst.items()),
+                                                columns=['Показатель', 'Значение']).transpose()
+                    new_temp_cols = temp_svod_df.iloc[0]  # получаем первую строку для названий
+                    temp_svod_df = temp_svod_df[1:]  # удаляем первую строку
                     temp_svod_df.columns = new_temp_cols
-                    temp_svod_df.insert(0,'Файл',name)
+                    temp_svod_df.insert(0, 'Файл', name)
                     # добавляем значение в датафрейм
-                    dct_svod_list_df[name_lst_column] = pd.concat([dct_svod_list_df[name_lst_column],temp_svod_df])
+                    dct_svod_list_df[name_lst_column] = pd.concat([dct_svod_list_df[name_lst_column], temp_svod_df])
 
-            for key,value_df in dct_svod_list_df.items():
+            for key, value_df in dct_svod_list_df.items():
                 dct_svod_list_df[key].fillna(0, inplace=True)  # заполняем наны
-                dct_svod_list_df[key] = dct_svod_list_df[key].astype(int,errors='ignore')
+                dct_svod_list_df[key] = dct_svod_list_df[key].astype(int, errors='ignore')
                 sum_row = dct_svod_list_df[key].sum(axis=0)  # суммируем колонки
                 dct_svod_list_df[key].loc['Итого'] = sum_row  # добавляем суммирующую колонку
-                dct_svod_list_df[key].iloc[-1,0] = 'Итого'
+                dct_svod_list_df[key].iloc[-1, 0] = 'Итого'
                 # Сохраняем
             list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
             list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
             list_columns_svod_wb.save(f'{path_svod_file}/Свод по колонкам Списков {current_time}.xlsx')
 
-
         # Сохраняем общий файл
-        main_wb = write_df_to_excel({'Общий список':main_df},write_index=False)
+        main_wb = write_df_to_excel({'Общий список': main_df}, write_index=False)
         main_wb = del_sheet(main_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
 
-
-
         # Создаем Свод по статусам
-        main_df.replace('','Нет статуса',inplace=True)
+        main_df.replace('', 'Нет статуса', inplace=True)
         # Заменяем название колонки Пол на Статус_Пол чтобы обработка проходила нормально
-        main_df.rename(columns={'Пол':'Статус_Пол'},inplace=True)
-
+        main_df.rename(columns={'Пол': 'Статус_Пол'}, inplace=True)
 
         # Создаем раскладку по колонкам статусов
         lst_status_columns = [column for column in main_df.columns if 'Статус_' in column]
-        dct_status = {} # словарь для хранения сводных датафреймов
+        dct_status = {}  # словарь для хранения сводных датафреймов
         for name_column in lst_status_columns:
-            svod_df = pd.pivot_table(main_df,index='Файл', columns=name_column, values='ФИО',
-              aggfunc='count', fill_value=0, margins=True,
-              margins_name='Итого').reset_index()
-            name_sheet = name_column.replace('Статус_','')
-            dct_status[name_sheet] = svod_df # сохраняем в словарь сводную таблицу
+            svod_df = pd.pivot_table(main_df, index='Файл', columns=name_column, values='ФИО',
+                                     aggfunc='count', fill_value=0, margins=True,
+                                     margins_name='Итого').reset_index()
+            name_sheet = name_column.replace('Статус_', '')
+            dct_status[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
 
         # Сохраняем
         svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
         svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         svod_status_wb.save(f'{path_svod_file}/Статусы в разрезе групп {current_time}.xlsx')
-
 
         # Статусы в разрезе возрастов
         dct_status_age = {}  # словарь для хранения сводных датафреймов
@@ -892,7 +907,6 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         svod_status_age_wb = write_df_big_dct_to_excel(dct_status_age, write_index=False)
         svod_status_age_wb = del_sheet(svod_status_age_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         svod_status_age_wb.save(f'{path_svod_file}/Статусы в разрезе возрастов {current_time}.xlsx')
-
 
         # Статусы в разрезе образовательных программ
         dct_status_op = {}  # словарь для хранения сводных датафреймов
@@ -928,14 +942,12 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         svod_status_sex_wb = del_sheet(svod_status_sex_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         svod_status_sex_wb.save(f'{path_svod_file}/Статусы в разрезе полов {current_time}.xlsx')
 
-
-
-
         # Собираем колонки содержащие слово Статус_ и Подсчет_
-        lst_status = [name_column for name_column in main_df.columns if 'Статус_' in name_column or 'Подсчет_' in name_column or 'Список_' in name_column]
+        lst_status = [name_column for name_column in main_df.columns if
+                      'Статус_' in name_column or 'Подсчет_' in name_column or 'Список_' in name_column]
         # Создаем датафрейм с данными по статусам
-        soc_df = pd.DataFrame(columns=['Показатель','Значение']) # датафрейм для сбора данных отчета
-        soc_df.loc[len(soc_df)] = ['Количество учебных групп',quantity_sheets] # добавляем количество учебных групп
+        soc_df = pd.DataFrame(columns=['Показатель', 'Значение'])  # датафрейм для сбора данных отчета
+        soc_df.loc[len(soc_df)] = ['Количество учебных групп', quantity_sheets]  # добавляем количество учебных групп
         # считаем количество студентов
         quantity_study_student = main_df[main_df['Статус_Учёба'] == 'Обучается'].shape[0]  # со статусом Обучается
         quantity_academ_student = main_df[main_df['Статус_Учёба'].str.contains('Академический отпуск')].shape[
@@ -950,13 +962,14 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # считаем количество совершенолетних студентов
         quantity_maturity_students = len(main_df[main_df['Совершеннолетие'] == 'совершеннолетний'])
         quantity_not_maturity_students = len(main_df[main_df['Совершеннолетие'] == 'несовершеннолетний'])
-        quantity_error_maturity_students = len(main_df[main_df['Совершеннолетие'].isin(['отрицательный возраст','Ошибочное значение!!!'])])
+        quantity_error_maturity_students = len(
+            main_df[main_df['Совершеннолетие'].isin(['отрицательный возраст', 'Ошибочное значение!!!'])])
         soc_df.loc[len(soc_df)] = ['Возраст',
                                    f'Совершеннолетних - {quantity_maturity_students}, Несовершеннолетних - {quantity_not_maturity_students}, Неправильная дата рождения - {quantity_error_maturity_students}, Всего {quantity_except_deducted} (включая академ. и без статуса)']
 
         # Распределение по СПО-1
         header_spo = pd.DataFrame(columns=['Показатель', 'Значение'],
-                                   data=[['Статус_СПО-1', None]])  # создаем строку с заголовком
+                                  data=[['Статус_СПО-1', None]])  # создаем строку с заголовком
         df_svod_by_SPO1 = main_df.groupby(['СПО_Один']).agg({'ФИО': 'count'})
         df_svod_by_SPO1 = df_svod_by_SPO1.reset_index()
         df_svod_by_SPO1.columns = ['Показатель', 'Значение']
@@ -967,7 +980,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
                                            data=[[name_column, None]])  # создаем строку с заголовком
                 # создаем строки с описанием
-                new_value_df = create_value_str(main_df, name_column,'Статус_Учёба',
+                new_value_df = create_value_str(main_df, name_column, 'Статус_Учёба',
                                                 {'Обучается': 'Обучается', 'Академ': 'Академический отпуск',
                                                  'Не указан статус': 'Нет статуса'})
             elif 'Статус_' in name_column:
@@ -977,7 +990,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
                 new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
                 new_value_df['Показатель'] = new_value_df['Показатель'].astype(str)
-                new_value_df.sort_values(by='Показатель',inplace=True)
+                new_value_df.sort_values(by='Показатель', inplace=True)
             elif 'Подсчет_' in name_column:
                 new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
                                            data=[[name_column, None]])  # создаем строку с заголовком
@@ -985,20 +998,21 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
                 temp_desccribe = main_df[name_column].describe()
                 sum_column = main_df[name_column].sum()
                 _dct_describe = temp_desccribe.to_dict()
-                dct_describe = {'Среднее':round(_dct_describe['mean'],2),'Сумма': round(sum_column,2),'Медиана':_dct_describe['50%'],
-                                'Минимум':_dct_describe['min'],'Максимум':_dct_describe['max'],'Количество':_dct_describe['count'],}
-                new_value_df = pd.DataFrame(list(dct_describe.items()),columns=['Показатель', 'Значение'])
+                dct_describe = {'Среднее': round(_dct_describe['mean'], 2), 'Сумма': round(sum_column, 2),
+                                'Медиана': _dct_describe['50%'],
+                                'Минимум': _dct_describe['min'], 'Максимум': _dct_describe['max'],
+                                'Количество': _dct_describe['count'], }
+                new_value_df = pd.DataFrame(list(dct_describe.items()), columns=['Показатель', 'Значение'])
             elif 'Список_' in name_column:
                 new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
                                            data=[[name_column, None]])  # создаем строку с заголовком
                 new_value_df = dct_list_columns[name_column]
 
-
             new_part_df = pd.concat([new_part_df, new_value_df], axis=0)  # соединяем
             soc_df = pd.concat([soc_df, new_part_df], axis=0)
         # Создаем раскладку по группам
         new_group_header_df = pd.DataFrame(columns=['Показатель', 'Значение'],
-                                   data=[['Статус_студентов по группам', None]])  # создаем строку с заголовком
+                                           data=[['Статус_студентов по группам', None]])  # создаем строку с заголовком
         new_group_df = create_value_str(main_df, 'Группа', 'Статус_Учёба',
                                         {'Обучается': 'Обучается', 'Академ': 'Академический отпуск',
                                          'Не указан статус': 'Нет статуса'})
@@ -1006,17 +1020,20 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
 
         soc_df = pd.concat([soc_df, new_group_header_df], axis=0)
 
-        soc_wb = write_df_to_excel({'Свод по статусам':soc_df},write_index=False)
+        soc_wb = write_df_to_excel({'Свод по статусам': soc_df}, write_index=False)
         soc_wb = del_sheet(soc_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
 
-        column_number = 0 # номер колонки в которой ищем слово Статус_
+        column_number = 0  # номер колонки в которой ищем слово Статус_
         # Создаем  стиль шрифта и заливки
         font = Font(color='FF000000')  # Черный цвет
         fill = PatternFill(fill_type='solid', fgColor='ffa500')  # Оранжевый цвет
         for row in soc_wb['Свод по статусам'].iter_rows(min_row=1, max_row=soc_wb['Свод по статусам'].max_row,
-                                                        min_col=column_number, max_col=column_number):  # Перебираем строки
-            if 'Статус_' in str(row[column_number].value) or 'Подсчет_' in str(row[column_number].value) or 'Список_' in str(row[column_number].value): # делаем ячейку строковой и проверяем наличие слова Статус_
-                for cell in row: # применяем стиль если условие сработало
+                                                        min_col=column_number,
+                                                        max_col=column_number):  # Перебираем строки
+            if 'Статус_' in str(row[column_number].value) or 'Подсчет_' in str(
+                    row[column_number].value) or 'Список_' in str(
+                    row[column_number].value):  # делаем ячейку строковой и проверяем наличие слова Статус_
+                for cell in row:  # применяем стиль если условие сработало
                     cell.font = font
                     cell.fill = fill
         soc_wb.save(f'{path_end_folder}/Свод по статусам от {current_time}.xlsx')
@@ -1048,7 +1065,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
             wb.create_sheet(title=name_column[:30], index=idx)
 
         for idx, name_column in enumerate(main_df.columns):
-            group_main_df = main_df.astype({name_column:str}).groupby([name_column]).agg({'Для подсчета': 'sum'})
+            group_main_df = main_df.astype({name_column: str}).groupby([name_column]).agg({'Для подсчета': 'sum'})
             group_main_df.columns = ['Количество']
             # Сортируем по убыванию
             group_main_df.sort_values(by=['Количество'], inplace=True, ascending=False)
@@ -1059,7 +1076,7 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
             wb[name_column[:30]].column_dimensions['A'].width = 50
 
         # Удаляем листы
-        wb = del_sheet(wb,['Sheet','Sheet1','Для подсчета'])
+        wb = del_sheet(wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         # Сохраняем итоговый файл
         wb.save(f'{path_svod_file}/Свод по каждой колонке таблицы от {current_time}.xlsx')
 
@@ -1067,8 +1084,8 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         if error_df.shape[0] != 0:
             count_error = len(error_df['Название листа'].unique())
             messagebox.showwarning('Деметра Отчеты социальный паспорт студента',
-                                f'Количество необработанных листов {count_error}\n'
-                                f'Проверьте файл Ошибки в файле')
+                                   f'Количество необработанных листов {count_error}\n'
+                                   f'Проверьте файл Ошибки в файле')
     except FileNotFoundError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Перенесите файлы, конечную папку с которой вы работете в корень диска. Проблема может быть\n '
@@ -1106,7 +1123,8 @@ if __name__ == '__main__':
     main_raw_date = '05.09.2024'
     # main_checkbox_expelled = 1
 
-    create_social_report(main_etalon_file,main_data_folder,main_egisso_params,main_end_folder,main_checkbox_expelled,main_raw_date)
+    create_social_report(main_etalon_file, main_data_folder, main_egisso_params, main_end_folder,
+                         main_checkbox_expelled, main_raw_date)
 
     print('Lindy Booth !!!')
 
