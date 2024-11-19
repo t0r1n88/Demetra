@@ -805,10 +805,6 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
         # генерируем текущее время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
-        # Создаем папку для хранения дополнительных сводов
-        path_svod_file = f'{path_end_folder}/Своды по колонкам Статусов'  #
-        if not os.path.exists(path_svod_file):
-            os.makedirs(path_svod_file)
 
         # Проверяем есть ли данные в общем файле, если нет то вызываем исключение
         if len(main_df) == 0:
@@ -935,7 +931,7 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
                 # Сохраняем
             list_columns_report_wb = write_df_big_dct_to_excel(dct_df_list_in_columns, write_index=False)
             list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            list_columns_report_wb.save(f'{path_list_file}/Данные по срезам Списков {current_time}.xlsx')
+            list_columns_report_wb.save(f'{path_list_file}/Данные по сводам Списков {current_time}.xlsx')
 
             # создаем срезы
             for name_column, prefix_file in dct_list_save_name.items():
@@ -952,6 +948,12 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
         # Заменяем название колонки Пол на Статус_Пол чтобы обработка проходила нормально
         main_df.rename(columns={'Пол': 'Статус_Пол'}, inplace=True)
 
+        # Создаем папку для хранения сводов по статусам
+        path_svod_file = f'{path_end_folder}/Своды по колонкам Статусов'  #
+        if not os.path.exists(path_svod_file):
+            os.makedirs(path_svod_file)
+
+
         # Создаем раскладку по колонкам статусов
         lst_status_columns = [column for column in main_df.columns if 'Статус_' in column]
         dct_status_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Статус_ОП': 'по ОП',
@@ -961,68 +963,6 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
             create_svod_status(main_df.copy(), name_column, prefix_file, lst_status_columns,
                              path_svod_file, current_time)
 
-
-
-        # dct_status = {}  # словарь для хранения сводных датафреймов
-        # for name_column in lst_status_columns:
-        #     svod_df = pd.pivot_table(main_df, index='Файл', columns=name_column, values='ФИО',
-        #                              aggfunc='count', fill_value=0, margins=True,
-        #                              margins_name='Итого').reset_index()
-        #     name_sheet = name_column.replace('Статус_', '')
-        #     dct_status[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
-        #
-        # # Сохраняем
-        # svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
-        # svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        # svod_status_wb.save(f'{path_svod_file}/Статусы в разрезе групп {current_time}.xlsx')
-        #
-        # # Статусы в разрезе возрастов
-        # dct_status_age = {}  # словарь для хранения сводных датафреймов
-        # for name_column in lst_status_columns:
-        #     svod_df = pd.pivot_table(main_df, index='Текущий_возраст', columns=name_column, values='ФИО',
-        #                              aggfunc='count', fill_value=0, margins=True,
-        #                              margins_name='Итого').reset_index()
-        #     name_sheet = name_column.replace('Статус_', '')
-        #     dct_status_age[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
-        #
-        # # Сохраняем
-        # svod_status_age_wb = write_df_big_dct_to_excel(dct_status_age, write_index=False)
-        # svod_status_age_wb = del_sheet(svod_status_age_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        # svod_status_age_wb.save(f'{path_svod_file}/Статусы в разрезе возрастов {current_time}.xlsx')
-        #
-        # # Статусы в разрезе образовательных программ
-        # dct_status_op = {}  # словарь для хранения сводных датафреймов
-        # lst_status_not_op = lst_status_columns.copy()
-        # lst_status_not_op.remove('Статус_ОП')
-        #
-        # for name_column in lst_status_not_op:
-        #     svod_df = pd.pivot_table(main_df, index='Статус_ОП', columns=name_column, values='ФИО',
-        #                              aggfunc='count', fill_value=0, margins=True,
-        #                              margins_name='Итого').reset_index()
-        #     name_sheet = name_column.replace('Статус_', '')
-        #     dct_status_op[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
-        #
-        # # Сохраняем
-        # svod_status_op_wb = write_df_big_dct_to_excel(dct_status_op, write_index=False)
-        # svod_status_op_wb = del_sheet(svod_status_op_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        # svod_status_op_wb.save(f'{path_svod_file}/Статусы в разрезе ОП {current_time}.xlsx')
-        #
-        # # Статусы в разрезе полов
-        # dct_status_sex = {}  # словарь для хранения сводных датафреймов
-        # lst_status_sex = lst_status_columns.copy()
-        # lst_status_sex.remove('Статус_Пол')
-        #
-        # for name_column in lst_status_sex:
-        #     svod_df = pd.pivot_table(main_df, index='Статус_Пол', columns=name_column, values='ФИО',
-        #                              aggfunc='count', fill_value=0, margins=True,
-        #                              margins_name='Итого').reset_index()
-        #     name_sheet = name_column.replace('Статус_', '')
-        #     dct_status_sex[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
-        #
-        # # Сохраняем
-        # svod_status_sex_wb = write_df_big_dct_to_excel(dct_status_sex, write_index=False)
-        # svod_status_sex_wb = del_sheet(svod_status_sex_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        # svod_status_sex_wb.save(f'{path_svod_file}/Статусы в разрезе полов {current_time}.xlsx')
 
         # Собираем колонки содержащие слово Статус_ и Подсчет_
         lst_status = [name_column for name_column in main_df.columns if

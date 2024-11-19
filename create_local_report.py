@@ -208,6 +208,143 @@ def create_slice_report(df:pd.DataFrame,slice_column:str,dct_params:dict):
 
     return out_df
 
+def create_svod_counting(df: pd.DataFrame, name_column: str, postfix_file: str, lst_counting_name_columns: list,
+                         path: str, current_time):
+    """
+    Функция для создания сводов по колонкам подсчета
+    :param df: основной датафрейм
+    :param name_column: название колонки
+    :param postfix_file: дополнение к имени файла
+    :param lst_counting_name_columns: список колонок типа Подсчет
+    :param path: путь куда сохранять файлы
+    :param current_time: время под которым будет сохраняться файл
+    """
+    dct_counting_df = {}  # словарь для хранения датафреймов
+    for name_counting_column in lst_counting_name_columns:
+        temp_svod_df = (pd.pivot_table(df, index=[name_column],
+                                       values=[name_counting_column],
+                                       aggfunc=[np.mean, np.sum, np.median, np.min, np.max, len]))
+        temp_svod_df = temp_svod_df.reset_index()  # убираем мультииндекс
+        temp_svod_df = temp_svod_df.droplevel(axis=1, level=0)  # убираем мультиколонки
+        temp_svod_df.columns = [name_column, 'Среднее', 'Сумма', 'Медиана', 'Минимум', 'Максимум',
+                                'Количество']
+        if name_column == 'Текущий_возраст':
+            # для проведения сортировки
+            temp_svod_df.rename(index={'Ошибочное значение!!!': 100000000}, inplace=True)
+            temp_svod_df.sort_index(inplace=True)
+            temp_svod_df.rename(index={100000000: 'Ошибочное значение!!!'}, inplace=True)
+
+        dct_counting_df[name_counting_column] = temp_svod_df  # сохраняем в словарь
+
+    # Сохраняем
+    counting_report_wb = write_df_big_dct_to_excel(dct_counting_df, write_index=False)
+    counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+    counting_report_wb.save(f'{path}/Свод по {postfix_file} от {current_time}.xlsx')
+
+def create_svod_list(df: pd.DataFrame, name_column: str, postfix_file: str, lst_list_name_columns: list,
+                         path: str, current_time, dct_values_in_list_columns:dict):
+    """
+    Функция для создания сводов по колонкам подсчета
+    :param df: основной датафрейм
+    :param name_column: название колонки
+    :param postfix_file: дополнение к имени файла
+    :param lst_counting_name_columns: список колонок типа Список
+    :param path: путь куда сохранять файлы
+    :param current_time: время под которым будет сохраняться файл
+    """
+    dct_svod_list_df = {}  # словарь в котором будут храниться датафреймы по названию колонок
+    for name_lst_column in lst_list_name_columns:
+        file_cols = dct_values_in_list_columns[name_lst_column]
+        file_cols.insert(0, name_column)
+        dct_svod_list_df[name_lst_column] = pd.DataFrame(columns=file_cols)
+
+    lst_file = df[name_column].unique()  # список файлов
+    for name in lst_file:
+        temp_df = df[df[name_column] == name]
+        for name_lst_column in lst_list_name_columns:
+
+            temp_col_value_lst = temp_df[name_lst_column].tolist()  # создаем список
+            temp_col_value_lst = [value for value in temp_col_value_lst if value]  # отбрасываем пустые значения
+            temp_unwrap_lst = []
+            temp_col_value_lst = list(map(str, temp_col_value_lst))  # делаем строковым каждый элемент
+            for value in temp_col_value_lst:
+                temp_unwrap_lst.extend(value.split(','))
+            temp_unwrap_lst = list(map(str.strip, temp_unwrap_lst))  # получаем список
+            # убираем повторения и сортируем
+            dct_values_in_list_columns[name_lst_column] = sorted(list(set(temp_unwrap_lst)))
+
+            dct_value_list = dict(Counter(temp_unwrap_lst))  # Превращаем в словарь
+            sorted_dct_value_lst = dict(sorted(dct_value_list.items()))  # сортируем словарь
+            # создаем датафрейм
+            temp_svod_df = pd.DataFrame(list(sorted_dct_value_lst.items()),
+                                        columns=['Показатель', 'Значение']).transpose()
+            new_temp_cols = temp_svod_df.iloc[0]  # получаем первую строку для названий
+            temp_svod_df = temp_svod_df[1:]  # удаляем первую строку
+            temp_svod_df.columns = new_temp_cols
+            temp_svod_df.insert(0, name_column, name)
+            # добавляем значение в датафрейм
+            dct_svod_list_df[name_lst_column] = pd.concat([dct_svod_list_df[name_lst_column], temp_svod_df])
+
+    for key, value_df in dct_svod_list_df.items():
+        dct_svod_list_df[key].fillna(0, inplace=True)  # заполняем наны
+        dct_svod_list_df[key] = dct_svod_list_df[key].astype(int, errors='ignore')
+        if name_column == 'Текущий_возраст':
+            dct_svod_list_df[key] = dct_svod_list_df[key].astype(str) # делаем строковой
+            # заменяем ошибочное значение числом чтобы отсортировать
+            dct_svod_list_df[key] = dct_svod_list_df[key].apply(lambda x:x.replace('Ошибочное значение!!!',100000000))
+            dct_svod_list_df[key] = dct_svod_list_df[key].astype(float) # делаем числом
+            dct_svod_list_df[key] = dct_svod_list_df[key].astype(int) # делаем числом
+            dct_svod_list_df[key].sort_values(by='Текущий_возраст',inplace=True)
+
+
+        sum_row = dct_svod_list_df[key].sum(axis=0)  # суммируем колонки
+        dct_svod_list_df[key].loc['Итого'] = sum_row  # добавляем суммирующую колонку
+        dct_svod_list_df[key].iloc[-1, 0] = 'Итого'
+        if name_column == 'Текущий_возраст':
+            dct_svod_list_df[key]['Текущий_возраст'] = dct_svod_list_df[key]['Текущий_возраст'] .astype(str)  # делаем строковой
+            dct_svod_list_df[key]['Текущий_возраст']  = dct_svod_list_df[key]['Текущий_возраст'] .apply(lambda x: x.replace('100000000','Ошибочное значение!!!'))
+        # Сохраняем
+    list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
+    list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+    list_columns_svod_wb.save(f'{path}/Свод по {postfix_file} {current_time}.xlsx')
+
+
+def create_svod_status(df: pd.DataFrame, name_column: str, postfix_file: str, lst_status: list,
+                         path: str, current_time):
+    """
+    Функция для создания сводов по колонкам подсчета
+    :param df: основной датафрейм
+    :param name_column: название колонки
+    :param postfix_file: дополнение к имени файла
+    :param lst_counting_name_columns: список колонок типа Список
+    :param path: путь куда сохранять файлы
+    :param current_time: время под которым будет сохраняться файл
+    """
+    dct_status = {}  # словарь для хранения сводных датафреймов
+    lst_status_columns = lst_status.copy()
+
+    if name_column == 'Статус_Пол':
+        lst_status_columns.remove('Статус_Пол')
+    if name_column == 'Статус_ОП':
+        lst_status_columns.remove('Статус_ОП')
+
+    for name_status_column in lst_status_columns:
+        svod_df = pd.pivot_table(df, index=name_column, columns=name_status_column, values='ФИО',
+                                 aggfunc='count', fill_value=0, margins=True,
+                                 margins_name='Итого').reset_index()
+        name_sheet = name_status_column.replace('Статус_', '')
+        dct_status[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
+
+    # Сохраняем
+    svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
+    svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+    svod_status_wb.save(f'{path}/Свод по {postfix_file} {current_time}.xlsx')
+
+
+
+
+
+
 
 
 
@@ -332,11 +469,6 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         # получаем текущее время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
-        # Создаем папку для хранения дополнительных сводов
-        path_svod_file = f'{path_end_folder}/ДопСводы' #
-        if not os.path.exists(path_svod_file):
-            os.makedirs(path_svod_file)
-
 
         main_df.rename(columns={'Группа': 'Для переноса', 'Файл': 'файл для переноса'},
                        inplace=True)  # переименовываем группу чтобы перенести ее в начало таблицы
@@ -356,16 +488,28 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
         main_df.replace('Нет статуса', '', inplace=True)
         # Добавляем разбиение по датам
-        main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_svod_file)
+        main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_end_folder)
 
         # Добавляем склонение по падежам и создание инициалов
         main_df = declension_fio_by_case(main_df)
 
-        # Приводим колонки с подсчетом к правильному формату с запятой
+        # Обрабатываем колонки типа Подсчет если они есть
         lst_counting_name_columns = [name_column for name_column in main_df.columns if 'Подсчет_' in name_column]
         if len(lst_counting_name_columns) != 0:
+            # Создаем файл в котором будут сводные данные по колонкам с Подсчетом
+            dct_counting_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Статус_ОП': 'по ОП',
+                                      'Пол': 'по полам'}  # словарь для названий колонок по которым будут создаваться файлы
+            # Создаем папку для хранения сводов по колонкам подсчета
+            path_counting_file = f'{path_end_folder}/Своды по колонкам Подсчетов'  #
+            if not os.path.exists(path_counting_file):
+                os.makedirs(path_counting_file)
+            # приводим к числовому формату
             for name_counting_column in lst_counting_name_columns:
                 main_df[name_counting_column] = main_df[name_counting_column].apply(convert_number)
+            # создаем своды
+            for name_column, name_file in dct_counting_save_name.items():
+                create_svod_counting(main_df.copy(), name_column, name_file, lst_counting_name_columns,
+                                     path_counting_file, current_time)
 
         # Создаем списки на основе которых мы создаем настраиваемый отчет
         lst_custom_wb = create_for_custom_report(main_df, params_df)
@@ -415,20 +559,11 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
         # отчет в разрезе возрастов
         custom_report_age_df = create_slice_report(main_df.copy(),'Текущий_возраст',dct_params)
-
-
-
         # отчет в разрезе полов
         custom_report_sex_df = create_slice_report(main_df.copy(),'Пол',dct_params)
 
         # отчет в разрезе статусов ОП
         custom_report_op_df = create_slice_report(main_df.copy(),'Статус_ОП',dct_params)
-
-
-
-
-
-
 
         # сохраняем файл с данными по выбранным колонкам
 
@@ -444,107 +579,58 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
         main_df.columns = list(map(str, list(main_df.columns)))
 
-        # Создаем файл в котором будут сводные данные по колонкам с Подсчетом
-        dct_counting_df = dict()  # словарь в котором будут храниться датафреймы созданные для каждой колонки
-        lst_counting_name_columns = [name_column for name_column in main_df.columns if 'Подсчет_' in name_column]
-        if len(lst_counting_name_columns) != 0:
-            for name_counting_column in lst_counting_name_columns:
-                temp_svod_df = (pd.pivot_table(main_df, index=['Файл', 'Группа'],
-                                               values=[name_counting_column],
-                                               aggfunc=[np.mean, np.sum, np.median, np.min, np.max, len]))
-                temp_svod_df = temp_svod_df.reset_index()  # убираем мультииндекс
-                temp_svod_df = temp_svod_df.droplevel(axis=1, level=0)  # убираем мультиколонки
-                temp_svod_df.columns = ['Файл', 'Группа', 'Среднее', 'Сумма', 'Медиана', 'Минимум', 'Максимум',
-                                        'Количество']
-                dct_counting_df[name_counting_column] = temp_svod_df  # сохраняем в словарь
 
-            # Сохраняем
-            counting_report_wb = write_df_to_excel(dct_counting_df, write_index=False)
-            counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            counting_report_wb.save(f'{path_svod_file}/Свод по колонкам Подсчета от {current_time}.xlsx')
-
-        # Создаем файл в котором будут данные по колонкам Список_
-        dct_list_columns= {} # словарь в котором будут храниться датафреймы созданные для каждой колонки со списокм
-        dct_values_in_list_columns = {} # словарь в котором будут храниться названия колонок и все значения которые там встречались
-        dct_df_list_in_columns = {} # словарь где будут храниться значения в колонках и датафреймы где в указанных колонках есть соответствующее значение
-
+        # Обрабатываем колонки типа Список
         lst_list_name_columns = [name_column for name_column in main_df.columns if 'Список_' in name_column]
         if len(lst_list_name_columns) != 0:
+            dct_list_columns = {}  # словарь в котором будут храниться датафреймы созданные для каждой колонки со списокм
+            dct_values_in_list_columns = {}  # словарь в котором будут храниться названия колонок и все значения которые там встречались
+            dct_df_list_in_columns = {}  # словарь где будут храниться значения в колонках и датафреймы где в указанных колонках есть соответствующее значение
+
+            dct_list_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Статус_ОП': 'по ОП',
+                                  'Пол': 'по полам'}  # словарь для названий колонок по которым будут создаваться срезы
+            # Создаем папку для хранения сводов по колонкам списков
+            path_list_file = f'{path_end_folder}/Своды по колонкам Списков'  #
+            if not os.path.exists(path_list_file):
+                os.makedirs(path_list_file)
+
             main_df[lst_list_name_columns] = main_df[lst_list_name_columns].astype(str)
             for name_lst_column in lst_list_name_columns:
-                temp_col_value_lst = main_df[name_lst_column].tolist() # создаем список
-                temp_col_value_lst = [value for value in temp_col_value_lst if value] # отбрасываем пустые значения
+                temp_col_value_lst = main_df[name_lst_column].tolist()  # создаем список
+                temp_col_value_lst = [value for value in temp_col_value_lst if value]  # отбрасываем пустые значения
                 unwrap_lst = []
-                temp_col_value_lst = list(map(str,temp_col_value_lst)) # делаем строковым каждый элемент
+                temp_col_value_lst = list(map(str, temp_col_value_lst))  # делаем строковым каждый элемент
                 for value in temp_col_value_lst:
                     unwrap_lst.extend(value.split(','))
-                unwrap_lst = list(map(str.strip,unwrap_lst)) # получаем список
+                unwrap_lst = list(map(str.strip, unwrap_lst))  # получаем список
                 # убираем повторения и сортируем
                 dct_values_in_list_columns[name_lst_column] = sorted(list(set(unwrap_lst)))
 
-                dct_value_list = dict(Counter(unwrap_lst)) # Превращаем в словарь
-                sorted_dct_value_lst = dict(sorted(dct_value_list.items())) # сортируем словарь
+                dct_value_list = dict(Counter(unwrap_lst))  # Превращаем в словарь
+                sorted_dct_value_lst = dict(sorted(dct_value_list.items()))  # сортируем словарь
                 # создаем датафрейм
-                temp_df =  pd.DataFrame(list(sorted_dct_value_lst.items()), columns=['Показатель', 'Значение'])
+                temp_df = pd.DataFrame(list(sorted_dct_value_lst.items()), columns=['Показатель', 'Значение'])
                 dct_list_columns[name_lst_column] = temp_df
 
             # Создаем датафреймы для подтверждения цифр
-            for key,lst in dct_values_in_list_columns.items():
+            for key, lst in dct_values_in_list_columns.items():
                 for value in lst:
                     temp_list_df = main_df[main_df[key].str.contains(value)]
-                    name_sheet = key.replace('Список_','')
+                    name_sheet = key.replace('Список_', '')
 
                     dct_df_list_in_columns[f'{name_sheet}_{value}'] = temp_list_df
 
                 # Сохраняем
             list_columns_report_wb = write_df_big_dct_to_excel(dct_df_list_in_columns, write_index=False)
             list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            list_columns_report_wb.save(f'{path_svod_file}/Данные по своду Списков {current_time}.xlsx')
+            list_columns_report_wb.save(f'{path_list_file}/Данные по сводам Списков {current_time}.xlsx')
 
-            # Создаем свод по каждой группе
-            dct_svod_list_df = {} # словарь в котором будут храниться датафреймы по названию колонок
-            for name_lst_column in lst_list_name_columns:
-                file_cols = dct_values_in_list_columns[name_lst_column]
-                file_cols.insert(0,'Файл')
-                dct_svod_list_df[name_lst_column] = pd.DataFrame(columns=file_cols)
+            # создаем срезы
+            for name_column, prefix_file in dct_list_save_name.items():
+                create_svod_list(main_df.copy(), name_column, prefix_file, lst_list_name_columns,
+                                 path_list_file, current_time, dct_values_in_list_columns)
 
 
-            lst_file = main_df['Файл'].unique() # список файлов
-            for name in lst_file:
-                temp_df = main_df[main_df['Файл'] == name]
-                for name_lst_column in lst_list_name_columns:
-
-                    temp_col_value_lst = temp_df[name_lst_column].tolist()  # создаем список
-                    temp_col_value_lst = [value for value in temp_col_value_lst if value]  # отбрасываем пустые значения
-                    temp_unwrap_lst = []
-                    temp_col_value_lst = list(map(str, temp_col_value_lst))  # делаем строковым каждый элемент
-                    for value in temp_col_value_lst:
-                        temp_unwrap_lst.extend(value.split(','))
-                    temp_unwrap_lst = list(map(str.strip, temp_unwrap_lst))  # получаем список
-                    # убираем повторения и сортируем
-                    dct_values_in_list_columns[name_lst_column] = sorted(list(set(temp_unwrap_lst)))
-
-                    dct_value_list = dict(Counter(temp_unwrap_lst))  # Превращаем в словарь
-                    sorted_dct_value_lst = dict(sorted(dct_value_list.items()))  # сортируем словарь
-                    # создаем датафрейм
-                    temp_svod_df = pd.DataFrame(list(sorted_dct_value_lst.items()), columns=['Показатель', 'Значение']).transpose()
-                    new_temp_cols = temp_svod_df.iloc[0] # получаем первую строку для названий
-                    temp_svod_df = temp_svod_df[1:] # удаляем первую строку
-                    temp_svod_df.columns = new_temp_cols
-                    temp_svod_df.insert(0,'Файл',name)
-                    # добавляем значение в датафрейм
-                    dct_svod_list_df[name_lst_column] = pd.concat([dct_svod_list_df[name_lst_column],temp_svod_df])
-
-            for key,value_df in dct_svod_list_df.items():
-                dct_svod_list_df[key].fillna(0, inplace=True)  # заполняем наны
-                dct_svod_list_df[key] = dct_svod_list_df[key].astype(int,errors='ignore')
-                sum_row = dct_svod_list_df[key].sum(axis=0)  # суммируем колонки
-                dct_svod_list_df[key].loc['Итого'] = sum_row  # добавляем суммирующую колонку
-                dct_svod_list_df[key].iloc[-1,0] = 'Итого'
-                # Сохраняем
-            list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
-            list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            list_columns_svod_wb.save(f'{path_svod_file}/Свод по колонкам Списков {current_time}.xlsx')
 
 
         main_wb = write_df_to_excel({'Общий список': main_df}, write_index=False)
@@ -555,6 +641,20 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         # Заменяем название колонки Пол на Статус_Пол чтобы обработка проходила нормально
         main_df.rename(columns={'Пол':'Статус_Пол'},inplace=True)
 
+        # Создаем папку для хранения сводов по статусам
+        path_svod_file = f'{path_end_folder}/Своды по колонкам Статусов'  #
+        if not os.path.exists(path_svod_file):
+            os.makedirs(path_svod_file)
+
+            # Создаем раскладку по колонкам статусов
+            lst_status_columns = [column for column in main_df.columns if 'Статус_' in column]
+            dct_status_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Статус_ОП': 'по ОП',
+                                    'Статус_Пол': 'по полам'}  # словарь для названий колонок по которым будут создаваться срезы
+
+            for name_column, prefix_file in dct_status_save_name.items():
+                create_svod_status(main_df.copy(), name_column, prefix_file, lst_status_columns,
+                                   path_svod_file, current_time)
+
         # Создаем раскладку по колонкам статусов
         lst_status_columns = [column for column in main_df.columns if 'Статус_' in column]
         dct_status = {}  # словарь для хранения сводных датафреймов
@@ -564,65 +664,6 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
               margins_name='Итого').reset_index()
             name_sheet = name_column.replace('Статус_', '')
             dct_status[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
-
-        # Сохраняем
-        svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
-        svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_wb.save(f'{path_svod_file}/Статусы в разрезе групп {current_time}.xlsx')
-
-
-        # Статусы в разрезе возрастов
-        dct_status_age = {}  # словарь для хранения сводных датафреймов
-        for name_column in lst_status_columns:
-            svod_df = pd.pivot_table(main_df, index='Текущий_возраст', columns=name_column, values='ФИО',
-                                     aggfunc='count', fill_value=0, margins=True,
-                                     margins_name='Итого').reset_index()
-            name_sheet = name_column.replace('Статус_', '')
-            dct_status_age[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
-
-        # Сохраняем
-        svod_status_age_wb = write_df_big_dct_to_excel(dct_status_age, write_index=False)
-        svod_status_age_wb = del_sheet(svod_status_age_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_age_wb.save(f'{path_svod_file}/Статусы в разрезе возрастов {current_time}.xlsx')
-
-        # Статусы в разрезе образовательных программ
-        dct_status_op = {}  # словарь для хранения сводных датафреймов
-        lst_status_not_op = lst_status_columns.copy()
-        lst_status_not_op.remove('Статус_ОП')
-
-        for name_column in lst_status_not_op:
-            svod_df = pd.pivot_table(main_df, index='Статус_ОП', columns=name_column, values='ФИО',
-                                     aggfunc='count', fill_value=0, margins=True,
-                                     margins_name='Итого').reset_index()
-            name_sheet = name_column.replace('Статус_', '')
-            dct_status_op[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
-
-        # Сохраняем
-        svod_status_op_wb = write_df_big_dct_to_excel(dct_status_op, write_index=False)
-        svod_status_op_wb = del_sheet(svod_status_op_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-        svod_status_op_wb.save(f'{path_svod_file}/Статусы в разрезе ОП {current_time}.xlsx')
-
-        # Статусы в разрезе полов
-        if 'Статус_Пол' in lst_status_columns:
-            dct_status_sex = {}  # словарь для хранения сводных датафреймов
-            lst_status_sex = lst_status_columns.copy()
-            lst_status_sex.remove('Статус_Пол')
-
-            for name_column in lst_status_sex:
-                svod_df = pd.pivot_table(main_df, index='Статус_Пол', columns=name_column, values='ФИО',
-                                         aggfunc='count', fill_value=0, margins=True,
-                                         margins_name='Итого').reset_index()
-                name_sheet = name_column.replace('Статус_', '')
-                dct_status_sex[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
-
-            # Сохраняем
-            svod_status_sex_wb = write_df_big_dct_to_excel(dct_status_sex, write_index=False)
-            svod_status_sex_wb = del_sheet(svod_status_sex_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            svod_status_sex_wb.save(f'{path_svod_file}/Статусы в разрезе полов {current_time}.xlsx')
-
-
-
-
 
         # Создаем Свод по статусам
         # Собираем колонки содержащие слово Статус_ и Подсчет_ и Список
@@ -762,7 +803,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         # Удаляем листы
         wb = del_sheet(wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         # Сохраняем итоговый файл
-        wb.save(f'{path_svod_file}/Свод по каждой колонке таблицы от {current_time}.xlsx')
+        wb.save(f'{path_end_folder}/Свод по каждой колонке таблицы от {current_time}.xlsx')
 
         if error_df.shape[0] != 0:
             count_error = len(error_df['Название листа'].unique())
