@@ -355,6 +355,8 @@ def write_df_to_excel(dct_df: dict, write_index: bool) -> openpyxl.Workbook:
     :param write_index: нужно ли записывать индекс датафрейма True or False
     :return: объект Workbook с записанными датафреймами
     """
+    if len(dct_df) >= 253:
+        raise ExceedingQuantity # проверяем количество значений
     wb = openpyxl.Workbook()  # создаем файл
     count_index = 0  # счетчик индексов создаваемых листов
     for name_sheet, df in dct_df.items():

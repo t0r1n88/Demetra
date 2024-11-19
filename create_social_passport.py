@@ -503,6 +503,42 @@ def create_report_brit(df:pd.DataFrame, dct_slice:dict, path_end_folder:str)->No
     lst_report_wb.save(f'{path_end_folder}/Списки для отчета по стандарту БРИТ от {current_time}.xlsx')
 
 
+def create_svod_counting(df:pd.DataFrame,name_column:str, postfix_file:str, lst_counting_name_columns:list, path:str, current_time):
+    """
+    Функция для создания сводов по колонкам подсчета
+    :param df: основной датафрейм
+    :param name_column: название колонки
+    :param postfix_file: дополнение к имени файла
+    :param lst_counting_name_columns: список колонок типа Подсчет
+    :param path: путь куда сохранять файлы
+    :param current_time: время под которым будет сохраняться файл
+    """
+    dct_counting_df = {} # словарь для хранения датафреймов
+    for name_counting_column in lst_counting_name_columns:
+        temp_svod_df = (pd.pivot_table(df, index=[name_column],
+                                       values=[name_counting_column],
+                                       aggfunc=[np.mean, np.sum, np.median, np.min, np.max, len]))
+        temp_svod_df = temp_svod_df.reset_index()  # убираем мультииндекс
+        temp_svod_df = temp_svod_df.droplevel(axis=1, level=0)  # убираем мультиколонки
+        temp_svod_df.columns = [name_column, 'Среднее', 'Сумма', 'Медиана', 'Минимум', 'Максимум',
+                                'Количество']
+        if name_column == 'Текущий_возраст':
+            # для проведения сортировки
+            temp_svod_df.rename(index={'Ошибочное значение!!!': 100000000},inplace=True)
+            temp_svod_df.sort_index(inplace=True)
+            temp_svod_df.rename(index={100000000:'Ошибочное значение!!!'}, inplace=True)
+
+        dct_counting_df[name_counting_column] = temp_svod_df  # сохраняем в словарь
+
+    # Сохраняем
+    counting_report_wb = write_df_big_dct_to_excel(dct_counting_df, write_index=False)
+    counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+    counting_report_wb.save(f'{path}/Срез по {postfix_file} от {current_time}.xlsx')
+
+
+
+
+
 def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str, path_end_folder:str,checkbox_expelled:int,raw_date)->None:
     """
     Функция для генерации отчета по социальному статусу студентов БРИТ
@@ -644,6 +680,9 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
             os.makedirs(path_svod_file)
 
 
+
+
+
         # Проверяем есть ли данные в общем файле, если нет то вызываем исключение
         if len(main_df) == 0:
             error_df.to_excel(f'{path_end_folder}/Ошибки от {current_time}.xlsx',index=False)
@@ -677,8 +716,20 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         # Приводим колонки с подсчетом к правильному формату с запятой
         lst_counting_name_columns = [name_column for name_column in main_df.columns if 'Подсчет_' in name_column]
         if len(lst_counting_name_columns) != 0:
+            # Создаем файл в котором будут сводные данные по колонкам с Подсчетом
+            dct_counting_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Статус_ОП': 'по ОП',
+                                      'Пол': 'по полам'}  # словарь для названий колонок по которым будут создаваться файлы
+            # Создаем папку для хранения сводов по колонкам подсчета
+            path_counting_file = f'{path_end_folder}/Своды по колонкам Подсчета'  #
+            if not os.path.exists(path_counting_file):
+                os.makedirs(path_counting_file)
+            # приводим к числовому формату
             for name_counting_column in lst_counting_name_columns:
                 main_df[name_counting_column] = main_df[name_counting_column].apply(convert_number)
+            # сохраняем в папку
+            for name_column, name_file in dct_counting_save_name.items():
+                create_svod_counting(main_df.copy(), name_column, name_file, lst_counting_name_columns,
+                                     path_counting_file,current_time)
 
 
         # генерируем отчет по стандарту БРИТ
@@ -712,22 +763,8 @@ def create_social_report(etalon_file:str,data_folder:str,path_egisso_params:str,
         error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
         error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
 
-        # Создаем файл в котором будут сводные данные по колонкам с Подсчетом
-        dct_counting_df = dict() # словарь в котором будут храниться датафреймы созданные для каждой колонки
-        if len(lst_counting_name_columns) != 0:
-            for name_counting_column in lst_counting_name_columns:
-                temp_svod_df = (pd.pivot_table(main_df,index=['Файл','Группа'],
-                                     values=[name_counting_column],
-                                     aggfunc=[np.mean,np.sum,np.median,np.min,np.max,len]))
-                temp_svod_df=temp_svod_df.reset_index() # убираем мультииндекс
-                temp_svod_df = temp_svod_df.droplevel(axis=1,level=0) # убираем мультиколонки
-                temp_svod_df.columns = ['Файл','Группа','Среднее','Сумма','Медиана','Минимум','Максимум','Количество']
-                dct_counting_df[name_counting_column] = temp_svod_df # сохраняем в словарь
 
-            # Сохраняем
-            counting_report_wb = write_df_to_excel(dct_counting_df, write_index=False)
-            counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            counting_report_wb.save(f'{path_svod_file}/Свод по колонкам Подсчета от {current_time}.xlsx')
+
 
         # Создаем файл в котором будут данные по колонкам Список_
         dct_list_columns= {} # словарь в котором будут храниться датафреймы созданные для каждой колонки со списокм
