@@ -228,7 +228,7 @@ def create_svod_counting(df: pd.DataFrame, name_column: str, postfix_file: str, 
         temp_svod_df = temp_svod_df.droplevel(axis=1, level=0)  # убираем мультиколонки
         temp_svod_df.columns = [name_column, 'Среднее', 'Сумма', 'Медиана', 'Минимум', 'Максимум',
                                 'Количество']
-        if name_column == 'Текущий_возраст':
+        if name_column == 'Текущий_возраст' or name_column == 'Год_рождения':
             # для проведения сортировки
             temp_svod_df.rename(index={'Ошибочное значение!!!': 100000000}, inplace=True)
             temp_svod_df.sort_index(inplace=True)
@@ -288,13 +288,16 @@ def create_svod_list(df: pd.DataFrame, name_column: str, postfix_file: str, lst_
     for key, value_df in dct_svod_list_df.items():
         dct_svod_list_df[key].fillna(0, inplace=True)  # заполняем наны
         dct_svod_list_df[key] = dct_svod_list_df[key].astype(int, errors='ignore')
-        if name_column == 'Текущий_возраст':
+        if name_column == 'Текущий_возраст' or name_column == 'Год_рождения':
             dct_svod_list_df[key] = dct_svod_list_df[key].astype(str) # делаем строковой
             # заменяем ошибочное значение числом чтобы отсортировать
             dct_svod_list_df[key] = dct_svod_list_df[key].apply(lambda x:x.replace('Ошибочное значение!!!',100000000))
             dct_svod_list_df[key] = dct_svod_list_df[key].astype(float) # делаем числом
             dct_svod_list_df[key] = dct_svod_list_df[key].astype(int) # делаем числом
-            dct_svod_list_df[key].sort_values(by='Текущий_возраст',inplace=True)
+            if name_column == 'Текущий_возраст':
+                dct_svod_list_df[key].sort_values(by='Текущий_возраст',inplace=True)
+            else:
+                dct_svod_list_df[key].sort_values(by='Год_рождения', inplace=True)
 
 
         sum_row = dct_svod_list_df[key].sum(axis=0)  # суммируем колонки
@@ -303,6 +306,9 @@ def create_svod_list(df: pd.DataFrame, name_column: str, postfix_file: str, lst_
         if name_column == 'Текущий_возраст':
             dct_svod_list_df[key]['Текущий_возраст'] = dct_svod_list_df[key]['Текущий_возраст'] .astype(str)  # делаем строковой
             dct_svod_list_df[key]['Текущий_возраст']  = dct_svod_list_df[key]['Текущий_возраст'] .apply(lambda x: x.replace('100000000','Ошибочное значение!!!'))
+        if name_column == 'Год_рождения':
+            dct_svod_list_df[key]['Год_рождения'] = dct_svod_list_df[key]['Год_рождения'] .astype(str)  # делаем строковой
+            dct_svod_list_df[key]['Год_рождения']  = dct_svod_list_df[key]['Год_рождения'] .apply(lambda x: x.replace('100000000','Ошибочное значение!!!'))
         # Сохраняем
     list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
     list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
@@ -339,7 +345,6 @@ def create_svod_status(df: pd.DataFrame, name_column: str, postfix_file: str, ls
     svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
     svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
     svod_status_wb.save(f'{path}/Свод по {postfix_file} {current_time}.xlsx')
-
 
 
 
@@ -497,7 +502,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         lst_counting_name_columns = [name_column for name_column in main_df.columns if 'Подсчет_' in name_column]
         if len(lst_counting_name_columns) != 0:
             # Создаем файл в котором будут сводные данные по колонкам с Подсчетом
-            dct_counting_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Статус_ОП': 'по ОП',
+            dct_counting_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Год_рождения': 'по годам рождения', 'Статус_ОП': 'по ОП',
                                       'Пол': 'по полам'}  # словарь для названий колонок по которым будут создаваться файлы
             # Создаем папку для хранения сводов по колонкам подсчета
             path_counting_file = f'{path_end_folder}/Своды по колонкам Подсчетов'  #
@@ -559,6 +564,8 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
         # отчет в разрезе возрастов
         custom_report_age_df = create_slice_report(main_df.copy(),'Текущий_возраст',dct_params)
+        # отчет в разрезе годов рождения
+        custom_report_year_df = create_slice_report(main_df.copy(),'Год_рождения',dct_params)
         # отчет в разрезе полов
         custom_report_sex_df = create_slice_report(main_df.copy(),'Пол',dct_params)
 
@@ -568,7 +575,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         # сохраняем файл с данными по выбранным колонкам
 
         custom_report_wb = write_df_to_excel({'Общий свод': all_custom_report_df, 'Свод по файлам': custom_report_df,
-                                              'Свод по возрастам':custom_report_age_df,'Свод по полам':custom_report_sex_df,'Свод по ОП':custom_report_op_df,
+                                              'Свод по возрастам':custom_report_age_df,'Свод по годам рождения':custom_report_year_df,'Свод по полам':custom_report_sex_df,'Свод по ОП':custom_report_op_df,
                                               },
                                              write_index=False)
         custom_report_wb = del_sheet(custom_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
@@ -587,7 +594,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
             dct_values_in_list_columns = {}  # словарь в котором будут храниться названия колонок и все значения которые там встречались
             dct_df_list_in_columns = {}  # словарь где будут храниться значения в колонках и датафреймы где в указанных колонках есть соответствующее значение
 
-            dct_list_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Статус_ОП': 'по ОП',
+            dct_list_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам','Год_рождения': 'по годам рождения', 'Статус_ОП': 'по ОП',
                                   'Пол': 'по полам'}  # словарь для названий колонок по которым будут создаваться срезы
             # Создаем папку для хранения сводов по колонкам списков
             path_list_file = f'{path_end_folder}/Своды по колонкам Списков'  #
@@ -648,7 +655,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
             # Создаем раскладку по колонкам статусов
             lst_status_columns = [column for column in main_df.columns if 'Статус_' in column]
-            dct_status_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам', 'Статус_ОП': 'по ОП',
+            dct_status_save_name = {'Файл': 'по группам', 'Текущий_возраст': 'по возрастам','Год_рождения': 'по годам рождения', 'Статус_ОП': 'по ОП',
                                     'Статус_Пол': 'по полам'}  # словарь для названий колонок по которым будут создаваться срезы
 
             for name_column, prefix_file in dct_status_save_name.items():
