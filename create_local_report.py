@@ -197,7 +197,7 @@ def create_slice_report(df:pd.DataFrame,slice_column:str,dct_params:dict):
 
     out_df.fillna(0,inplace=True) # заполняем наны
     out_df = out_df.astype(int) # приводим к инту
-    if slice_column == 'Текущий_возраст':
+    if slice_column == 'Текущий_возраст' or slice_column== 'Год_рождения':
         # для проведения сортировки с учетом слова ошибочное значение
         out_df.rename(index={'Ошибочное значение!!!': 100000000}, inplace=True)
         out_df.sort_index(inplace=True)
