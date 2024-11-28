@@ -454,6 +454,15 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                                 temp_df['Статус_Учёба'] != 'Отчислен']  # отбрасываем отчисленных если поставлен чекбокс
 
                         main_df = pd.concat([main_df, temp_df], axis=0, ignore_index=True)  # добавляем в общий файл
+                        if len(temp_df) == 0:
+                            temp_error_df = pd.DataFrame(
+                                data=[[f'{name_file}', f'{name_sheet}', f'',
+                                       'Пустой файл']],
+                                columns=['Название файла', 'Название листа', 'Значение ошибки',
+                                         'Описание ошибки'])
+                            error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+                        else:
+                            quantity_sheets += 1
 
                         # Создаем свод по файлам
                         row_dct = {key: 0 for key in lst_generate_name_columns}  # создаем словарь для хранения данных
@@ -470,7 +479,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
 
 
-                        quantity_sheets += 1
+
         # получаем текущее время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
@@ -813,10 +822,9 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         wb.save(f'{path_end_folder}/Свод по каждой колонке таблицы от {current_time}.xlsx')
 
         if error_df.shape[0] != 0:
-            count_error = len(error_df['Название листа'].unique())
-            messagebox.showinfo('Деметра Отчеты социальный паспорт студента',
-                                f'Количество необработанных листов {count_error}\n'
-                                f'Проверьте файл Ошибки в файле')
+            messagebox.showwarning('Деметра Отчеты социальный паспорт студента',
+                                   f'Обнаружены ошибки в файлах с данными.\n'
+                                   f'Проверьте файл Ошибки в файле')
 
     except FileNotFoundError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',

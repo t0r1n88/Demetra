@@ -807,7 +807,15 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
                                 temp_df['Статус_Учёба'] != 'Отчислен']  # отбрасываем отчисленных если поставлен чекбокс
 
                         main_df = pd.concat([main_df, temp_df], axis=0, ignore_index=True)  # добавляем в общий файл
-                        quantity_sheets += 1
+                        if len(temp_df) == 0:
+                            temp_error_df = pd.DataFrame(
+                                data=[[f'{name_file}', f'{name_sheet}', f'',
+                                       'Пустой файл']],
+                                columns=['Название файла', 'Название листа', 'Значение ошибки',
+                                         'Описание ошибки'])
+                            error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+                        else:
+                            quantity_sheets += 1
         # генерируем текущее время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
@@ -1110,9 +1118,8 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
 
         # проверяем на наличие ошибок
         if error_df.shape[0] != 0:
-            count_error = len(error_df['Название листа'].unique())
             messagebox.showwarning('Деметра Отчеты социальный паспорт студента',
-                                   f'Количество необработанных листов {count_error}\n'
+                                   f'Обнаружены ошибки в файлах с данными.\n'
                                    f'Проверьте файл Ошибки в файле')
     except FileNotFoundError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
