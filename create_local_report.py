@@ -434,7 +434,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                             error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
                             continue  # не обрабатываем лист, где найдены ошибки
                         # проверяем на соответствие эталонному файлу
-                        diff_cols = etalon_cols.difference(set(temp_df.columns))
+                        diff_cols = etalon_cols.symmetric_difference(set(temp_df.columns))
                         if len(diff_cols) != 0:
                             temp_error_df = pd.DataFrame(
                                 data=[[f'{name_file}', f'{name_sheet}', f'{";".join(diff_cols)}',
