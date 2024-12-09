@@ -174,6 +174,8 @@ def extract_fio(fio:str,code_fio:int):
         return 'Не заполнено ФИО'
     else:
         part_fio = fio.split()  # разбиваем по пробелам создавая список где [0] это Фамилия,[1]-Имя,[2]-Отчество
+        part_fio = [value for value in part_fio if value]  # отбрасываем варианты из за лишнего пробела
+        part_fio = list(map(str.strip, part_fio))
 
         if len(part_fio) == 3:  # проверяем на длину и обрабатываем только те что имеют длину 3
             lastname = part_fio[0].capitalize()  # Фамилия
