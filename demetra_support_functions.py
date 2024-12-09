@@ -143,6 +143,8 @@ def create_initials(cell, checkbox, space):
     Функция для создания инициалов
     """
     lst_fio = cell.split(' ')  # сплитим по пробелу
+    lst_fio = [value for value in lst_fio if value] # отбрасываем варианты из за лишнего пробела
+    lst_fio = list(map(str.strip,lst_fio))
     if len(lst_fio) == 3:  # проверяем на стандартный размер в 3 слова иначе ничего не меняем
         if checkbox == 'ФИ':
             if space == 'без пробела':
