@@ -755,7 +755,7 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
                             continue  # не обрабатываем лист, где найдены ошибки
 
                         # проверяем на соответствие эталонному файлу
-                        diff_cols = (set(temp_df.columns).difference(etalon_cols))
+                        diff_cols = (set(temp_df.columns).symmetric_difference(etalon_cols))
                         if len(diff_cols) != 0:
                             temp_error_df = pd.DataFrame(
                                 data=[[f'{name_file}', f'{name_sheet}', f'{";".join(diff_cols)}',
