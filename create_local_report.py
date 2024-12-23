@@ -477,12 +477,13 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
 
 
-
-
-
         # получаем текущее время
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
+        # Проверяем есть ли данные в общем файле, если нет то вызываем исключение
+        if len(main_df) == 0:
+            error_df.to_excel(f'{path_end_folder}/Ошибки от {current_time}.xlsx', index=False)
+            raise NotGoodSheet
 
         main_df.rename(columns={'Группа': 'Для переноса', 'Файл': 'файл для переноса'},
                        inplace=True)  # переименовываем группу чтобы перенести ее в начало таблицы
@@ -555,8 +556,6 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         error_df = pd.concat([error_df, temp_params_egisso_error_df], axis=0, ignore_index=True)
         error_wb = write_df_to_excel({'Ошибки':error_df},write_index=False)
         error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
-        if len(main_df) == 0:
-            raise NotGoodSheet
 
         # суммируем данные по листам
 
