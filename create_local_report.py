@@ -127,6 +127,24 @@ def create_value_str(df: pd.DataFrame, name_column: str, target_name_column: str
 
     return new_value_df
 
+def extract_part_status_op(value,part_extract:str):
+    """
+    Функция для извлечения кода или наименования специальности профессии
+    :param value: значение
+    :param part_extract: что именно нужно извлекать либо Код_ОП либо Наименование_ОП
+    :return:
+    """
+    lst_part = str(value).split(' ',maxsplit=1) # делим по первому пробелу
+    if len(lst_part) == 2:
+        if part_extract == 'Код_ОП':
+            return lst_part[0]
+        else:
+            return lst_part[1]
+    else:
+        return f''
+
+
+
 
 def prepare_file_params(params_file: str):
     """
@@ -502,6 +520,9 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
             lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp,datetime.datetime)) and pd.notna(x) else x)
 
         main_df.replace('Нет статуса', '', inplace=True)
+        # Добавляем раздельные колонки для кода ОП и названия ОП
+        main_df['Код_ОП'] = main_df['Статус_ОП'].apply(lambda x:extract_part_status_op(x,'Код_ОП'))
+        main_df['Наименование_ОП'] = main_df['Статус_ОП'].apply(lambda x:extract_part_status_op(x,'Наименование_ОП'))
         # Добавляем разбиение по датам
         main_df = proccessing_date(raw_date, 'Дата_рождения', main_df,path_end_folder)
 

@@ -143,6 +143,27 @@ def convert_to_date(value):
         return None
 
 
+def extract_part_status_op(value,part_extract:str):
+    """
+    Функция для извлечения кода или наименования специальности профессии
+    :param value: значение
+    :param part_extract: что именно нужно извлекать либо Код_ОП либо Наименование_ОП
+    :return:
+    """
+    lst_part = str(value).split(' ',maxsplit=1) # делим по первому пробелу
+    if len(lst_part) == 2:
+        if part_extract == 'Код_ОП':
+            return lst_part[0]
+        else:
+            return lst_part[1]
+    else:
+        return f''
+
+
+
+
+
+
 def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) -> None:
     """
     Функция для создания отчета по стандарту БРИТ
@@ -159,10 +180,12 @@ def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) 
 
         # Считаем общее количество студентов
         study_df = df[df['Статус_Учёба'] == 'Обучается']
-        dct_name_sheet['Обучается'] = study_df  # добавляем в словарь
         study_df_group_df = study_df.groupby(by=[slice_column]).agg({'ФИО': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(study_df_group_df)  # добавляем в свод
         group_main_df.rename(columns={'ФИО': 'Обучается'}, inplace=True)
+        study_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Обучается'] = study_df  # добавляем в словарь
+
 
         # Считаем количество студентов в академе
         akadem_df = df[df['Статус_Учёба'].str.contains('Академ')]
@@ -170,138 +193,178 @@ def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) 
         akadem_df_group_df = akadem_df.groupby(by=[slice_column]).agg({'ФИО': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(akadem_df_group_df)  # добавляем в свод
         group_main_df.rename(columns={'ФИО': 'Академ. отпуск'}, inplace=True)
+        akadem_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Академ'] = akadem_df  # добавляем в словарь
+
+
 
         # Совершеннолетние
         maturity_df = df[df['Совершеннолетие'] == 'совершеннолетний']
-        dct_name_sheet['Совершеннолетние'] = maturity_df  # добавляем в словарь
         maturity_df_group_df = maturity_df.groupby(by=[slice_column]).agg(
             {'Совершеннолетие': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(maturity_df_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Совершеннолетие': 'Совершеннолетние'}, inplace=True)
+        maturity_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Совершеннолетние'] = maturity_df  # добавляем в словарь
+
         # Несовершеннолетние
         not_maturity_df = df[df['Совершеннолетие'] == 'несовершеннолетний']
-        dct_name_sheet['Несовершеннолетние'] = not_maturity_df  # добавляем в словарь
         not_maturity_df_group_df = not_maturity_df.groupby(by=[slice_column]).agg(
             {'Совершеннолетие': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(not_maturity_df_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Совершеннолетие': 'Несовершеннолетние'}, inplace=True)
+        not_maturity_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Несовершеннолетние'] = not_maturity_df  # добавляем в словарь
 
         # Создаем датафрейм с сиротами
         orphans_df = df[df['Статус_Сиротство'].isin(['гособеспечение + постинтернатное сопровождение',
                                                      'дети-сироты, находящиеся на полном государственном обеспечении',
                                                      'дети-сироты, находящиеся под опекой'])]
 
-        dct_name_sheet['Сироты'] = orphans_df  # добавляем в словарь
         orphans_group_df = orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(orphans_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Сиротство': 'Дети-сироты'}, inplace=True)
+        orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Сироты'] = orphans_df  # добавляем в словарь
+
+
 
         # Создаем датафрейм с инвалидами
         invalid_df = df[df['Статус_Уровень_здоровья'].isin(['Инвалид детства', 'Инвалид 1,2,3, группы'])]
 
-        dct_name_sheet['Инвалиды'] = invalid_df  # добавляем в словарь
         invalid_group_df = invalid_df.groupby(by=[slice_column]).agg(
             {'Статус_Уровень_здоровья': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(invalid_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Инвалиды'}, inplace=True)
+        all_invalid_df = invalid_df.copy()
+        all_invalid_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Инвалиды'] = all_invalid_df  # добавляем в словарь
+
 
         # Создаем датафрейм с совершеннолетними инвалидами
         maturity_invalid_df = invalid_df[invalid_df['Совершеннолетие'] == 'совершеннолетний']
-        dct_name_sheet['Инвалиды_сов'] = maturity_invalid_df  # добавляем в словарь
         maturity_invalid_group_df = maturity_invalid_df.groupby(by=[slice_column]).agg(
             {'Статус_Уровень_здоровья': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(maturity_invalid_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Инвалиды совер-ние'}, inplace=True)
+        maturity_invalid_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Инвалиды_сов'] = maturity_invalid_df  # добавляем в словарь
+
 
         # Создаем датафрейм с несовершеннолетними инвалидами
         not_maturity_invalid_df = invalid_df[invalid_df['Совершеннолетие'] == 'несовершеннолетний']
-        dct_name_sheet['Инвалиды_несов'] = not_maturity_invalid_df  # добавляем в словарь
         not_maturity_invalid_group_df = not_maturity_invalid_df.groupby(by=[slice_column]).agg(
             {'Статус_Уровень_здоровья': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(not_maturity_invalid_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Инвалиды несов-ние'}, inplace=True)
+        not_maturity_invalid_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Инвалиды_несов'] = not_maturity_invalid_df  # добавляем в словарь
+
 
         # Создаем датафрейм с получателями социальной стипендии
         soc_benefit_df = df[df['Статус_Соц_стипендия'].isin(['да'])]
-        dct_name_sheet['Соц. стипендия Все'] = soc_benefit_df  # добавляем в словарь
+        all_soc_benefit_df = soc_benefit_df.copy()
+        all_soc_benefit_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Соц. стипендия Все'] = all_soc_benefit_df  # добавляем в словарь
 
         # получаем малоимущих
         poor_soc_benefit_df = soc_benefit_df[soc_benefit_df['Статус_Соц_положение_семьи'].isin(['Малоимущая'])]
-        dct_name_sheet['Соц. стипендия малоим.'] = poor_soc_benefit_df
         poor_soc_benefit_group_df = poor_soc_benefit_df.groupby(by=[slice_column]).agg(
             {'Статус_Соц_положение_семьи': 'count'})
         group_main_df = group_main_df.join(poor_soc_benefit_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Соц_положение_семьи': 'Соц. стипендия малоимущие'}, inplace=True)
+        poor_soc_benefit_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Соц. стипендия малоим.'] = poor_soc_benefit_df
+
 
         # получаем детей сирот
         orphans_soc_benefit_df = soc_benefit_df[soc_benefit_df['Статус_Сиротство'].isin(
             ['гособеспечение + постинтернатное сопровождение',
              'дети-сироты, находящиеся на полном государственном обеспечении',
              'дети-сироты, находящиеся под опекой'])]
-        dct_name_sheet['Соц. стипендия сироты'] = orphans_soc_benefit_df
         orphans_soc_benefit_group_df = orphans_soc_benefit_df.groupby(by=[slice_column]).agg(
             {'Статус_Сиротство': 'count'})
         group_main_df = group_main_df.join(orphans_soc_benefit_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Сиротство': 'Соц. стипендия дети-сироты'}, inplace=True)
+        orphans_soc_benefit_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Соц. стипендия сироты'] = orphans_soc_benefit_df
+
+
 
         # получаем инвалидов
         invalid_soc_benefit_df = soc_benefit_df[
             soc_benefit_df['Статус_Уровень_здоровья'].isin(['Инвалид детства', 'Инвалид 1,2,3, группы'])]
-        dct_name_sheet['Соц. стипендия инвалиды'] = invalid_soc_benefit_df
         invalid_soc_benefit_group_df = invalid_soc_benefit_df.groupby(by=[slice_column]).agg(
             {'Статус_Уровень_здоровья': 'count'})
         group_main_df = group_main_df.join(invalid_soc_benefit_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Соц. стипендия инвалиды'}, inplace=True)
+        invalid_soc_benefit_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Соц. стипендия инвалиды'] = invalid_soc_benefit_df
+
 
         # Создаем датафрейм с получателями бесплатного питания
         eating_df = df[df['Статус_Питание'].isin(
             ['получает компенсацию за питание', 'питается в ПОО', 'получает компенсацию за питание + питается в ПОО'])]
-        dct_name_sheet['Питание все'] = eating_df  # добавляем в словарь
+        all_eating_df = eating_df.copy()
+        all_eating_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Питание все'] = all_eating_df  # добавляем в словарь
 
         # получаем малоимущих
         poor_eating_df = eating_df[eating_df['Статус_Соц_положение_семьи'].isin(['Малоимущая'])]
-        dct_name_sheet['Питание малоим.'] = poor_eating_df
         poor_eating_group_df = poor_eating_df.groupby(by=[slice_column]).agg({'Статус_Соц_положение_семьи': 'count'})
         group_main_df = group_main_df.join(poor_eating_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Соц_положение_семьи': 'Питание малоимущие'}, inplace=True)
+        poor_eating_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Питание малоим.'] = poor_eating_df
+
 
         # получаем сирот
         orphans_eating_df = eating_df[
             eating_df['Статус_Сиротство'].isin(['гособеспечение + постинтернатное сопровождение',
                                                 'дети-сироты, находящиеся на полном государственном обеспечении',
                                                 'дети-сироты, находящиеся под опекой'])]
-        dct_name_sheet['Питание сироты'] = orphans_eating_df
         orphans_eating_group_df = orphans_eating_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
         group_main_df = group_main_df.join(orphans_eating_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Сиротство': 'Питание сироты'}, inplace=True)
+        orphans_eating_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Питание сироты'] = orphans_eating_df
+
 
         # получаем инвалидов
         invalid_eating_df = eating_df[
             eating_df['Статус_Уровень_здоровья'].isin(['Инвалид детства', 'Инвалид 1,2,3, группы'])]
-        dct_name_sheet['Питание инвалиды'] = invalid_eating_df
         invalid_eating_group_df = invalid_eating_df.groupby(by=[slice_column]).agg({'Статус_Уровень_здоровья': 'count'})
         group_main_df = group_main_df.join(invalid_eating_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Питание инвалиды'}, inplace=True)
+        invalid_eating_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Питание инвалиды'] = invalid_eating_df
+
 
         # получаем СВО
         svo_eating_df = eating_df[eating_df['Статус_Родитель_СВО'].isin(['да'])]
-        dct_name_sheet['Питание СВО'] = svo_eating_df
         svo_eating_group_df = svo_eating_df.groupby(by=[slice_column]).agg({'Статус_Родитель_СВО': 'count'})
         group_main_df = group_main_df.join(svo_eating_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Родитель_СВО': 'Питание СВО'}, inplace=True)
+        svo_eating_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Питание СВО'] = svo_eating_df
+
 
         # Создаем датафрейм с проживающими в общежитии
         dormitory_df = df[df['Статус_Общежитие'].isin(['да'])]
-        dct_name_sheet['Общежитие все'] = dormitory_df  # добавляем в словарь
         dormitory_group_df = dormitory_df.groupby(by=[slice_column]).agg({'Статус_Общежитие': 'count'})
         group_main_df = group_main_df.join(dormitory_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Общежитие': 'Общежитие Всего'}, inplace=True)
+        all_dormitory_df = dormitory_df.copy()
+        all_dormitory_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Общежитие все'] = all_dormitory_df  # добавляем в словарь
+
 
         # получаем не сирот и сохраняем для списка
         not_orphans_dormitory_df = dormitory_df[~dormitory_df['Статус_Сиротство'].isin(
             ['гособеспечение + постинтернатное сопровождение',
              'дети-сироты, находящиеся на полном государственном обеспечении',
              'дети-сироты, находящиеся под опекой'])]
+        not_orphans_dormitory_df.replace('Нет статуса', '', inplace=True)
         dct_name_sheet['Общежитие кроме сирот'] = not_orphans_dormitory_df
 
         # получаем сирот
@@ -309,14 +372,18 @@ def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) 
             ['гособеспечение + постинтернатное сопровождение',
              'дети-сироты, находящиеся на полном государственном обеспечении',
              'дети-сироты, находящиеся под опекой'])]
-        dct_name_sheet['Общежитие сироты'] = orphans_dormitory_df
         orphans_dormitory_group_df = orphans_dormitory_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
         group_main_df = group_main_df.join(orphans_dormitory_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Сиротство': 'Общежитие сироты'}, inplace=True)
+        orphans_dormitory_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Общежитие сироты'] = orphans_dormitory_df
+
 
         # Считаем выпуск текущего год
         release_df = df[df['Статус_Выпуск'].isin(['да'])]
-        dct_name_sheet['Выпуск текущий год'] = release_df  # добавляем в словарь
+        all_release_df = release_df.copy()
+        all_release_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Выпуск текущий год'] = all_release_df  # добавляем в словарь
 
         # Считаем сирот
         release_orphans_df = release_df[release_df['Статус_Сиротство'].isin(
@@ -324,21 +391,25 @@ def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) 
              'дети-сироты, находящиеся на полном государственном обеспечении',
              'дети-сироты, находящиеся под опекой'])]
 
-        dct_name_sheet['Выпуск сироты'] = release_orphans_df  # добавляем в словарь
         release_orphans_group_df = release_orphans_df.groupby(by=[slice_column]).agg(
             {'Статус_Сиротство': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(release_orphans_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Сиротство': 'Выпуск сироты'}, inplace=True)
+        release_orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Выпуск сироты'] = release_orphans_df  # добавляем в словарь
+
 
         # Считаем инвалидов
         release_invalid_df = release_df[
             release_df['Статус_Уровень_здоровья'].isin(['Инвалид детства', 'Инвалид 1,2,3, группы'])]
 
-        dct_name_sheet['Выпуск инвалиды'] = release_invalid_df  # добавляем в словарь
         release_invalid_group_df = release_invalid_df.groupby(by=[slice_column]).agg(
             {'Статус_Уровень_здоровья': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(release_invalid_group_df)  # добавляем в свод
         group_main_df.rename(columns={'Статус_Уровень_здоровья': 'Выпуск инвалиды'}, inplace=True)
+        release_invalid_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Выпуск инвалиды'] = release_invalid_df  # добавляем в словарь
+
 
         group_main_df.fillna(0, inplace=True)  # заполняем наны
         group_main_df = group_main_df.astype(int)  # приводим к инту
@@ -362,86 +433,108 @@ def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) 
 
         # Считаем сирот совершеннолетних
         maturity_orphans_df = orphans_df[orphans_df['Совершеннолетие'] == 'совершеннолетний']
-        dct_name_sheet['Сироты совер-ние'] = maturity_orphans_df
         maturity_orphans_group_df = maturity_orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(maturity_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Сироты совершеннолетние'}, inplace=True)
+        maturity_orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Сироты совер-ние'] = maturity_orphans_df
+
 
         # Считаем сирот несовершеннолетних
         not_maturity_orphans_df = orphans_df[orphans_df['Совершеннолетие'] == 'несовершеннолетний']
-        dct_name_sheet['Сироты несовер-ние'] = not_maturity_orphans_df
         not_maturity_orphans_group_df = not_maturity_orphans_df.groupby(by=[slice_column]).agg(
             {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(not_maturity_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Сироты несовершеннолетние'}, inplace=True)
+        not_maturity_orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Сироты несовер-ние'] = not_maturity_orphans_df
+
 
         # считаем академ
         akadem_orphans_df = orphans_df[orphans_df['Статус_Учёба'].str.contains('Академический отпуск')]
-        dct_name_sheet['Сироты академ'] = akadem_orphans_df
         akadem_orphans_group_df = akadem_orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(akadem_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Из них в академическом отпуске'}, inplace=True)
+        akadem_orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Сироты академ'] = akadem_orphans_df
+
+
 
         # считаем постинтернатное сопровождение
         postinternat_orphans_df = orphans_df[
             orphans_df['Статус_Сиротство'].str.contains('постинтернатное сопровождение')]
-        dct_name_sheet['Сироты постинтернат'] = postinternat_orphans_df
         postinternat_orphans_group_df = postinternat_orphans_df.groupby(by=[slice_column]).agg(
             {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(postinternat_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Из них постинтернат'}, inplace=True)
+        postinternat_orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Сироты постинтернат'] = postinternat_orphans_df
+
 
         # считаем сирот на гособеспечении
         gos_orphans_df = orphans_df[
             orphans_df['Статус_Сиротство'].isin(['гособеспечение + постинтернатное сопровождение',
                                                  'дети-сироты, находящиеся на полном государственном обеспечении'
                                                  ])]
-        dct_name_sheet['Сироты гособеспечение'] = gos_orphans_df
         gos_orphans_group_df = gos_orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(gos_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Из них на гособеспечении'}, inplace=True)
+        gos_orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Сироты гособеспечение'] = gos_orphans_df
+
 
         # считаем сирот с опекой
         custody_orphans_df = orphans_df[orphans_df['Статус_Сиротство'].isin(['дети-сироты, находящиеся под опекой'])]
-        dct_name_sheet['Сироты опека'] = custody_orphans_df
         custody_orphans_group_df = custody_orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(custody_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Из них под опекой'}, inplace=True)
+        custody_orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Сироты опека'] = custody_orphans_df
+
 
         # считаем сирот получающих питание
         all_eating_orphans_df = orphans_df[
             orphans_df['Статус_Питание'].isin(['питается в ПОО', 'получает компенсацию за питание',
                                                'получает компенсацию за питание + питается в ПОО'])]
-        dct_name_sheet['Сироты питание все'] = all_eating_orphans_df
         all_eating_orphans_group_df = all_eating_orphans_df.groupby(by=[slice_column]).agg(
             {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(all_eating_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Питается всего'}, inplace=True)
+        all_eating_orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Сироты питание все'] = all_eating_orphans_df
+
 
         # считаем сирот получающих питание в брит
         brit_eating_orphans_df = orphans_df[orphans_df['Статус_Питание'].isin(['питается в ПОО'])]
-        dct_name_sheet['Сироты питание ПОО'] = brit_eating_orphans_df
         brit_eating_orphans_group_df = brit_eating_orphans_df.groupby(by=[slice_column]).agg(
             {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(brit_eating_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Питается в ПОО'}, inplace=True)
+        brit_eating_orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Сироты питание ПОО'] = brit_eating_orphans_df
+
+
 
         # считаем сирот получающих компенсацию
         compens_eating_orphans_df = orphans_df[orphans_df['Статус_Питание'].isin(['получает компенсацию за питание'])]
-        dct_name_sheet['Сироты питание компенсация'] = compens_eating_orphans_df
         compens_eating_orphans_group_df = compens_eating_orphans_df.groupby(by=[slice_column]).agg(
             {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(compens_eating_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Получает компенсацию'}, inplace=True)
+        compens_eating_orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Сироты питание компенсация'] = compens_eating_orphans_df
+
 
         # считаем сирот получающих компенсацию + питание в брит
         brit_compens_eating_orphans_df = orphans_df[
             orphans_df['Статус_Питание'].isin(['получает компенсацию за питание + питается в ПОО'])]
-        dct_name_sheet['Сироты питание ПОО+компенсация'] = brit_compens_eating_orphans_df
         brit_compens_eating_orphans_group_df = brit_compens_eating_orphans_df.groupby(by=[slice_column]).agg(
             {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(brit_compens_eating_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'ПОО+компенсация'}, inplace=True)
+        brit_compens_eating_orphans_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Сироты питание ПОО+компенсация'] = brit_compens_eating_orphans_df
+
 
         group_orphans_main_df.fillna(0, inplace=True)  # заполняем наны
         group_orphans_main_df = group_orphans_main_df.astype(int)  # приводим к инту
@@ -459,15 +552,21 @@ def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) 
 
         # Считаем КДН
         kdn_accounting_df = df[df['Статус_КДН'].isin(['состоит'])]
-        dct_name_sheet['КДН'] = kdn_accounting_df
         kdn_group_accounting_df = kdn_accounting_df.groupby(by=[slice_column]).agg({'Статус_КДН': 'count'})
         group_accounting_main_df = group_accounting_main_df.join(kdn_group_accounting_df)  # добавляем в свод
+        kdn_accounting_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['КДН'] = kdn_accounting_df
+
+
 
         # Считаем ПДН
         pdn_accounting_df = df[df['Статус_ПДН'].isin(['состоит'])]
-        dct_name_sheet['ПДН'] = pdn_accounting_df
         pdn_group_accounting_df = pdn_accounting_df.groupby(by=[slice_column]).agg({'Статус_ПДН': 'count'})
         group_accounting_main_df = group_accounting_main_df.join(pdn_group_accounting_df)  # добавляем в свод
+        pdn_accounting_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['ПДН'] = pdn_accounting_df
+
+
 
         # Слаживаем колонки и удаляем лишнее
         group_accounting_main_df.fillna(0, inplace=True)
@@ -477,26 +576,34 @@ def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) 
 
         # Считаем внутренний учет
         inside_accounting_df = df[df['Статус_Внутр_учет'].isin(['состоит'])]
-        dct_name_sheet['Внутр_учет'] = inside_accounting_df
         inside_group_accounting_df = inside_accounting_df.groupby(by=[slice_column]).agg({'Статус_Внутр_учет': 'count'})
         group_accounting_main_df = group_accounting_main_df.join(inside_group_accounting_df)  # добавляем в свод
         group_accounting_main_df.rename(columns={'Статус_Внутр_учет': 'Внутренний учет'}, inplace=True)
+        inside_accounting_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Внутр_учет'] = inside_accounting_df
+
 
         # Считаем самовольный уход
         awol_accounting_df = df[df['Статус_Самовольный_уход'].isin(['да'])]
-        dct_name_sheet['Самовольный уход'] = awol_accounting_df
         awol_group_accounting_df = awol_accounting_df.groupby(by=[slice_column]).agg(
             {'Статус_Самовольный_уход': 'count'})
         group_accounting_main_df = group_accounting_main_df.join(awol_group_accounting_df)  # добавляем в свод
         group_accounting_main_df.rename(columns={'Статус_Самовольный_уход': 'Самовольный уход'}, inplace=True)
+        awol_accounting_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Самовольный уход'] = awol_accounting_df
 
-        # Считаем самовольный уход
+
+
+        # Считаем соп
         sop_accounting_df = df[df['Статус_Соц_положение_семьи'].isin(['СОП'])]
-        dct_name_sheet['СОП'] = sop_accounting_df
         sop_group_accounting_df = sop_accounting_df.groupby(by=[slice_column]).agg(
             {'Статус_Соц_положение_семьи': 'count'})
         group_accounting_main_df = group_accounting_main_df.join(sop_group_accounting_df)  # добавляем в свод
         group_accounting_main_df.rename(columns={'Статус_Соц_положение_семьи': 'СОП'}, inplace=True)
+        sop_accounting_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['СОП'] = sop_accounting_df
+
+
 
         group_accounting_main_df.fillna(0, inplace=True)  # заполняем наны
         group_accounting_main_df = group_accounting_main_df.astype(int)  # приводим к инту
@@ -842,6 +949,11 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
             lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp, datetime.datetime)) and pd.notna(x) else x)
 
         main_df.replace('Нет статуса', '', inplace=True)
+
+        # Добавляем раздельные колонки для кода ОП и названия ОП
+        main_df['Код_ОП'] = main_df['Статус_ОП'].apply(lambda x:extract_part_status_op(x,'Код_ОП'))
+        main_df['Наименование_ОП'] = main_df['Статус_ОП'].apply(lambda x:extract_part_status_op(x,'Наименование_ОП'))
+
         # Добавляем разбиение по датам
         main_df = proccessing_date(raw_date, 'Дата_рождения', main_df, path_end_folder)
 
