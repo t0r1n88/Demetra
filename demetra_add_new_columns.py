@@ -8,6 +8,7 @@ import numpy as np
 import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Font, PatternFill
+import xlsxwriter
 import time
 import datetime
 from collections import Counter
@@ -141,22 +142,43 @@ def add_new_columns(etalon_file:str,data_folder:str,path_end_folder:str):
                             error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
                             continue  # не обрабатываем лист, где найдены ошибки
 
-                        # Проверяем порядок колонок
-                        order_main_columns = list(main_df.columns)  # порядок колонок эталонного файла
-                        order_temp_df_columns = list(temp_df.columns)  # порядок колонок проверяемого файла
-                        error_order_lst = []  # список для несовпадающих пар
-                        # Сравниваем попарно колонки
-                        for main, temp in zip(order_main_columns, order_temp_df_columns):
-                            if main != temp:
-                                error_order_lst.append(f'На месте колонки {main} находится колонка {temp}')
-                        if len(error_order_lst) != 0:
-                            temp_error_df = pd.DataFrame(
-                                data=[[f'{name_file}', f'{name_sheet}', f'{";".join(error_order_lst)}',
-                                       'Неправильный порядок колонок по сравнению с эталоном. Приведите порядок колонок в соответствии с порядком в эталоне. ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
-                                columns=['Название файла', 'Название листа', 'Значение ошибки',
-                                         'Описание ошибки'])
-                            error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
-                            continue  # не обрабатываем лист, где найдены ошибки
+
+                        # Проверяем одинаковость колонок
+                        if len(main_df.columns) == len(temp_df.columns):
+                            # Если длина совпадает, проверяем на различия в написании названий колонок
+                            diff_cols = (set(temp_df.columns).symmetric_difference(set(main_df.columns)))
+                            if len(diff_cols) != 0:
+                                order_main_columns = list(main_df.columns)  # порядок колонок эталонного файла
+                                order_temp_df_columns = list(temp_df.columns)  # порядок колонок проверяемого файла
+                                order_dct = dict()  # словарь для несовпадающих пар
+                                # Сравниваем попарно колонки
+                                for main, temp in zip(order_main_columns, order_temp_df_columns):
+                                    if main != temp:
+                                        order_dct[temp] = main
+                                temp_df.rename(columns=order_dct,inplace=True) # переименовываем колонки в файле с данными
+                                # записываем в файл
+                                temp_wb.close() #закрываем файл открытый openpyxl
+                                workbook = xlsxwriter.Workbook(f'{data_folder}/{file}')
+                                worksheet = workbook.get_worksheet_by_name(name_sheet)
+
+                                # Делаем лист активным
+                                workbook.set_active_sheet(worksheet)
+                                row = 1
+                                for value in temp_df.columns:
+                                    workbook[name_sheet].write(row, 0, value)
+                                    row += 1
+
+                                # Сохраняем файл
+                                workbook.close()
+
+                                # Запись списка в первые ячейки первой строки
+                                # for col_idx, value in enumerate(temp_df.columns):
+                                #     temp_wb[name_sheet].cell(row=1, column=col_idx + 1).value = value
+                                #
+                                # # Сохранение файла
+                                # print(temp_wb.sheetnames)
+                                # temp_wb.save(f'{path_end_folder}/{file}')
+
 
 
 
