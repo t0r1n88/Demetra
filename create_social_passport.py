@@ -664,15 +664,35 @@ def create_svod_counting(df: pd.DataFrame, name_column: str, postfix_file: str, 
 
         dct_counting_df[name_counting_column] = temp_svod_df  # сохраняем в словарь
 
-    # Сохраняем
-    counting_report_wb = write_df_big_dct_to_excel(dct_counting_df, write_index=False)
-    counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-    counting_report_wb.save(f'{path}/Свод по {postfix_file} от {current_time}.xlsx')
+    # Сохраняем контролируя количество листов в файле
+    if len(dct_counting_df) >= 252:
+        lst_dct = list(dct_counting_df.items())  # превращаем в список кортежей
+        start_threshold = 0
+        end_threshold = 252
+        count = 1
+        while end_threshold <= len(lst_dct) + 1:
+            big_dct = dict(lst_dct[start_threshold:end_threshold])
+            counting_report_wb = write_df_big_dct_to_excel(big_dct, write_index=False)
+            counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+            counting_report_wb.save(f'{path}/Свод по {postfix_file} {count}.xlsx')
+            count += 1
+            start_threshold += 252
+            end_threshold += 252
+            # контролируем диапазон
+            if end_threshold > len(lst_dct):
+                big_dct = dict(lst_dct[start_threshold:len(lst_dct) + 1])
+                counting_report_wb = write_df_big_dct_to_excel(big_dct, write_index=False)
+                counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+                counting_report_wb.save(f'{path}/Свод по {postfix_file} {count}.xlsx')
+    else:
+        counting_report_wb = write_df_big_dct_to_excel(dct_counting_df, write_index=False)
+        counting_report_wb = del_sheet(counting_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        counting_report_wb.save(f'{path}/Свод по {postfix_file} от {current_time}.xlsx')
 
 def create_svod_list(df: pd.DataFrame, name_column: str, postfix_file: str, lst_list_name_columns: list,
                          path: str, current_time, dct_values_in_list_columns:dict):
     """
-    Функция для создания сводов по колонкам подсчета
+    Функция для создания сводов по колонкам списков
     :param df: основной датафрейм
     :param name_column: название колонки
     :param postfix_file: дополнение к имени файла
@@ -738,9 +758,30 @@ def create_svod_list(df: pd.DataFrame, name_column: str, postfix_file: str, lst_
             dct_svod_list_df[key]['Год_рождения'] = dct_svod_list_df[key]['Год_рождения'] .astype(str)  # делаем строковой
             dct_svod_list_df[key]['Год_рождения']  = dct_svod_list_df[key]['Год_рождения'] .apply(lambda x: x.replace('100000000','Ошибочное значение!!!'))
         # Сохраняем
-    list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
-    list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-    list_columns_svod_wb.save(f'{path}/Свод по {postfix_file} {current_time}.xlsx')
+
+    if len(dct_svod_list_df) >= 252:
+        lst_dct = list(dct_svod_list_df.items())  # превращаем в список кортежей
+        start_threshold = 0
+        end_threshold = 252
+        count = 1
+        while end_threshold <= len(lst_dct) + 1:
+            big_dct = dict(lst_dct[start_threshold:end_threshold])
+            list_columns_svod_wb = write_df_big_dct_to_excel(big_dct, write_index=False)
+            list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+            list_columns_svod_wb.save(f'{path}/Свод по {postfix_file} {count}.xlsx')
+            count += 1
+            start_threshold += 252
+            end_threshold += 252
+            # контролируем диапазон
+            if end_threshold > len(lst_dct):
+                big_dct = dict(lst_dct[start_threshold:len(lst_dct) + 1])
+                list_columns_svod_wb = write_df_big_dct_to_excel(big_dct, write_index=False)
+                list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+                list_columns_svod_wb.save(f'{path}/Свод по {postfix_file} {count}.xlsx')
+    else:
+        list_columns_svod_wb = write_df_big_dct_to_excel(dct_svod_list_df, write_index=False)
+        list_columns_svod_wb = del_sheet(list_columns_svod_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        list_columns_svod_wb.save(f'{path}/Свод по {postfix_file} {current_time}.xlsx')
 
 
 def create_svod_status(df: pd.DataFrame, name_column: str, postfix_file: str, lst_status: list,
@@ -770,13 +811,29 @@ def create_svod_status(df: pd.DataFrame, name_column: str, postfix_file: str, ls
         dct_status[name_sheet] = svod_df  # сохраняем в словарь сводную таблицу
 
     # Сохраняем
-    svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
-    svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-    svod_status_wb.save(f'{path}/Свод по {postfix_file} {current_time}.xlsx')
-
-
-
-
+    if len(dct_status) >= 252:
+        lst_dct = list(dct_status.items())  # превращаем в список кортежей
+        start_threshold = 0
+        end_threshold = 252
+        count = 1
+        while end_threshold <= len(lst_dct) + 1:
+            big_dct = dict(lst_dct[start_threshold:end_threshold])
+            svod_status_wb = write_df_big_dct_to_excel(big_dct, write_index=False)
+            svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+            svod_status_wb.save(f'{path}/Свод по {postfix_file} {count}.xlsx')
+            count += 1
+            start_threshold += 252
+            end_threshold += 252
+            # контролируем диапазон
+            if end_threshold > len(lst_dct):
+                big_dct = dict(lst_dct[start_threshold:len(lst_dct) + 1])
+                svod_status_wb = write_df_big_dct_to_excel(big_dct, write_index=False)
+                svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+                svod_status_wb.save(f'{path}/Свод по {postfix_file} {count}.xlsx')
+    else:
+        svod_status_wb = write_df_big_dct_to_excel(dct_status, write_index=False)
+        svod_status_wb = del_sheet(svod_status_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+        svod_status_wb.save(f'{path}/Свод по {postfix_file} {current_time}.xlsx')
 
 
 
@@ -1055,9 +1112,30 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
                     dct_df_list_in_columns[f'{name_sheet}_{value}'] = temp_list_df
 
                 # Сохраняем
-            list_columns_report_wb = write_df_big_dct_to_excel(dct_df_list_in_columns, write_index=False)
-            list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            list_columns_report_wb.save(f'{path_list_file}/Данные по сводам Списков {current_time}.xlsx')
+            if len(dct_df_list_in_columns) >= 252:
+                lst_dct = list(dct_df_list_in_columns.items()) # превращаем в список кортежей
+                start_threshold = 0
+                end_threshold = 252
+                count = 1
+                while end_threshold <= len(lst_dct) + 1:
+                    big_dct = dict(lst_dct[start_threshold:end_threshold])
+                    list_columns_report_wb = write_df_big_dct_to_excel(big_dct, write_index=False)
+                    list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+                    list_columns_report_wb.save(f'{path_list_file}/Данные по сводам Списков {count}.xlsx')
+                    count += 1
+                    start_threshold += 252
+                    end_threshold += 252
+                    # контролируем диапазон
+                    if end_threshold > len(lst_dct):
+                        big_dct = dict(lst_dct[start_threshold:len(lst_dct) + 1])
+                        list_columns_report_wb = write_df_big_dct_to_excel(big_dct, write_index=False)
+                        list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+                        list_columns_report_wb.save(f'{path_list_file}/Данные по сводам Списков {count}.xlsx')
+
+            else:
+                list_columns_report_wb = write_df_big_dct_to_excel(dct_df_list_in_columns, write_index=False)
+                list_columns_report_wb = del_sheet(list_columns_report_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+                list_columns_report_wb.save(f'{path_list_file}/Данные по сводам Списков {current_time}.xlsx')
 
             # создаем срезы
             for name_column, prefix_file in dct_list_save_name.items():
