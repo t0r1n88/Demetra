@@ -511,6 +511,25 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                                          'Описание ошибки'])
                             error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
                             continue  # не обрабатываем лист, где найдены ошибки
+
+                        # Проверяем порядок колонок
+                        order_main_columns = list(main_df.columns)  # порядок колонок эталонного файла
+                        order_temp_df_columns = list(temp_df.columns)  # порядок колонок проверяемого файла
+                        error_order_lst = []  # список для несовпадающих пар
+                        # Сравниваем попарно колонки
+                        for main, temp in zip(order_main_columns, order_temp_df_columns):
+                            if main != temp:
+                                error_order_lst.append(f'На месте колонки {main} находится колонка {temp}')
+                        if len(error_order_lst) != 0:
+                            temp_error_df = pd.DataFrame(
+                                data=[[f'{name_file}', f'{name_sheet}', f'{";".join(error_order_lst)}',
+                                       'Неправильный порядок колонок по сравнению с эталоном. Приведите порядок колонок в соответствии с порядком в эталоне. ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
+                                columns=['Название файла', 'Название листа', 'Значение ошибки',
+                                         'Описание ошибки'])
+                            error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
+                            continue  # не обрабатываем лист, где найдены ошибки
+
+
                         # проверяем на соответствие эталонному файлу
                         diff_cols = etalon_cols.symmetric_difference(set(temp_df.columns))
                         if len(diff_cols) != 0:
