@@ -549,6 +549,12 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                         if checkbox_expelled == 0:
                             temp_df = temp_df[
                                 temp_df['Статус_Учёба'] != 'Отчислен']  # отбрасываем отчисленных если поставлен чекбокс
+                        elif checkbox_expelled == 1:
+                            temp_df = temp_df[
+                                temp_df['Статус_Учёба'] != 'Отчислен']  # отбрасываем отчисленных и академистов
+                            temp_df = temp_df[~temp_df['Статус_Учёба'].str.contains('Академ')]
+                        else:
+                            temp_df = temp_df
 
                         main_df = pd.concat([main_df, temp_df], axis=0, ignore_index=True)  # добавляем в общий файл
                         if len(temp_df) == 0:

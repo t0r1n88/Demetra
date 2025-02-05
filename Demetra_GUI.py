@@ -687,8 +687,10 @@ if __name__ == '__main__':
     #
     Radiobutton(frame_rb_social_report, text='А) Подсчет без отчисленных', variable=group_rb_expelled_social_report,
                 value=0).pack()
-    Radiobutton(frame_rb_social_report, text='Б) Подсчет с отчисленными', variable=group_rb_expelled_social_report,
+    Radiobutton(frame_rb_social_report, text='Б) Подсчет без студентов в академе и отчисленных', variable=group_rb_expelled_social_report,
                 value=1).pack()
+    Radiobutton(frame_rb_social_report, text='В) Подсчет с отчисленными и студентами в академе', variable=group_rb_expelled_social_report,
+                value=2).pack()
 
     btn_choose_file_params_egisso_social_report = Button(frame_data_social_report, text='5) Выберите файл с параметрами ЕГИССО',
                                                   font=('Arial Bold', 14),
@@ -771,8 +773,10 @@ if __name__ == '__main__':
     #
     Radiobutton(frame_rb_local_report, text='А) Подсчет без отчисленных', variable=group_rb_expelled_local_report,
                 value=0).pack()
-    Radiobutton(frame_rb_local_report, text='Б) Подсчет с отчисленными', variable=group_rb_expelled_local_report,
+    Radiobutton(frame_rb_local_report, text='Б) Подсчет без студентов в академе и отчисленных', variable=group_rb_expelled_local_report,
                 value=1).pack()
+    Radiobutton(frame_rb_local_report, text='В) Подсчет с отчисленными и студентами в академе', variable=group_rb_expelled_local_report,
+                value=2).pack()
 
     btn_choose_file_params_egisso_local_report = Button(frame_data_local_report, text='6) Выберите файл с параметрами ЕГИССО',
                                                   font=('Arial Bold', 14),
