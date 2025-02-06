@@ -1188,7 +1188,7 @@ def check_inn(inn):
     if len(result) == 12:
         return ''.join(result)
     else:
-        return f'Ошибка ИНН (ИНН физлица должно состоять из 12 цифр)- {inn} -{len(inn)} цифр'
+        return f'Ошибка ИНН (ИНН физлица должно состоять из 12 цифр)- {inn} -{len(result)} цифр'
 
 def contains_word(s):
     s = str(s)
