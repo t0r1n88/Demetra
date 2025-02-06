@@ -200,7 +200,7 @@ def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) 
 
 
         # Считаем количество студентов в академе
-        akadem_df = df[df['Статус_Учёба'].str.contains('Академ')]
+        akadem_df = df[df['Статус_Учёба'].isin(['Академический отпуск(декрет)','Академический отпуск(служба в РА)','Академический отпуск(по болезни)','Академический отпуск(ученич. договор)'])]
         dct_name_sheet['Академ'] = akadem_df  # добавляем в словарь
         akadem_df_group_df = akadem_df.groupby(by=[slice_column]).agg({'ФИО': 'count'})  # создаем базовый
         group_main_df = group_main_df.join(akadem_df_group_df)  # добавляем в свод
@@ -463,7 +463,7 @@ def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) 
 
 
         # считаем академ
-        akadem_orphans_df = orphans_df[orphans_df['Статус_Учёба'].str.contains('Академический отпуск')]
+        akadem_orphans_df = orphans_df[orphans_df['Статус_Учёба'].isin(['Академический отпуск(декрет)','Академический отпуск(служба в РА)','Академический отпуск(по болезни)','Академический отпуск(ученич. договор)'])]
         akadem_orphans_group_df = akadem_orphans_df.groupby(by=[slice_column]).agg({'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(akadem_orphans_group_df)  # добавляем в свод
         group_orphans_main_df.rename(columns={'Статус_Сиротство': 'Из них в академическом отпуске'}, inplace=True)
@@ -474,7 +474,7 @@ def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) 
 
         # считаем постинтернатное сопровождение
         postinternat_orphans_df = orphans_df[
-            orphans_df['Статус_Сиротство'].str.contains('постинтернатное сопровождение')]
+            orphans_df['Статус_Сиротство'].isin(['гособеспечение + постинтернатное сопровождение'])]
         postinternat_orphans_group_df = postinternat_orphans_df.groupby(by=[slice_column]).agg(
             {'Статус_Сиротство': 'count'})
         group_orphans_main_df = group_orphans_main_df.join(postinternat_orphans_group_df)  # добавляем в свод
