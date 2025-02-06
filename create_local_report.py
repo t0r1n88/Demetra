@@ -96,18 +96,20 @@ def convert_to_date(value):
 
 
 
-def create_value_str(df: pd.DataFrame, name_column: str, target_name_column: str, dct_str: dict) -> pd.DataFrame:
+def create_value_str(df: pd.DataFrame, name_column: str, target_name_column: str, dct_str: dict,checkbox_expelled:int) -> pd.DataFrame:
     """
     Функция для формирования строки нужного формата с использованием переменных
     :param df:датафрейм
     :param name_column:название колонки для значений которой нужно произвести подсчет
     :param target_name_column: название колонки по которой будет производится подсчет
     :param dct_str:словарь с параметрами
+    :param checkbox_expelled: как будет отображаться количество людей в академ и отчисленных
     :return:датафрейм
     """
     temp_counts = df[name_column].value_counts()  # делаем подсчет
     new_value_df = temp_counts.to_frame().reset_index()  # создаем датафрейм с данными
     new_value_df.columns = ['Показатель', 'Значение']  # делаем одинаковыми названия колонок
+    new_value_df['Показатель'] = new_value_df['Показатель'].astype(str)
     new_value_df.sort_values(by='Показатель', inplace=True)
     for idx, row in enumerate(new_value_df.iterrows()):
         name_op = row[1].values[0]  # получаем название ОП
@@ -119,10 +121,18 @@ def create_value_str(df: pd.DataFrame, name_column: str, target_name_column: str
         quantity_not_status_student = \
         temp_df[temp_df[target_name_column].str.contains(dct_str['Не указан статус'])].shape[
             0]
-        quantity_except_deducted = temp_df[~temp_df[target_name_column].str.contains('Отчислен')].shape[
-            0]
-        out_str = f'Обучается - {quantity_study_student}, Академ - {quantity_academ_student},' \
-                  f' Не указан статус - {quantity_not_status_student}, Всего {quantity_except_deducted} (включая академ. и без статуса)'
+
+        if checkbox_expelled == 0:
+            out_str = f'Обучается - {quantity_study_student}, Академ - {quantity_academ_student},' \
+                      f' Не указан статус - {quantity_not_status_student}, Всего {len(temp_df)}'
+        elif checkbox_expelled == 1:
+            out_str = f'Обучается - {quantity_study_student},' \
+                      f' Не указан статус - {quantity_not_status_student}, Всего {len(temp_df)}'
+        else:
+            quantity_except = temp_df[temp_df[target_name_column].str.contains('Отчислен')].shape[
+                0]
+            out_str = f'Обучается - {quantity_study_student}, Академ - {quantity_academ_student}, Отчислено - {quantity_except}, Не указан статус - {quantity_not_status_student}, Всего {len(temp_df)}'
+
         new_value_df.iloc[idx, 1] = out_str  # присваиваем значение
 
     return new_value_df
@@ -552,7 +562,8 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                         elif checkbox_expelled == 1:
                             temp_df = temp_df[
                                 temp_df['Статус_Учёба'] != 'Отчислен']  # отбрасываем отчисленных и академистов
-                            temp_df = temp_df[~temp_df['Статус_Учёба'].str.contains('Академ')]
+                            temp_df = temp_df[~temp_df['Статус_Учёба'].isin(['Академический отпуск(декрет)','Академический отпуск(служба в РА)','Академический отпуск(по болезни)','Академический отпуск(ученич. договор)'])]
+
                         else:
                             temp_df = temp_df
 
@@ -823,16 +834,27 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
             0]
         quantity_except_deducted = main_df[~main_df['Статус_Учёба'].str.contains('Отчислен')].shape[
             0]  # все студенты кроме отчисленных
-        soc_df.loc[len(soc_df)] = ['Количество студентов (контингент)',
-                                   f'Обучается - {quantity_study_student}, Академ - {quantity_academ_student},'
-                                   f' Не указан статус - {quantity_not_status_student}, Всего {quantity_except_deducted} (включая академ. и без статуса)']  # добавляем количество студентов
+        if checkbox_expelled == 0:
+            soc_df.loc[len(soc_df)] = ['Количество студентов (контингент)',
+                                       f'Обучается - {quantity_study_student}, Академ - {quantity_academ_student}, Не указан статус - {quantity_not_status_student}, Всего - {quantity_except_deducted} ']  # добавляем количество студентов
+        elif checkbox_expelled == 1:
+            # Без отчисленных и академа
+            soc_df.loc[len(soc_df)] = ['Количество студентов (контингент)',
+                                       f'Обучается - {quantity_study_student}, Не указан статус - {quantity_not_status_student}, Всего {quantity_except_deducted} (без студентов в академическом отпуске и отчисленных)']  # добавляем количество студентов
+        else:
+            # Включая отчисленных и в академе
+            quantity_except = main_df[main_df['Статус_Учёба'].str.contains('Отчислен')].shape[
+                0]  # количество отчисленных
+            soc_df.loc[len(soc_df)] = ['Количество студентов (контингент)',
+                                       f'Обучается - {quantity_study_student}, Академ - {quantity_academ_student}, Не указан статус - {quantity_not_status_student},Отчислено - {quantity_except}, Всего -  {len(main_df)}']  # добавляем количество студентов
+
         # считаем количество совершенолетних студентов
         quantity_maturity_students = len(main_df[main_df['Совершеннолетие'] == 'совершеннолетний'])
         quantity_not_maturity_students = len(main_df[main_df['Совершеннолетие'] == 'несовершеннолетний'])
         quantity_error_maturity_students = len(
             main_df[main_df['Совершеннолетие'].isin(['отрицательный возраст', 'Ошибочное значение!!!'])])
         soc_df.loc[len(soc_df)] = ['Возраст',
-                                   f'Совершеннолетних - {quantity_maturity_students}, Несовершеннолетних - {quantity_not_maturity_students}, Неправильная дата рождения - {quantity_error_maturity_students}, Всего {quantity_except_deducted} (включая академ. и без статуса)']
+                                   f'Совершеннолетних - {quantity_maturity_students}, Несовершеннолетних - {quantity_not_maturity_students}, Неправильная дата рождения - {quantity_error_maturity_students}, Всего {len(main_df)}']
         # Распределение по СПО-1
         header_spo = pd.DataFrame(columns=['Показатель', 'Значение'],
                                    data=[['Статус_СПО-1', None]])  # создаем строку с заголовком
@@ -848,7 +870,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                 # создаем строки с описанием
                 new_value_df = create_value_str(main_df, name_column, 'Статус_Учёба',
                                                 {'Обучается': 'Обучается', 'Академ': 'Академический отпуск',
-                                                 'Не указан статус': 'Нет статуса'})
+                                                 'Не указан статус': 'Нет статуса'},checkbox_expelled)
             elif 'Статус_' in name_column:
                 temp_counts = main_df[name_column].value_counts()  # делаем подсчет
                 new_part_df = pd.DataFrame(columns=['Показатель', 'Значение'],
@@ -880,7 +902,7 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
                                            data=[['Статус_студентов по группам', None]])  # создаем строку с заголовком
         new_group_df = create_value_str(main_df, 'Группа', 'Статус_Учёба',
                                         {'Обучается': 'Обучается', 'Академ': 'Академический отпуск',
-                                         'Не указан статус': 'Нет статуса'})
+                                         'Не указан статус': 'Нет статуса'},checkbox_expelled)
         new_group_header_df = pd.concat([new_group_header_df, new_group_df], axis=0)
 
         soc_df = pd.concat([soc_df, new_group_header_df], axis=0)
@@ -987,7 +1009,6 @@ if __name__ == '__main__':
     main_egisso_params = 'data/Параметры ЕГИССО.xlsx'
     main_checkbox_expelled = 0
     main_raw_data = '05.09.2024'
-    # main_checkbox_expelled = 1
     create_local_report(main_etalon_file, main_data_folder, main_result_folder, main_params_file,main_egisso_params,
                         main_checkbox_expelled, main_raw_data)
     print('Lindy Booth')
