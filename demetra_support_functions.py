@@ -1206,24 +1206,27 @@ def check_error_in_pers_data(df:pd.DataFrame,path_end_folder:str,current_time):
     out_df = df[['Файл','Группа','ФИО']]
     # Проверяем М и Ж
     out_df['Пол'] = df['Пол'].apply(lambda x:x if x in ('М','Ж') else f'Ошибка: Допустимые значения М и Ж. В ячейке указано {x}')
+    # СНИЛС
+    df['СНИЛС'] = df['СНИЛС'].astype(str)
     out_df['СНИЛС'] = df['СНИЛС'].apply(processing_snils) # проверяем снилс и конвертируем снилс
-    # проверяем колонку дату рождения
+    # проверяем колонку ИНН
     out_df['ИНН'] = df['ИНН'].apply(check_inn) # проверяем ИНН
 
+
     date_pattern = re.compile(r'^\d{2}\.\d{2}\.\d{4}$')  # созадем паттерн
-    out_df['Дата_рождения'] = df['Дата_рождения'].astype(str)
+    df['Дата_рождения'] = df['Дата_рождения'].astype(str)
     out_df['Дата_рождения'] = df['Дата_рождения'].apply(lambda x: comparison_date(x, date_pattern))
     # Проверяем колонку серия паспорта
     series_pattern = re.compile(r'^\d{4}$')
-    out_df['Серия_паспорта'] = df['Серия_паспорта'].astype(str)
+    df['Серия_паспорта'] = df['Серия_паспорта'].astype(str)
     out_df['Серия_паспорта'] = df['Серия_паспорта'].apply(lambda x: processing_series(x, series_pattern))
     # проверяем номер паспорта
     number_pattern = re.compile(r'^\d{6}$')
-    out_df['Номер_паспорта'] = df['Номер_паспорта'].astype(str)
+    df['Номер_паспорта'] = df['Номер_паспорта'].astype(str)
     out_df['Номер_паспорта'] = df['Номер_паспорта'].apply(lambda x: processing_number(x, number_pattern))
     # проверяем колонку дата выдачи паспорта
     date_pattern = re.compile(r'^\d{2}\.\d{2}.\d{4}$')  # созадем паттерн
-    out_df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].astype(str)
+    df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].astype(str)
     out_df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].apply(lambda x: comparison_date(x, date_pattern))
     # Проверяем колонку Кем выдано
     out_df['Кем_выдан'] = df['Кем_выдан'].apply(lambda x: check_simple_str_column(x, 'Ошибка: не заполнено'))
@@ -1232,6 +1235,8 @@ def check_error_in_pers_data(df:pd.DataFrame,path_end_folder:str,current_time):
     out_df['Фамилия'] = df['Фамилия'].apply(lambda x:processing_fio(x,fio_pattern)) # проверяем фамилию
     out_df['Имя'] = df['Имя'].apply(lambda x:processing_fio(x,fio_pattern)) # проверяем имя
     out_df['Отчество'] = df['Отчество'].apply(lambda x:processing_fio(x,fio_pattern)) # проверяем отчество
+
+
 
 
     # определяем строки где встречается слово ошибка
@@ -1250,9 +1255,20 @@ def check_error_in_pers_data(df:pd.DataFrame,path_end_folder:str,current_time):
 
     # Удаляем найденные колонки
     error_df.drop(columns_to_drop, axis=1, inplace=True)
+    out_dct = {'Общий список ошибок':error_df}
+    # Создаем отдельные датафреймы
+    for name_col in error_df.columns:
+        if name_col not in ('Файл','Группа','ФИО'):
+            error_df[name_col] = error_df[name_col].astype(str)
+            temp_df = error_df[error_df[name_col].str.contains('Ошибка')]
+            temp_df = temp_df[['Файл','Группа','ФИО',name_col]]
+            out_dct[name_col] = temp_df
 
 
-    error_pers_wb = write_df_to_excel({'Общий список': error_df}, write_index=False)
+
+
+
+    error_pers_wb = write_df_to_excel(out_dct, write_index=False)
     error_pers_wb = del_sheet(error_pers_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
     error_pers_wb.save(f'{path_end_folder}/Ошибки в персональных данных от {current_time}.xlsx')
 
