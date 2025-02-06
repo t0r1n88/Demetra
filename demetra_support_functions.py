@@ -1024,18 +1024,6 @@ def replace_point(value):
         return None
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def extract_parameters_egisso(path_egisso_params: str, df_cols:list):
     """
     Функция для извлечения параметров из файла егиссо
@@ -1082,3 +1070,189 @@ def extract_parameters_egisso(path_egisso_params: str, df_cols:list):
 
 
         return df_params,error_df
+
+"""
+Функции для проверки персональных данных
+"""
+
+def check_simple_str_column(value, error_str: str):
+    """
+    Функция для проверки на заполнение ячейки для простой колонки с текстом не требующим дополнительной проверки
+    :param value: значение ячейки
+    :param error_str: сообщение об ошибки
+    """
+    if pd.isna(value):
+        return error_str
+    elif value == 'Нет статуса':
+        return 'Ошибка Не заполнено!'
+    else:
+        return value
+
+def processing_snils(value):
+    """
+    Функция для проверки и обработки СНИЛС
+    :param value:
+    :return:
+    """
+    result = re.findall(r'\d',value)
+    if len(result) == 11:
+        # проверяем на лидирующий ноль
+        out_str = ''.join(result)
+        if out_str.startswith('0'):
+            return out_str
+        else:
+            return int(out_str)
+    else:
+        return f'Ошибка: В СНИЛС должно быть 11 цифр а в ячейке {len(result)} цифр(ы). В ячейке указано - {value}'
+
+def processing_fio(value,pattern):
+    """
+    Функция для проверки соответствия
+    :param value:значение
+    :param pattern: объект re.compile
+    :return:
+    """
+    if re.fullmatch(pattern,value):
+        return value
+    else:
+        return f'Ошибка: ФИО должно начинаться с большой буквы и содержать только буквы кириллицы и дефис. В ячейке указано - {value}'
+
+def comparison_date(value, pattern):
+    """
+    Функция для проверки соответсвия формата даты
+    :param value:значение
+    :param pattern: объект re.compile
+    :return:
+    """
+    if re.fullmatch(pattern,value):
+        return value
+    else:
+        return f'Ошибка: В ячейке указано - {value}'
+
+
+def processing_series(value, pattern):
+    """
+    Функция для проверки соответсвия формата серии паспорта
+    :param value:значение
+    :param pattern: объект re.compile
+    :return:
+    """
+    if re.fullmatch(pattern,value):
+        if value.startswith('0'):
+            return value
+        else:
+            return int(value)
+    else:
+        error_str = re.sub(r'\s','Пробельный символ',value)
+        return f'Ошибка: Серия паспорта должна состоять из 4 цифр без пробелов, например 0343. В ячейке указано - {error_str}'
+
+def processing_number(value, pattern):
+    """
+    Функция для проверки соответсвия формата номера паспорта
+    :param value:значение
+    :param pattern: объект re.compile
+    :return:
+    """
+
+    if re.fullmatch(pattern,value):
+        if value.startswith('0'):
+            return value
+        else:
+            return int(value)
+    else:
+        error_str = re.sub(r'\s','Пробельный символ',value)
+        return f'Ошибка: Номер паспорта должен состоять из 6 цифр без пробелов, например 420343. В ячейке указано - {error_str}'
+
+def find_error_in_row(row):
+    """
+    Функция для поиска в каждой колонке строки слова Ошибка
+    :param row:
+    :return:
+    """
+    value_lst = row.tolist()
+    error_lst = [value for value in value_lst if isinstance(value,str) and 'Ошибка' in value]
+    if len(error_lst) !=0:
+        return 'Ошибка'
+    else:
+        return 'Нет ошибок'
+
+
+def check_inn(inn):
+    """
+    Функция для приведения значений снилс в вид 12 цифр
+    """
+    if inn is np.nan:
+        return 'Ошибка'
+    inn = str(inn)
+    result = re.findall(r'\d', inn) # ищем цифры
+    if len(result) == 12:
+        return ''.join(result)
+    else:
+        return f'Ошибка ИНН (ИНН физлица должно состоять из 12 цифр)- {inn} -{len(inn)} цифр'
+
+def contains_word(s):
+    s = str(s)
+    return 'Ошибка' in s
+
+
+def check_error_in_pers_data(df:pd.DataFrame,path_end_folder:str,current_time):
+    """
+    Функция для проверки правильности данных
+    :param df:датафрейм который нужно проверить на корректность заполнения
+    :param path_end_folder: папка куда будет сохранен результат
+    :param current_time: время сохранения
+    """
+
+    out_df = df[['Файл','Группа','ФИО']]
+    # Проверяем М и Ж
+    out_df['Пол'] = df['Пол'].apply(lambda x:x if x in ('М','Ж') else f'Ошибка: Допустимые значения М и Ж. В ячейке указано {x}')
+    out_df['СНИЛС'] = df['СНИЛС'].apply(processing_snils) # проверяем снилс и конвертируем снилс
+    # проверяем колонку дату рождения
+    out_df['ИНН'] = df['ИНН'].apply(check_inn) # проверяем ИНН
+
+    date_pattern = re.compile(r'^\d{2}\.\d{2}\.\d{4}$')  # созадем паттерн
+    out_df['Дата_рождения'] = df['Дата_рождения'].astype(str)
+    out_df['Дата_рождения'] = df['Дата_рождения'].apply(lambda x: comparison_date(x, date_pattern))
+    # Проверяем колонку серия паспорта
+    series_pattern = re.compile(r'^\d{4}$')
+    out_df['Серия_паспорта'] = df['Серия_паспорта'].astype(str)
+    out_df['Серия_паспорта'] = df['Серия_паспорта'].apply(lambda x: processing_series(x, series_pattern))
+    # проверяем номер паспорта
+    number_pattern = re.compile(r'^\d{6}$')
+    out_df['Номер_паспорта'] = df['Номер_паспорта'].astype(str)
+    out_df['Номер_паспорта'] = df['Номер_паспорта'].apply(lambda x: processing_number(x, number_pattern))
+    # проверяем колонку дата выдачи паспорта
+    date_pattern = re.compile(r'^\d{2}\.\d{2}.\d{4}$')  # созадем паттерн
+    out_df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].astype(str)
+    out_df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].apply(lambda x: comparison_date(x, date_pattern))
+    # Проверяем колонку Кем выдано
+    out_df['Кем_выдан'] = df['Кем_выдан'].apply(lambda x: check_simple_str_column(x, 'Ошибка: не заполнено'))
+    # првоеряем ФИО
+    fio_pattern = re.compile(r'^[ЁА-Я][ёЁа-яА-Я-]+$')
+    out_df['Фамилия'] = df['Фамилия'].apply(lambda x:processing_fio(x,fio_pattern)) # проверяем фамилию
+    out_df['Имя'] = df['Имя'].apply(lambda x:processing_fio(x,fio_pattern)) # проверяем имя
+    out_df['Отчество'] = df['Отчество'].apply(lambda x:processing_fio(x,fio_pattern)) # проверяем отчество
+
+
+    # определяем строки где встречается слово ошибка
+    out_df['Ошибка'] = out_df.apply(find_error_in_row, axis=1)
+
+    error_df = out_df[out_df['Ошибка'] == 'Ошибка']
+    # Убираем лишнюю колонку
+    error_df.drop(columns=['Ошибка'],inplace=True)
+    # Убираем колонки в которых нет ошибок чтобы таблица была компактнее
+    lst_check_cols = ['Пол','СНИЛС','ИНН','Дата_рождения','Серия_паспорта','Номер_паспорта','Кем_выдан','Фамилия','Имя','Отчество']
+    # Проверяем колонки
+    columns_to_drop = []
+    for column in lst_check_cols:
+        if not error_df[column].apply(contains_word).any():
+            columns_to_drop.append(column)
+
+    # Удаляем найденные колонки
+    error_df.drop(columns_to_drop, axis=1, inplace=True)
+
+
+    error_pers_wb = write_df_to_excel({'Общий список': error_df}, write_index=False)
+    error_pers_wb = del_sheet(error_pers_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+    error_pers_wb.save(f'{path_end_folder}/Ошибки в персональных данных от {current_time}.xlsx')
+

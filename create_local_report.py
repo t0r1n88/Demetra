@@ -2,7 +2,7 @@
 Скрипт для обработки списка студентов на отделении и создания отчетности по нему
 """
 from demetra_support_functions import write_df_to_excel, del_sheet, \
-    declension_fio_by_case,extract_parameters_egisso,write_df_big_dct_to_excel
+    declension_fio_by_case,extract_parameters_egisso,write_df_big_dct_to_excel,check_error_in_pers_data
 from demetra_processing_date import proccessing_date
 from demetra_egisso import create_part_egisso_data, create_full_egisso_data
 from tkinter import messagebox
@@ -87,7 +87,11 @@ def convert_to_date(value):
     except ValueError:
         result = re.search(r'^\d{2}\.\d{2}\.\d{4}$',value)
         if result:
-            return datetime.datetime.strptime(result.group(0), '%d.%m.%Y')
+            try:
+                return datetime.datetime.strptime(result.group(0), '%d.%m.%Y')
+            except ValueError:
+                # для случаев вида 45.09.2007
+                return f'Некорректный формат даты - {value}'
         else:
             return f'Некорректный формат даты - {value}'
     except:
@@ -790,7 +794,10 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
         main_wb = del_sheet(main_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         main_wb.save(f'{path_end_folder}/Общий файл от {current_time}.xlsx')
 
+        # Ищем ошибки в персональных данных
         main_df.replace('', 'Нет статуса', inplace=True)
+        check_error_in_pers_data(main_df.copy(), path_end_folder, current_time)
+
         # Заменяем название колонки Пол на Статус_Пол чтобы обработка проходила нормально
         main_df.rename(columns={'Пол':'Статус_Пол'},inplace=True)
 
