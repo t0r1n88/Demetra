@@ -4,7 +4,7 @@
 from demetra_support_functions import write_df_to_excel, del_sheet, \
     declension_fio_by_case,extract_parameters_egisso,write_df_big_dct_to_excel
 from demetra_processing_date import proccessing_date
-from egisso import create_part_egisso_data, create_full_egisso_data
+from demetra_egisso import create_part_egisso_data, create_full_egisso_data
 from tkinter import messagebox
 import pandas as pd
 import numpy as np

@@ -5,7 +5,7 @@ from demetra_support_functions import (write_df_to_excel, write_df_to_excel_repo
                                        declension_fio_by_case,
                                        extract_parameters_egisso, write_df_big_dct_to_excel)
 from demetra_processing_date import proccessing_date
-from egisso import create_part_egisso_data, create_full_egisso_data
+from demetra_egisso import create_part_egisso_data, create_full_egisso_data
 from tkinter import messagebox
 
 import pandas as pd
@@ -860,7 +860,7 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
         name_columns_set = {'ФИО', 'Дата_рождения', 'Статус_ОП', 'Статус_Бюджет', 'Статус_Общежитие', 'Статус_Учёба',
                             'Статус_Всеобуч',
                             'Статус_Соц_стипендия', 'Статус_Соц_положение_семьи',
-                            'СНИЛС', 'Пол', 'Серия_паспорта', 'Номер_паспорта', 'Дата_выдачи_паспорта', 'Кем_выдан',
+                            'СНИЛС','ИНН', 'Пол', 'Серия_паспорта', 'Номер_паспорта', 'Дата_выдачи_паспорта', 'Кем_выдан',
                             'Статус_Питание',
                             'Статус_Состав_семьи', 'Статус_Уровень_здоровья', 'Статус_Сиротство',
                             'Статус_Место_регистрации', 'Статус_Студенческая_семья',
@@ -1089,7 +1089,7 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
 
         error_df = pd.concat([error_df, temp_params_egisso_error_df], axis=0, ignore_index=True)
         error_wb = write_df_to_excel({'Ошибки': error_df}, write_index=False)
-        error_wb.save(f'{path_end_folder}/Ошибки в файле от {current_time}.xlsx')
+        error_wb.save(f'{path_end_folder}/Ошибки в файлах от {current_time}.xlsx')
 
 
         # Обрабатываем колонки типа Список
