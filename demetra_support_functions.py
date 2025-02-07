@@ -1094,6 +1094,8 @@ def processing_snils(value):
     :param value:
     :return:
     """
+    if value == 'Нет статуса':
+        return 'Ошибка СНИЛС не заполнен!'
     result = re.findall(r'\d',value)
     if len(result) == 11:
         # проверяем на лидирующий ноль
@@ -1137,6 +1139,8 @@ def processing_series(value, pattern):
     :param pattern: объект re.compile
     :return:
     """
+    if value == 'Нет статуса':
+        return 'Ошибка Серия паспорта не заполнена!'
     if re.fullmatch(pattern,value):
         if value.startswith('0'):
             return value
@@ -1153,6 +1157,8 @@ def processing_number(value, pattern):
     :param pattern: объект re.compile
     :return:
     """
+    if value == 'Нет статуса':
+        return 'Ошибка номер паспорта не заполнен!'
 
     if re.fullmatch(pattern,value):
         if value.startswith('0'):
@@ -1184,6 +1190,8 @@ def check_inn(inn):
     if inn is np.nan:
         return 'Ошибка'
     inn = str(inn)
+    if inn == 'Нет статуса':
+        return 'Ошибка ИНН не заполнен!'
     result = re.findall(r'\d', inn) # ищем цифры
     if len(result) == 12:
         return ''.join(result)
@@ -1228,8 +1236,16 @@ def check_error_in_pers_data(df:pd.DataFrame,path_end_folder:str,current_time):
     date_pattern = re.compile(r'^\d{2}\.\d{2}.\d{4}$')  # созадем паттерн
     df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].astype(str)
     out_df['Дата_выдачи_паспорта'] = df['Дата_выдачи_паспорта'].apply(lambda x: comparison_date(x, date_pattern))
+    out_df['Код_подразделения'] = df['Код_подразделения'].apply(lambda x: check_simple_str_column(x, 'Ошибка: не заполнено'))
     # Проверяем колонку Кем выдано
     out_df['Кем_выдан'] = df['Кем_выдан'].apply(lambda x: check_simple_str_column(x, 'Ошибка: не заполнено'))
+    # Проверяем адреса регистрации и фактический адрес
+    out_df['Адрес_регистрации'] = df['Адрес_регистрации'].apply(lambda x: check_simple_str_column(x, 'Ошибка: не заполнено'))
+    out_df['Фактический_адрес'] = df['Фактический_адрес'].apply(lambda x: check_simple_str_column(x, 'Ошибка: не заполнено'))
+
+
+
+
     # првоеряем ФИО
     fio_pattern = re.compile(r'^[ЁА-Я][ёЁа-яА-Я-]+$')
     out_df['Фамилия'] = df['Фамилия'].apply(lambda x:processing_fio(x,fio_pattern)) # проверяем фамилию
@@ -1246,7 +1262,7 @@ def check_error_in_pers_data(df:pd.DataFrame,path_end_folder:str,current_time):
     # Убираем лишнюю колонку
     error_df.drop(columns=['Ошибка'],inplace=True)
     # Убираем колонки в которых нет ошибок чтобы таблица была компактнее
-    lst_check_cols = ['Пол','СНИЛС','ИНН','Дата_рождения','Серия_паспорта','Номер_паспорта','Кем_выдан','Фамилия','Имя','Отчество']
+    lst_check_cols = ['Пол','СНИЛС','ИНН','Дата_рождения','Серия_паспорта','Номер_паспорта','Код_подразделения','Кем_выдан','Адрес_регистрации','Фактический_адрес','Фамилия','Имя','Отчество']
     # Проверяем колонки
     columns_to_drop = []
     for column in lst_check_cols:
