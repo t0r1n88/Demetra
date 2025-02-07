@@ -141,7 +141,7 @@ def convert_to_date(value):
     """
     try:
         if value == 'Нет статуса':
-            return None
+            return 'Не заполнено'
         else:
             date_value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
             return date_value
@@ -152,11 +152,11 @@ def convert_to_date(value):
                 return datetime.datetime.strptime(result.group(0), '%d.%m.%Y')
             except ValueError:
                 # для случаев вида 45.09.2007
-                return f'Некорректный формат даты - {value}'
+                return f'Некорректный формат даты - {value}, проверьте лишние пробелы,наличие точек'
         else:
-            return f'Некорректный формат даты - {value}'
+            return f'Некорректный формат даты - {value}, проверьте лишние пробелы,наличие точек'
     except:
-        return None
+        return f'Некорректный формат даты - {value}, проверьте лишние пробелы,наличие точек'
 
 
 def extract_part_status_op(value,part_extract:str):
@@ -977,9 +977,19 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
                             continue  # не обрабатываем лист, где найдены ошибки
 
 
+                        # указываем где есть ФИО в которых пробельные символы
+                        lst_fio = temp_df['ФИО'].tolist()  # делаем список
+                        lst_spaces = []  # список в котором будут храниться индексы
+                        for idx, fio in enumerate(lst_fio):
+                            lst_spaces.append(fio)
+                            if str(fio).strip() == '':
+                                lst_spaces[idx] = f'Строка {idx + 2} состоит из только из пробельных символов'
 
+                        temp_df['ФИО'] = lst_spaces  #
                         temp_df.dropna(how='all', inplace=True)  # удаляем пустые строки
-                        temp_df = temp_df[temp_df['ФИО'].notna()] # отсекаем строки где заполнено ФИО
+                        temp_df = temp_df[temp_df['ФИО'].notna()] # отсекаем строки где не заполнено ФИО
+
+
                         # проверяем наличие колонок Файл и Группа
                         if 'Файл' not in temp_df.columns:
                             temp_df.insert(0, 'Файл', name_file)
@@ -1305,7 +1315,7 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
                 for cell in row:  # применяем стиль если условие сработало
                     cell.font = font
                     cell.fill = fill
-        soc_wb.save(f'{path_end_folder}/Свод по статусам от {current_time}.xlsx')
+        soc_wb.save(f'{path_end_folder}/Сводка от {current_time}.xlsx')
 
         # Создаем файл excel в котороым будет находится отчет
         wb = openpyxl.Workbook()
