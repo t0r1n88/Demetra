@@ -9,7 +9,8 @@ from demetra_create_union_table import merge_table  # соединие табл�
 from expired_doc import check_expired_docs
 from demetra_preparation_list import prepare_list  # подготовка персональных данных
 from demetra_split_table import split_table  # разделение таблицы
-from demetra_generate_docs import generate_docs_from_template
+from demetra_generate_docs import generate_docs_from_template # создание документов
+from demetra_diff_tables import find_diffrence # нахождение разницы двух таблиц
 import pandas as pd
 from pandas._libs.tslibs.parsing import DateParseError
 import os
@@ -542,6 +543,58 @@ def generate_docs_other():
 
 
 """
+Функции для разницы файлов
+"""
+def select_first_diffrence():
+    """
+    Функция для файла с данными
+    :return: Путь к файлу с данными
+    """
+    global data_first_diffrence
+    # Получаем путь к файлу
+    data_first_diffrence = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
+def select_second_diffrence():
+    """
+    Функция для файла с данными
+    :return: Путь к файлу с данными
+    """
+    global data_second_diffrence
+    # Получаем путь к файлу
+    data_second_diffrence = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
+def select_end_folder_diffrence():
+    """
+    Функия для выбора папки.Определенно вот это когда нибудь я перепишу на ООП
+    :return:
+    """
+    global path_to_end_folder_diffrence
+    path_to_end_folder_diffrence = filedialog.askdirectory()
+
+
+def processing_diffrence():
+    """
+    Функция для нахождения разницы между двумя таблицами
+    :return:
+    """
+    try:
+        # находим разницу
+        find_diffrence(data_first_diffrence, data_second_diffrence,
+                       path_to_end_folder_diffrence)
+    except NameError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Выберите файлы с данными и папку куда будет генерироваться файл')
+        logging.exception('AN ERROR HAS OCCURRED')
+
+
+
+
+
+
+
+"""
 Создание нового окна
 """
 def open_list_changes():
@@ -892,153 +945,65 @@ if __name__ == '__main__':
     btn_choose_processing_prep.pack(padx=10, pady=10)
 
     """
-    Создаем вкладку для предварительной обработки списка
+    Вкладка для поиска разницы между двумя таблицами
     """
-    tab_preparation = ttk.Frame(tab_control)
-    tab_control.add(tab_preparation, text='Обработка\nсписка')
+    tab_diffrence = Frame(tab_control)
+    tab_control.add(tab_diffrence, text='Разница\n2 таблиц')
 
-    preparation_frame_description = LabelFrame(tab_preparation)
-    preparation_frame_description.pack()
+    diffrence_frame_description = LabelFrame(tab_diffrence)
+    diffrence_frame_description.pack()
 
-    lbl_hello_preparation = Label(preparation_frame_description,
-                                  text='Очистка от лишних пробелов и символов; поиск пропущенных значений\n в колонках с персональными данными,'
-                                       '(ФИО,паспортные данные,\nтелефон,e-mail,дата рождения,ИНН)\n преобразование СНИЛС в формат ХХХ-ХХХ-ХХХ ХХ.\n'
-                                       'Создание списка дубликатов по каждой колонке.\n'
-                                       'Поиск со смешаным написанием русских и английских букв.\n'
-                                       'ПРИМЕЧАНИЯ\n'
-                                       'Данные обрабатываются С ПЕРВОГО ЛИСТА В ФАЙЛЕ !!!\n'
-                                       'Заголовок таблицы должен занимать только первую строку!\n'
-                                       'Для корректной работы программы уберите из таблицы\nобъединенные ячейки',
-                                  width=60)
-    lbl_hello_preparation.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+    lbl_hello_diffrence = Label(diffrence_frame_description,
+                                text='Поиск отличий в двух таблицах\n'
+                                     'ВАЖНО Количество строк и колонок в таблицах должно совпадать\n'
+                                     'ВАЖНО Названия колонок в таблицах должны совпадать\n'
+                                     'ПРИМЕЧАНИЯ\n'
+                                     'Заголовок таблицы должен занимать только первую строку!\n'
+                                     'Для корректной работы программы уберите из таблицы\n объединенные ячейки',
+                                width=60)
 
+    lbl_hello_diffrence.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
     # Картинка
-    path_to_img_preparation = resource_path('logo.png')
-    img_preparation = PhotoImage(file=path_to_img_preparation)
-    Label(preparation_frame_description,
-          image=img_preparation, padx=10, pady=10
+    path_to_img_diffrence = resource_path('logo.png')
+    img_diffrence = PhotoImage(file=path_to_img_diffrence)
+    Label(diffrence_frame_description,
+          image=img_diffrence, padx=10, pady=10
           ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
 
     # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
-    frame_data_prep = LabelFrame(tab_preparation, text='Подготовка')
-    frame_data_prep.pack(padx=10, pady=10)
+    frame_data_diffrence = LabelFrame(tab_diffrence, text='Подготовка')
+    frame_data_diffrence.pack(padx=10, pady=10)
 
-    # Создаем кнопку выбора файла с данными
-    btn_choose_prep_file = Button(frame_data_prep, text='1) Выберите файл', font=('Arial Bold', 14),
-                                  command=select_prep_file)
-    btn_choose_prep_file.pack(padx=10, pady=10)
+    # Создаем кнопку Выбрать  первый файл с данными
+    btn_data_first_diffrence = Button(frame_data_diffrence, text='1) Выберите первый файл',
+                                      font=('Arial Bold', 14),
+                                      command=select_first_diffrence
+                                      )
+    btn_data_first_diffrence.pack(padx=10, pady=10)
 
-    # Создаем кнопку выбора конечной папки
-    btn_choose_end_folder_prep = Button(frame_data_prep, text='2) Выберите конечную папку', font=('Arial Bold', 14),
-                                        command=select_end_folder_prep)
-    btn_choose_end_folder_prep.pack(padx=10, pady=10)
+    # Создаем кнопку Выбрать  второй файл с данными
+    btn_data_second_diffrence = Button(frame_data_diffrence, text='2) Выберите второй файл',
+                                       font=('Arial Bold', 14),
+                                       command=select_second_diffrence
+                                       )
+    btn_data_second_diffrence.pack(padx=10, pady=10)
 
-    # Создаем переменную для хранения результа переключения чекбокса
-    mode_dupl_value = StringVar()
+    # Создаем кнопку выбора папки куда будет генерироваьться файл
+    btn_select_end_diffrence = Button(frame_data_diffrence, text='3) Выберите конечную папку',
+                                      font=('Arial Bold', 14),
+                                      command=select_end_folder_diffrence
+                                      )
+    btn_select_end_diffrence.pack(padx=10, pady=10)
 
-    # Устанавливаем значение по умолчанию для этой переменной. По умолчанию будет вестись подсчет числовых данных
-    mode_dupl_value.set('No')
-    # Создаем чекбокс для выбора режима подсчета
-
-    chbox_mode_dupl = Checkbutton(frame_data_prep,
-                                  text='Проверить каждую колонку таблицы на дубликаты',
-                                  variable=mode_dupl_value,
-                                  offvalue='No',
-                                  onvalue='Yes')
-    chbox_mode_dupl.pack(padx=10, pady=10)
-
-    # Создаем переменную для хранения результа переключения чекбокса поиска смешения
-    mode_mix_alphabets = StringVar()
-
-    # Устанавливаем значение по умолчанию для этой переменной. По умолчанию будет вестись подсчет числовых данных
-    mode_mix_alphabets.set('No')
-    # Создаем чекбокс для выбора режима подсчета
-
-    chbox_mode_mix_alphabets = Checkbutton(frame_data_prep,
-                                           text='Проверить каждую ячейку таблицы на смешение русских и английских букв',
-                                           variable=mode_mix_alphabets,
-                                           offvalue='No',
-                                           onvalue='Yes')
-    chbox_mode_mix_alphabets.pack(padx=10, pady=10)
-
-    # Создаем кнопку очистки
-    btn_choose_processing_prep = Button(tab_preparation, text='3) Выполнить обработку', font=('Arial Bold', 20),
-                                        command=processing_preparation_file)
-    btn_choose_processing_prep.pack(padx=10, pady=10)
+    # Создаем кнопку Обработать данные
+    btn_data_do_diffrence = Button(tab_diffrence, text='4) Обработать таблицы', font=('Arial Bold', 20),
+                                   command=processing_diffrence
+                                   )
+    btn_data_do_diffrence.pack(padx=10, pady=10)
 
     """
-    Создание вкладки для разбиения таблицы на несколько штук по значениям в определенной колонке
-    """
-    # Создаем вкладку для подсчета данных по категориям
-    tab_split_tables = ttk.Frame(tab_control)
-    tab_control.add(tab_split_tables, text='Разделение\n таблицы')
-
-    split_tables_frame_description = LabelFrame(tab_split_tables)
-    split_tables_frame_description.pack()
-
-    lbl_hello_split_tables = Label(split_tables_frame_description,
-                                   text='Центр опережающей профессиональной подготовки Республики Бурятия\nРазделение таблицы Excel по листам и файлам'
-                                        '\nДля корректной работы программы уберите из таблицы\nобъединенные ячейки\n'
-                                        'Данные обрабатываются С ПЕРВОГО ЛИСТА В ФАЙЛЕ !!!\n'
-                                        'Заголовок таблицы должен занимать ОДНУ СТРОКУ\n и в нем не должно быть объединенных ячеек!',
-                                   width=60)
-    lbl_hello_split_tables.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
-
-    # Картинка
-    path_to_img_split_tables = resource_path('logo.png')
-    img_split_tables = PhotoImage(file=path_to_img_split_tables)
-    Label(split_tables_frame_description,
-          image=img_split_tables, padx=10, pady=10
-          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
-
-    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
-    frame_data_for_split = LabelFrame(tab_split_tables, text='Подготовка')
-    frame_data_for_split.pack(padx=10, pady=10)
-    # Переключатель:вариант слияния файлов
-    # Создаем переключатель
-    group_rb_type_split = IntVar()
-    # Создаем фрейм для размещения переключателей(pack и грид не используются в одном контейнере)
-    frame_rb_type_split = LabelFrame(frame_data_for_split, text='1) Выберите вариант разделения')
-    frame_rb_type_split.pack(padx=10, pady=10)
-    #
-    Radiobutton(frame_rb_type_split, text='А) По листам в одном файле', variable=group_rb_type_split,
-                value=0).pack()
-    Radiobutton(frame_rb_type_split, text='Б) По отдельным файлам', variable=group_rb_type_split,
-                value=1).pack()
-
-    # Создаем кнопку Выбрать файл
-
-    btn_example_split = Button(frame_data_for_split, text='2) Выберите файл с таблицей', font=('Arial Bold', 14),
-                               command=select_file_split)
-    btn_example_split.pack(padx=10, pady=10)
-
-    # Определяем числовую переменную для порядкового номера
-    entry_number_column_split = IntVar()
-    # Описание поля
-    label_number_column_split = Label(frame_data_for_split,
-                                      text='3) Введите порядковый номер колонки начиная с 1\nпо значениям которой нужно разделить таблицу')
-    label_number_column_split.pack(padx=10, pady=10)
-    # поле ввода имени листа
-    entry_number_column_split = Entry(frame_data_for_split, textvariable=entry_number_column_split,
-                                      width=30)
-    entry_number_column_split.pack(ipady=5)
-
-    btn_choose_end_folder_split = Button(frame_data_for_split, text='4) Выберите конечную папку',
-                                         font=('Arial Bold', 14),
-                                         command=select_end_folder_split
-                                         )
-    btn_choose_end_folder_split.pack(padx=10, pady=10)
-
-    # Создаем кнопку слияния
-
-    btn_split_process = Button(tab_split_tables, text='5) Разделить таблицу',
-                               font=('Arial Bold', 20),
-                               command=processing_split_table)
-    btn_split_process.pack(padx=10, pady=10)
-
-    """
-     Создаем вкладку создания документов
-     """
+      Создаем вкладку создания документов
+      """
     tab_create_doc = Frame(tab_control)
     tab_control.add(tab_create_doc, text='Создание\nдокументов')
 
@@ -1190,6 +1155,154 @@ if __name__ == '__main__':
                                     command=generate_docs_other
                                     )
     btn_create_files_other.pack(padx=10, pady=10)
+
+
+    """
+    Создаем вкладку для предварительной обработки списка
+    """
+    tab_preparation = ttk.Frame(tab_control)
+    tab_control.add(tab_preparation, text='Обработка\nсписка')
+
+    preparation_frame_description = LabelFrame(tab_preparation)
+    preparation_frame_description.pack()
+
+    lbl_hello_preparation = Label(preparation_frame_description,
+                                  text='Очистка от лишних пробелов и символов; поиск пропущенных значений\n в колонках с персональными данными,'
+                                       '(ФИО,паспортные данные,\nтелефон,e-mail,дата рождения,ИНН)\n преобразование СНИЛС в формат ХХХ-ХХХ-ХХХ ХХ.\n'
+                                       'Создание списка дубликатов по каждой колонке.\n'
+                                       'Поиск со смешаным написанием русских и английских букв.\n'
+                                       'ПРИМЕЧАНИЯ\n'
+                                       'Данные обрабатываются С ПЕРВОГО ЛИСТА В ФАЙЛЕ !!!\n'
+                                       'Заголовок таблицы должен занимать только первую строку!\n'
+                                       'Для корректной работы программы уберите из таблицы\nобъединенные ячейки',
+                                  width=60)
+    lbl_hello_preparation.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+
+    # Картинка
+    path_to_img_preparation = resource_path('logo.png')
+    img_preparation = PhotoImage(file=path_to_img_preparation)
+    Label(preparation_frame_description,
+          image=img_preparation, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_prep = LabelFrame(tab_preparation, text='Подготовка')
+    frame_data_prep.pack(padx=10, pady=10)
+
+    # Создаем кнопку выбора файла с данными
+    btn_choose_prep_file = Button(frame_data_prep, text='1) Выберите файл', font=('Arial Bold', 14),
+                                  command=select_prep_file)
+    btn_choose_prep_file.pack(padx=10, pady=10)
+
+    # Создаем кнопку выбора конечной папки
+    btn_choose_end_folder_prep = Button(frame_data_prep, text='2) Выберите конечную папку', font=('Arial Bold', 14),
+                                        command=select_end_folder_prep)
+    btn_choose_end_folder_prep.pack(padx=10, pady=10)
+
+    # Создаем переменную для хранения результа переключения чекбокса
+    mode_dupl_value = StringVar()
+
+    # Устанавливаем значение по умолчанию для этой переменной. По умолчанию будет вестись подсчет числовых данных
+    mode_dupl_value.set('No')
+    # Создаем чекбокс для выбора режима подсчета
+
+    chbox_mode_dupl = Checkbutton(frame_data_prep,
+                                  text='Проверить каждую колонку таблицы на дубликаты',
+                                  variable=mode_dupl_value,
+                                  offvalue='No',
+                                  onvalue='Yes')
+    chbox_mode_dupl.pack(padx=10, pady=10)
+
+    # Создаем переменную для хранения результа переключения чекбокса поиска смешения
+    mode_mix_alphabets = StringVar()
+
+    # Устанавливаем значение по умолчанию для этой переменной. По умолчанию будет вестись подсчет числовых данных
+    mode_mix_alphabets.set('No')
+    # Создаем чекбокс для выбора режима подсчета
+
+    chbox_mode_mix_alphabets = Checkbutton(frame_data_prep,
+                                           text='Проверить каждую ячейку таблицы на смешение русских и английских букв',
+                                           variable=mode_mix_alphabets,
+                                           offvalue='No',
+                                           onvalue='Yes')
+    chbox_mode_mix_alphabets.pack(padx=10, pady=10)
+
+    # Создаем кнопку очистки
+    btn_choose_processing_prep = Button(tab_preparation, text='3) Выполнить обработку', font=('Arial Bold', 20),
+                                        command=processing_preparation_file)
+    btn_choose_processing_prep.pack(padx=10, pady=10)
+
+    """
+    Создание вкладки для разбиения таблицы на несколько штук по значениям в определенной колонке
+    """
+    # Создаем вкладку для подсчета данных по категориям
+    tab_split_tables = ttk.Frame(tab_control)
+    tab_control.add(tab_split_tables, text='Разделение\n таблицы')
+
+    split_tables_frame_description = LabelFrame(tab_split_tables)
+    split_tables_frame_description.pack()
+
+    lbl_hello_split_tables = Label(split_tables_frame_description,
+                                   text='Центр опережающей профессиональной подготовки Республики Бурятия\nРазделение таблицы Excel по листам и файлам'
+                                        '\nДля корректной работы программы уберите из таблицы\nобъединенные ячейки\n'
+                                        'Данные обрабатываются С ПЕРВОГО ЛИСТА В ФАЙЛЕ !!!\n'
+                                        'Заголовок таблицы должен занимать ОДНУ СТРОКУ\n и в нем не должно быть объединенных ячеек!',
+                                   width=60)
+    lbl_hello_split_tables.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+
+    # Картинка
+    path_to_img_split_tables = resource_path('logo.png')
+    img_split_tables = PhotoImage(file=path_to_img_split_tables)
+    Label(split_tables_frame_description,
+          image=img_split_tables, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_for_split = LabelFrame(tab_split_tables, text='Подготовка')
+    frame_data_for_split.pack(padx=10, pady=10)
+    # Переключатель:вариант слияния файлов
+    # Создаем переключатель
+    group_rb_type_split = IntVar()
+    # Создаем фрейм для размещения переключателей(pack и грид не используются в одном контейнере)
+    frame_rb_type_split = LabelFrame(frame_data_for_split, text='1) Выберите вариант разделения')
+    frame_rb_type_split.pack(padx=10, pady=10)
+    #
+    Radiobutton(frame_rb_type_split, text='А) По листам в одном файле', variable=group_rb_type_split,
+                value=0).pack()
+    Radiobutton(frame_rb_type_split, text='Б) По отдельным файлам', variable=group_rb_type_split,
+                value=1).pack()
+
+    # Создаем кнопку Выбрать файл
+
+    btn_example_split = Button(frame_data_for_split, text='2) Выберите файл с таблицей', font=('Arial Bold', 14),
+                               command=select_file_split)
+    btn_example_split.pack(padx=10, pady=10)
+
+    # Определяем числовую переменную для порядкового номера
+    entry_number_column_split = IntVar()
+    # Описание поля
+    label_number_column_split = Label(frame_data_for_split,
+                                      text='3) Введите порядковый номер колонки начиная с 1\nпо значениям которой нужно разделить таблицу')
+    label_number_column_split.pack(padx=10, pady=10)
+    # поле ввода имени листа
+    entry_number_column_split = Entry(frame_data_for_split, textvariable=entry_number_column_split,
+                                      width=30)
+    entry_number_column_split.pack(ipady=5)
+
+    btn_choose_end_folder_split = Button(frame_data_for_split, text='4) Выберите конечную папку',
+                                         font=('Arial Bold', 14),
+                                         command=select_end_folder_split
+                                         )
+    btn_choose_end_folder_split.pack(padx=10, pady=10)
+
+    # Создаем кнопку слияния
+
+    btn_split_process = Button(tab_split_tables, text='5) Разделить таблицу',
+                               font=('Arial Bold', 20),
+                               command=processing_split_table)
+    btn_split_process.pack(padx=10, pady=10)
+
+
 
     """
     Создаем вкладку для размещения описания программы, руководства пользователя,лицензии.

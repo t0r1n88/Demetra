@@ -1,7 +1,7 @@
 """
 Скрипт для нахождения разницы между двумя таблицами
 """
-from demetra_support_functions import write_df_to_excel # импорт функции по записи в файл с автошириной колонок
+from demetra_support_functions import write_df_to_excel, del_sheet # импорт функции по записи в файл с автошириной колонок
 import pandas as pd
 import re
 import datetime
@@ -122,10 +122,19 @@ def find_diffrence(first_df, second_df,path_to_end_folder_diffrence):
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
         # записываем в файл Excel с сохранением ширины
-        dct_df = {'По колонкам':df_cols,'По строкам':df_rows}
-        write_index = True # нужно ли записывать индекс
-        wb = write_df_to_excel(dct_df,write_index)
-        wb.save(f'{path_to_end_folder_diffrence}/Разница между 2 таблицами {current_time}.xlsx')
+        if len(df_cols) != 0:
+            dct_df = {'По колонкам':df_cols,'По строкам':df_rows}
+            write_index = True # нужно ли записывать индекс
+            wb = write_df_to_excel(dct_df,write_index)
+            wb = del_sheet(wb, ['Sheet', 'Sheet1'])
+            wb.save(f'{path_to_end_folder_diffrence}/Разница между 2 таблицами {current_time}.xlsx')
+        else:
+            df_cols = pd.DataFrame(columns=['Отличий в таблицах не найдено'])
+            dct_df = {'По колонкам':df_cols}
+            write_index = True # нужно ли записывать индекс
+            wb = write_df_to_excel(dct_df,write_index)
+            wb = del_sheet(wb, ['Sheet', 'Sheet1'])
+            wb.save(f'{path_to_end_folder_diffrence}/Разница между 2 таблицами {current_time}.xlsx')
     except UnboundLocalError:
         pass
     except ShapeDiffierence:
