@@ -70,9 +70,9 @@ def create_doc_convert_date(cell):
         string_date = datetime.datetime.strftime(cell, '%d.%m.%Y')
         return string_date
     except ValueError:
-        return 'Не удалось конвертировать дату.Проверьте значение ячейки!!!'
+        return ''
     except TypeError:
-        return 'Не удалось конвертировать дату.Проверьте значение ячейки!!!'
+        return ''
 
 
 def processing_date_column(df, lst_columns):

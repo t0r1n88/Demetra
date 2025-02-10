@@ -141,7 +141,7 @@ def convert_to_date(value):
     """
     try:
         if value == 'Нет статуса':
-            return 'Не заполнено'
+            return ''
         else:
             date_value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
             return date_value
