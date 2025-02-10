@@ -54,6 +54,39 @@ def convert_to_date(value):
         return f'Некорректный формат даты - {value}, проверьте лишние пробелы,наличие точек'
 
 
+def abs_diff(first_value, second_value):
+    """
+    Функция для подсчета абсолютной разницы между 2 значениями
+    """
+    try:
+        return abs(float(first_value) - float(second_value))
+    except:
+        return None
+
+
+def percent_diff(first_value, second_value):
+    """
+    функция для подсчета относительной разницы значений
+    """
+    try:
+        # округляем до трех
+        value = round(float(second_value) / float(first_value), 4) * 100
+        return value
+    except:
+        return None
+
+
+def change_perc_diff(first_value, second_value):
+    """
+    функция для подсчета процентного ихменения значений
+    """
+    try:
+        value = (float(second_value) - float(first_value)) / float(first_value)
+        return round(value, 4) * 100
+    except:
+        return None
+
+
 
 
 
@@ -117,13 +150,46 @@ def find_diffrence(first_df, second_df,path_to_end_folder_diffrence):
         index = pd.MultiIndex.from_tuples(lst_mul_ind, names=['№ строки', 'Таблица'])  # создаем мультиндекс
         df_rows.index = index
 
+        # Создаем датафрейм с подсчетом разниц
+        df_diff_cols = df_cols.copy()
+
+        # получаем список колонок первого уровня
+        temp_first_level_column = list(map(lambda x: x[0], df_diff_cols.columns))
+        first_level_column = []
+        [first_level_column.append(value) for value in temp_first_level_column if value not in first_level_column]
+
+        # Добавляем колонки с абсолютной и относительной разницей
+        count_columns = 2
+        for name_column in first_level_column:
+            # высчитываем абсолютную разницу
+            df_diff_cols.insert(count_columns, (name_column, 'Разница между первым и вторым значением'),
+                                df_diff_cols.apply(lambda x: abs_diff(x[name_column]['Первая таблица'],
+                                                                      x[name_column]['Вторая таблица']), axis=1))
+
+            # высчитываем отношение второго значения от первого
+            df_diff_cols.insert(count_columns + 1, (name_column, '% второго от первого значения'),
+                                df_diff_cols.apply(lambda x: percent_diff(x[name_column]['Первая таблица'],
+                                                                          x[name_column]['Вторая таблица']), axis=1))
+
+            # высчитываем процентное изменение
+            df_diff_cols.insert(count_columns + 2, (name_column, 'Изменение в процентах'),
+                                df_diff_cols.apply(lambda x: change_perc_diff(x[name_column]['Первая таблица'],
+                                                                              x[name_column]['Вторая таблица']),
+                                                   axis=1))
+
+            count_columns += 5
+
+
+
+
+
 
         # записываем
         t = time.localtime()
         current_time = time.strftime('%H_%M_%S', t)
         # записываем в файл Excel с сохранением ширины
         if len(df_cols) != 0:
-            dct_df = {'По колонкам':df_cols,'По строкам':df_rows}
+            dct_df = {'По колонкам':df_cols,'По строкам':df_rows,'Значение разницы':df_diff_cols}
             write_index = True # нужно ли записывать индекс
             wb = write_df_to_excel(dct_df,write_index)
             wb = del_sheet(wb, ['Sheet', 'Sheet1'])
