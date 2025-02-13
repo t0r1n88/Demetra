@@ -3,7 +3,8 @@
 """
 from demetra_support_functions import (write_df_to_excel, write_df_to_excel_report_brit, del_sheet,
                                        declension_fio_by_case,
-                                       extract_parameters_egisso, write_df_big_dct_to_excel, check_error_in_pers_data)
+                                       extract_parameters_egisso, write_df_big_dct_to_excel, check_error_in_pers_data,
+                                       convert_snils_dash,convert_snils_not_dash)
 from demetra_processing_date import proccessing_date
 from demetra_egisso import create_part_egisso_data, create_full_egisso_data
 from tkinter import messagebox
@@ -1044,6 +1045,13 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
             lambda x: x.strftime('%d.%m.%Y') if isinstance(x, (pd.Timestamp, datetime.datetime)) and pd.notna(x) else x)
 
         main_df.replace('Нет статуса', '', inplace=True)
+        # Добавляем 2 колонки с вариантами СНИЛС
+        # классический вариант
+        main_df['СНИЛС_дефис'] = main_df.apply(lambda row: convert_snils_dash(row['СНИЛС']) if row['ФИО'] != 'Группа' else '',
+                                     axis=1)
+        # просто цифры
+        main_df['СНИЛС_без_дефиса'] = main_df.apply(
+            lambda row: convert_snils_not_dash(row['СНИЛС']) if row['ФИО'] != 'Группа' else '', axis=1)
 
         # Добавляем раздельные колонки для кода ОП и названия ОП
         main_df['Код_ОП'] = main_df['Статус_ОП'].apply(lambda x:extract_part_status_op(x,'Код_ОП'))

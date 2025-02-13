@@ -1288,3 +1288,38 @@ def check_error_in_pers_data(df:pd.DataFrame,path_end_folder:str,current_time):
     error_pers_wb = del_sheet(error_pers_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
     error_pers_wb.save(f'{path_end_folder}/Ошибки в персональных данных от {current_time}.xlsx')
 
+
+
+def convert_snils_dash(snils):
+    """
+    Функция для приведения значений снилс в вид ХХХ-ХХХ-ХХХ ХХ
+    """
+    if snils is np.nan:
+        return 'Не заполнено'
+    snils = str(snils)
+    result = re.findall(r'\d', snils) # ищем цифры
+    if len(result) == 11:
+        first_group = ''.join(result[:3])
+        second_group = ''.join(result[3:6])
+        third_group = ''.join(result[6:9])
+        four_group = ''.join(result[9:11])
+
+        out_snils = f'{first_group}-{second_group}-{third_group} {four_group}'
+        return out_snils
+    else:
+        return f'Неправильное значение!В СНИЛС должно быть 11 цифр - {snils} -{len(result)} цифр'
+
+def convert_snils_not_dash(snils):
+    """
+    Функция для приведения значений снилс в вид XXXXXXXXXXX 11 цифр подряд
+    """
+    if snils is np.nan:
+        return 'Не заполнено'
+    snils = str(snils)
+    result = re.findall(r'\d', snils) # ищем цифры
+    if len(result) == 11:
+        out_snils = ''.join(result)
+
+        return out_snils
+    else:
+        return f'Неправильное значение!В СНИЛС должно быть 11 цифр - {snils} -{len(result)} цифр'
