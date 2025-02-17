@@ -427,6 +427,68 @@ def create_report_brit(df: pd.DataFrame, dct_slice: dict, path_end_folder: str) 
         release_invalid_df.replace('Нет статуса', '', inplace=True)
         dct_name_sheet['Выпуск инвалиды'] = release_invalid_df  # добавляем в словарь
 
+        # Многодетные своего рода легаси, для техникумов которые уже внедрили и имеют другое название этой колонки
+        many_child_df = df[df['Статус_Многодетная_семья'] =='да']
+        many_child_group_df = many_child_df.groupby(by=[slice_column]).agg(
+            {'Статус_Многодетная_семья': 'count'})  # создаем базовый
+        group_main_df = group_main_df.join(many_child_group_df)  # добавляем в свод
+        group_main_df.rename(columns={'Статус_Многодетная_семья': 'Студенты из многодет.сем'}, inplace=True)
+        all_many_child_df = many_child_df.copy()
+        all_many_child_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Студенты из многодет.сем'] = all_many_child_df  # добавляем в словарь
+
+        # Многодетные совершеннолетние
+        many_child_maturity_df = many_child_df[many_child_df['Совершеннолетие'] == 'совершеннолетний']
+        maturity_child_maturity_group_df = many_child_maturity_df.groupby(by=[slice_column]).agg(
+            {'Статус_Многодетная_семья': 'count'})  # создаем базовый
+        group_main_df = group_main_df.join(maturity_child_maturity_group_df)  # добавляем в свод
+        group_main_df.rename(columns={'Статус_Многодетная_семья': 'Студенты из многодет.сем сов'}, inplace=True)
+        many_child_maturity_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Студенты из многодет.сем сов'] = many_child_maturity_df  # добавляем в словарь
+
+        # Многодетные несовершеннолетние
+        many_child_not_maturity_df = many_child_df[many_child_df['Совершеннолетие'] == 'несовершеннолетний']
+        maturity_child_not_maturity_group_df = many_child_not_maturity_df.groupby(by=[slice_column]).agg(
+            {'Статус_Многодетная_семья': 'count'})  # создаем базовый
+        group_main_df = group_main_df.join(maturity_child_not_maturity_group_df)  # добавляем в свод
+        group_main_df.rename(columns={'Статус_Многодетная_семья': 'Студенты из многодет.сем несов'}, inplace=True)
+        many_child_not_maturity_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Студенты из многодет.сем несов'] = many_child_not_maturity_df  # добавляем в словарь
+
+        # Дети СВО
+        svo_df = df[df['Статус_Родитель_СВО'] =='да']
+        svo_df_group_df = svo_df.groupby(by=[slice_column]).agg(
+            {'Статус_Родитель_СВО': 'count'})  # создаем базовый
+        group_main_df = group_main_df.join(svo_df_group_df)  # добавляем в свод
+        group_main_df.rename(columns={'Статус_Родитель_СВО': 'Студенты из семей уч.СВО'}, inplace=True)
+        all_svo_df = svo_df.copy()
+        all_svo_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Студенты из семей уч.СВО'] = all_svo_df  # добавляем в словарь
+
+        # Дети СВО совершеннолетние
+        svo_maturity_df = svo_df[svo_df['Совершеннолетие'] == 'совершеннолетний']
+        svo_maturity_df_group_df = svo_maturity_df.groupby(by=[slice_column]).agg(
+            {'Статус_Родитель_СВО': 'count'})  # создаем базовый
+        group_main_df = group_main_df.join(svo_maturity_df_group_df)  # добавляем в свод
+        group_main_df.rename(columns={'Статус_Родитель_СВО': 'Студенты из семей уч.СВО сов'}, inplace=True)
+        svo_maturity_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Студенты из семей уч.СВО сов'] = svo_maturity_df  # добавляем в словарь
+
+        # Дети СВО несовершеннолетние
+        svo_not_maturity_df = svo_df[svo_df['Совершеннолетие'] == 'несовершеннолетний']
+        svo_not_maturity_df_group_df = svo_not_maturity_df.groupby(by=[slice_column]).agg(
+            {'Статус_Родитель_СВО': 'count'})  # создаем базовый
+        group_main_df = group_main_df.join(svo_not_maturity_df_group_df)  # добавляем в свод
+        group_main_df.rename(columns={'Статус_Родитель_СВО': 'Студенты из семей уч.СВО несов'}, inplace=True)
+        svo_not_maturity_df.replace('Нет статуса', '', inplace=True)
+        dct_name_sheet['Студенты из семей уч.СВО несов'] = svo_not_maturity_df  # добавляем в словарь
+
+
+
+
+
+
+
 
         group_main_df.fillna(0, inplace=True)  # заполняем наны
         group_main_df = group_main_df.astype(int)  # приводим к инту
@@ -869,7 +931,7 @@ def create_social_report(etalon_file: str, data_folder: str, path_egisso_params:
                             'Адрес_регистрации','Фактический_адрес',
                             'Статус_Питание',
                             'Статус_Состав_семьи', 'Статус_Уровень_здоровья', 'Статус_Сиротство',
-                            'Статус_Место_регистрации', 'Статус_Студенческая_семья',
+                            'Статус_Место_регистрации', 'Статус_Студенческая_семья','Статус_Многодетная_семья',
                              'Статус_Родитель_СВО',
                             'Статус_ПДН', 'Статус_КДН', 'Статус_Внутр_учет', 'Статус_Самовольный_уход', 'Статус_Выпуск'}
         error_df = pd.DataFrame(
