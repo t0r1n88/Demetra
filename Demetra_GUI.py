@@ -724,6 +724,12 @@ if __name__ == '__main__':
     # Создаем ноутбук (вкладки)
     tab_control = ttk.Notebook(canvas)
 
+    global name_file_params_egisso_social_report
+    name_file_params_egisso_social_report = 'Не выбрано' # костыль конечно но что поделать
+
+    global name_file_params_egisso_local_report
+    name_file_params_egisso_local_report = 'Не выбрано'  # костыль конечно но что поделать
+
     """
        Создаем вкладку для создания социального паспорта БРИТ
        """
@@ -787,8 +793,8 @@ if __name__ == '__main__':
     Radiobutton(frame_rb_social_report, text='В) Подсчет с отчисленными и студентами в академе', variable=group_rb_expelled_social_report,
                 value=2).pack()
 
-    btn_choose_file_params_egisso_social_report = Button(frame_data_social_report, text='5) Выберите файл с параметрами ЕГИССО',
-                                                  font=('Arial Bold', 14),
+    btn_choose_file_params_egisso_social_report = Button(frame_data_social_report, text='5) Выберите файл с параметрами ЕГИССО.\nНеобязательно, если вам не нужны файлы ЕГИССО',
+                                                  font=('Arial Bold',8),
                                                   command=select_file_params_egisso_social_report)
     btn_choose_file_params_egisso_social_report.pack(padx=10, pady=10)
 
@@ -873,8 +879,8 @@ if __name__ == '__main__':
     Radiobutton(frame_rb_local_report, text='В) Подсчет с отчисленными и студентами в академе', variable=group_rb_expelled_local_report,
                 value=2).pack()
 
-    btn_choose_file_params_egisso_local_report = Button(frame_data_local_report, text='6) Выберите файл с параметрами ЕГИССО',
-                                                  font=('Arial Bold', 14),
+    btn_choose_file_params_egisso_local_report = Button(frame_data_local_report, text='6) Выберите файл с параметрами ЕГИССО.\nНеобязательно, если вам не нужны файлы ЕГИССО',
+                                                  font=('Arial Bold', 8),
                                                   command=select_file_params_egisso_local_report)
     btn_choose_file_params_egisso_local_report.pack(padx=10, pady=10)
 

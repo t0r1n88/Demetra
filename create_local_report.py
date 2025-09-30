@@ -672,24 +672,28 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
         # Генерируем файлы егиссо
         # генерируем полный вариант
-        df_params_egisso, temp_params_egisso_error_df = extract_parameters_egisso(path_egisso_params,
-                                                                                  list(main_df.columns))
-        path_egisso_file = f'{path_end_folder}/ЕГИССО' # создаем папку для хранения файлов егиссо
-        if not os.path.exists(path_egisso_file):
-            os.makedirs(path_egisso_file)
-        if len(df_params_egisso) != 0:
-            egisso_full_wb, egisso_not_find_wb, egisso_error_wb = create_full_egisso_data(main_df, df_params_egisso,
-                                                                                          path_egisso_file)  # создаем полный набор данных
-            egisso_full_wb.save(f'{path_egisso_file}/ЕГИССО полные данные от {current_time}.xlsx')
-            egisso_not_find_wb.save(f'{path_egisso_file}/ЕГИССО Не найденные льготы {current_time}.xlsx')
-            egisso_error_wb.save(f'{path_egisso_file}/ЕГИССО перс данные ОШИБКИ от {current_time}.xlsx')
+        if path_egisso_params != '' and path_egisso_params != 'Не выбрано':
+            df_params_egisso, temp_params_egisso_error_df = extract_parameters_egisso(path_egisso_params,
+                                                                                      list(main_df.columns))
+            path_egisso_file = f'{path_end_folder}/ЕГИССО' # создаем папку для хранения файлов егиссо
+            if not os.path.exists(path_egisso_file):
+                os.makedirs(path_egisso_file)
+            if len(df_params_egisso) != 0:
+                egisso_full_wb, egisso_not_find_wb, egisso_error_wb = create_full_egisso_data(main_df, df_params_egisso,
+                                                                                              path_egisso_file)  # создаем полный набор данных
+                egisso_full_wb.save(f'{path_egisso_file}/ЕГИССО полные данные от {current_time}.xlsx')
+                egisso_not_find_wb.save(f'{path_egisso_file}/ЕГИССО Не найденные льготы {current_time}.xlsx')
+                egisso_error_wb.save(f'{path_egisso_file}/ЕГИССО перс данные ОШИБКИ от {current_time}.xlsx')
 
 
+            else:
+                # генерируем вариант только с персональными данными
+                egisso_clean_wb, egisso_error_wb = create_part_egisso_data(main_df)
+                egisso_clean_wb.save(f'{path_egisso_file}/ЕГИССО перс данные от {current_time}.xlsx')
+                egisso_error_wb.save(f'{path_egisso_file}/ЕГИССО перс данные ОШИБКИ от {current_time}.xlsx')
         else:
-            # генерируем вариант только с персональными данными
-            egisso_clean_wb, egisso_error_wb = create_part_egisso_data(main_df)
-            egisso_clean_wb.save(f'{path_egisso_file}/ЕГИССО перс данные от {current_time}.xlsx')
-            egisso_error_wb.save(f'{path_egisso_file}/ЕГИССО перс данные ОШИБКИ от {current_time}.xlsx')
+            temp_params_egisso_error_df = pd.DataFrame(
+            columns=['Название файла', 'Название листа', 'Значение ошибки', 'Описание ошибки']) # создаем пустой файл
 
         # Сохраняем лист с ошибками
 
