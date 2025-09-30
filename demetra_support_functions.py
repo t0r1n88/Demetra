@@ -1365,7 +1365,7 @@ def write_df_up_to_excel(dct_df: dict, write_index: bool) -> openpyxl.Workbook:
                 for cell in wb[name_sheet][column_name]:
                     cell.alignment = Alignment(horizontal='left',wrap_text=True)
             else:
-                wb[name_sheet].column_dimensions[column_name].width = adjusted_width+2
+                wb[name_sheet].column_dimensions[column_name].width = adjusted_width+3
         count_index += 1
 
     return wb
