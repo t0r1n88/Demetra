@@ -5,8 +5,9 @@ import re
 
 from create_local_report import create_local_report  # создание отчета по выбранным пользователем параметрам
 from create_social_passport import create_social_report  # создание отчета по социальному состоянию
-from demetra_create_union_table import merge_table  # соединие таблиц
-from expired_doc import check_expired_docs
+from demetra_create_union_table import merge_table  # соединение таблиц
+from expired_doc import check_expired_docs # поиск истекающих документов
+from demetra_extract_up_for_tarification import processing_data_up_for_tarification # Структурирование данных
 from demetra_preparation_list import prepare_list  # подготовка персональных данных
 from demetra_split_table import split_table  # разделение таблицы
 from demetra_generate_docs import generate_docs_from_template # создание документов
@@ -112,9 +113,9 @@ def set_window_size(window):
     elif screen_width >= 2560:
         width = int(screen_width * 0.31)
     elif screen_width >= 1920:
-        width = int(screen_width * 0.41)
+        width = int(screen_width * 0.61)
     elif screen_width >= 1600:
-        width = int(screen_width * 0.5)
+        width = int(screen_width * 0.6)
     elif screen_width >= 1280:
         width = int(screen_width * 0.62)
     elif screen_width >= 1024:
@@ -476,6 +477,47 @@ def processing_check_expired_docs():
                              f'Выберите файл с данными и папку куда будет генерироваться файл')
         logging.exception('AN ERROR HAS OCCURRED')
 
+"""
+Функции структурирования данных
+"""
+def select_data_folder_extract_data_up():
+    """
+    Функция для выбора папки с данными
+    :return:
+    """
+    global path_to_data_extract_data_up
+    path_to_data_extract_data_up = filedialog.askdirectory()
+
+def select_end_folder_extract_data_up():
+    """
+    Функция для выбора папки с данными
+    :return:
+    """
+    global path_to_end_extract_data_up
+    path_to_end_extract_data_up = filedialog.askdirectory()
+
+
+def processing_extract_data_up():
+    """
+    Функция для структурирования данных
+    """
+    try:
+        name_sheet = var_extract_name_sheet.get()
+        quantity_header = var_extract_quantity_header.get()
+        number_main_column = var_extract_number_main_column.get()
+        quantity_cols = var_extract_quantity_cols.get()
+
+        processing_data_up_for_tarification(path_to_data_extract_data_up,path_to_end_extract_data_up,name_sheet,quantity_header,number_main_column,quantity_cols)
+
+    except NameError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Выберите файл с данными и папку куда будет генерироваться файл')
+        logging.exception('AN ERROR HAS OCCURRED')
+
+
+
+
+
 
 """
 Функции для создания документов
@@ -660,7 +702,7 @@ def open_libraries():
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты  ver 2.1')
+    window.title('Деметра Отчеты  ver 2.11')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -943,6 +985,95 @@ if __name__ == '__main__':
     btn_choose_processing_prep = Button(tab_expired_docs, text='3) Выполнить обработку', font=('Arial Bold', 20),
                                         command=processing_check_expired_docs)
     btn_choose_processing_prep.pack(padx=10, pady=10)
+
+    """
+    Извлечение данных из учебных планов для тарификации
+    """
+    tab_create_extract_data_up = ttk.Frame(tab_control)
+    tab_control.add(tab_create_extract_data_up, text='Структурирование\n данных')
+
+    create_extract_data_up_frame_description = LabelFrame(tab_create_extract_data_up)
+    create_extract_data_up_frame_description.pack()
+
+    lbl_hello_create_extract_data_up = Label(create_extract_data_up_frame_description,
+                                             text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
+                                                  'Извлечение данных из таблиц (в том числе из учебных планов)\n'
+                                                  'для последующей обработки'
+                                             , width=60)
+    lbl_hello_create_extract_data_up.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+
+    # Картинка
+    path_to_img_create_extract_data_up = resource_path('logo.png')
+    img_create_extract_data_up = PhotoImage(file=path_to_img_create_extract_data_up)
+    Label(create_extract_data_up_frame_description,
+          image=img_create_extract_data_up, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем область для того, чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_extract_data_up = LabelFrame(tab_create_extract_data_up, text='Подготовка')
+    frame_data_extract_data_up.pack(padx=10, pady=10)
+
+    # Поля для ввода
+    # Определяем текстовую переменную для названия листа
+    var_extract_name_sheet = StringVar()
+    # Описание поля
+    label_extract_name_sheet = Label(frame_data_extract_data_up,
+                              text='1) Введите наименование листа на котором располагаются данные')
+    label_extract_name_sheet.pack()
+    # поле ввода
+    entry_extract_name_sheet = Entry(frame_data_extract_data_up, textvariable=var_extract_name_sheet, width=30)
+    entry_extract_name_sheet.pack()
+
+    # Определяем текстовую переменную для количества строк заголовка
+    var_extract_quantity_header = StringVar()
+    # Описание поля
+    label_extract_quantity_header = Label(frame_data_extract_data_up,
+                              text='2) Введите количество строк, которые занимает заголовок таблицы. Например 4')
+    label_extract_quantity_header.pack()
+    # поле ввода
+    entry_extract_quantity_header = Entry(frame_data_extract_data_up, textvariable=var_extract_quantity_header, width=30)
+    entry_extract_quantity_header.pack()
+
+    # Определяем текстовую переменную для порядкового номера колонки которую нужно извлечь
+    var_extract_number_main_column = StringVar()
+    # Описание поля
+    label_extract_number_main_column = Label(frame_data_extract_data_up,
+                              text='3) Введите порядковый номер колонки по которой будет происходить обработка.\n'
+                                   'Например колонка Предмет является пятой по порядку с начала таблицы, значит нужно ввести число 5')
+    label_extract_number_main_column.pack()
+    # поле ввода
+    entry_extract_number_main_column = Entry(frame_data_extract_data_up, textvariable=var_extract_number_main_column, width=30)
+    entry_extract_number_main_column.pack()
+
+    # Определяем текстовую переменную для количества колонок данные которых нужно извлечь
+    var_extract_quantity_cols = StringVar()
+    # Описание поля
+    label_extract_quantity_cols = Label(frame_data_extract_data_up,
+                              text='4) Введите количество колонок с данными которые нужно собрать.\n'
+                                   'Например если таблица занимает 15 колонок, значит нужно ввести 15')
+    label_extract_quantity_cols.pack()
+    # поле ввода
+    entry_extract_quantity_cols = Entry(frame_data_extract_data_up, textvariable=var_extract_quantity_cols, width=30)
+    entry_extract_quantity_cols.pack()
+
+    # Создаем кнопку выбора папки c данными
+    btn_choose_data_folder_extract_data_up = Button(frame_data_extract_data_up, text='5) Выберите папку с данными',
+                                                   font=('Arial Bold', 14),
+                                                   command=select_data_folder_extract_data_up)
+    btn_choose_data_folder_extract_data_up.pack(padx=10, pady=10)
+
+    # Создаем кнопку выбора конечной папки
+    btn_choose_end_folder_extract_data_up = Button(frame_data_extract_data_up, text='6) Выберите конечную папку',
+                                                   font=('Arial Bold', 14),
+                                                   command=select_end_folder_extract_data_up)
+    btn_choose_end_folder_extract_data_up.pack(padx=10, pady=10)
+    #
+    # Создаем кнопку генерации отчетов
+
+    btn_generate_extract_data_up = Button(tab_create_extract_data_up, text='7) Обработать данные', font=('Arial Bold', 14),
+                                          command=processing_extract_data_up)
+    btn_generate_extract_data_up.pack(padx=10, pady=10)
+
 
     """
     Вкладка для поиска разницы между двумя таблицами

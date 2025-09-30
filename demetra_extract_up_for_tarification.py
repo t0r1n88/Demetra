@@ -82,7 +82,6 @@ def processing_data_up_for_tarification(data_folder:str,result_folder:str,name_s
             columns=['Название файла','Описание ошибки'])  # датафрейм для ошибок
 
         dct_params = convert_params(quantity_header,number_main_column,quantity_cols)
-        print(dct_params)
         quantity_header = dct_params['quantity_header'] # количество строк заголовка
         number_main_column = dct_params['number_main_column'] - 1 # порядковый номер колонки с наименованиями
         quantity_cols = dct_params['quantity_cols'] # количество колонок с данными которые нужно собрать
@@ -218,6 +217,11 @@ def processing_data_up_for_tarification(data_folder:str,result_folder:str,name_s
             used_name_file.add(short_name.lower())
             wb.close()
 
+        if error_df.shape[0] != 0:
+            messagebox.showwarning('Деметра Отчеты социальный паспорт студента',
+                                   f'Обнаружены ошибки в файлах с данными.\n'
+                                   f'Проверьте файл ОШИБКИ')
+
     except FileNotFoundError as e:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Ошибка {e}\n\nПеренесите файлы, конечную папку с которой вы работаете в корень диска. Проблема может быть\n '
@@ -229,6 +233,8 @@ def processing_data_up_for_tarification(data_folder:str,result_folder:str,name_s
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Неправильные параметры! Количество строк заголовка, порядковый номер колонки с извлекаемыми данными, количество колонок с данными которые нужно извлечь\n'
                              f'должны быть записаны ЦЕЛЫМИ числами например 5.')
+    else:
+        messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
 
 
 
