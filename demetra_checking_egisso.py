@@ -448,8 +448,8 @@ def processing_measury_code(row:pd.Series):
         else:
             return f'Ошибка: ячейка в колонке measury_Сode не заполнена хотя в колонке FormCode указано одно из значений 02,03,04'
     elif form_code == '01':
-        if isinstance(measury_code, str):
-            return f'Ошибка: ячейка в колонке measury_Сode заполнена хотя в колонке FormCode указано значение 01'
+        return measury_code
+
     else:
         return f'Ошибка: допустимые значения для колонки FormCode это 01,02,03,04'
 
@@ -488,8 +488,8 @@ def processing_equivalent_amount(row:pd.Series):
                 return f'Ошибка: {equivalent_amount} не является числом или в числе есть пробелы'
 
     elif form_code == '01':
-        if isinstance(equivalent_amount, str):
-            return f'Ошибка: ячейка в колонке equivalent_amount заполнена хотя в колонке FormCode указано значение 01'
+        return equivalent_amount
+
     else:
         return f'Ошибка: допустимые значения для колонки FormCode это 01,02,03,04'
 
