@@ -6,6 +6,7 @@ import re
 from create_local_report import create_local_report  # создание отчета по выбранным пользователем параметрам
 from create_social_passport import create_social_report  # создание отчета по социальному состоянию
 from demetra_create_union_table import merge_table  # соединение таблиц
+from demetra_checking_egisso import fix_files_egisso # Исправление файлов ЕГИССО
 from expired_doc import check_expired_docs # поиск истекающих документов
 from demetra_extract_up_for_tarification import processing_data_up_for_tarification # Структурирование данных
 from demetra_preparation_list import prepare_list  # подготовка персональных данных
@@ -632,7 +633,43 @@ def processing_diffrence():
 
 
 
+"""
+Функция для исправления файлов ЕГИССО
+"""
+def select_folder_data_fix_files_egisso():
+    """
+    Функция для выбора папки с данными
+    :return:
+    """
+    global path_folder_fix_files_egisso
+    path_folder_fix_files_egisso = filedialog.askdirectory()
 
+
+def select_end_folder_data_fix_files_egisso():
+    """
+    Функция для выбора папки с данными
+    :return:
+    """
+    global path_end_folder_fix_files_egisso
+    path_end_folder_fix_files_egisso = filedialog.askdirectory()
+
+
+def processing_fix_files_egisso():
+    """
+    Функция для подсчета
+    :return:
+    """
+    try:
+        if path_folder_fix_files_egisso == path_end_folder_fix_files_egisso:
+            raise SameFolder
+        # подсчитываем
+        fix_files_egisso(path_folder_fix_files_egisso,path_end_folder_fix_files_egisso)
+    except NameError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Выберите папку с файлами и папку куда будет генерироваться результат')
+    except SameFolder:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             'Выберите разные папки в качестве исходной и конечной')
 
 
 
@@ -702,7 +739,7 @@ def open_libraries():
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты  ver 2.11')
+    window.title('Деметра Отчеты  ver 2.12')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -946,6 +983,53 @@ if __name__ == '__main__':
     btn_generate_merge_report = Button(tab_create_merge_report, text='4) Соединить таблицы', font=('Arial Bold', 14),
                                        command=processing_merge_report)
     btn_generate_merge_report.pack(padx=10, pady=10)
+
+    """
+    Исправление данных для ЕГИССО
+    """
+    tab_create_fix_data_for_egisso = ttk.Frame(tab_control)
+    tab_control.add(tab_create_fix_data_for_egisso, text='Подготовка данных\nдля ЕГИССО')
+
+    create_fix_data_for_egisso_frame_description = LabelFrame(tab_create_fix_data_for_egisso)
+    create_fix_data_for_egisso_frame_description.pack()
+
+    lbl_hello_create_fix_data_for_egisso = Label(create_fix_data_for_egisso_frame_description,
+                                                 text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
+                                                      'Поиск и исправление БАЗОВЫХ ошибок в файлах xlsx для ЕГИССО.\n'
+                                                      'Программа удаляет лишние пробелы, лишние символы и т.п.\n'
+                                                      'Программа НЕ исправляет неправильные персональные данные\n или идентификаторы ЕГИССО'
+                                                 , width=60)
+    lbl_hello_create_fix_data_for_egisso.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+
+    # Картинка
+    path_to_img_create_fix_data_for_egisso = resource_path('logo.png')
+    img_create_fix_data_for_egisso = PhotoImage(file=path_to_img_create_fix_data_for_egisso)
+    Label(create_fix_data_for_egisso_frame_description,
+          image=img_create_fix_data_for_egisso, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_fix_data_for_egisso = LabelFrame(tab_create_fix_data_for_egisso, text='Подготовка')
+    frame_data_fix_data_for_egisso.pack(padx=10, pady=10)
+
+    btn_choose_folder_data_fix_data_for_egisso = Button(frame_data_fix_data_for_egisso,
+                                                        text='1) Выберите папку с файлами',
+                                                        font=('Arial Bold', 14),
+                                                        command=select_folder_data_fix_files_egisso)
+    btn_choose_folder_data_fix_data_for_egisso.pack(padx=10, pady=10)
+
+    btn_choose_end_folder_data_fix_data_for_egisso = Button(frame_data_fix_data_for_egisso,
+                                                            text='2) Выберите конечную папку',
+                                                            font=('Arial Bold', 14),
+                                                            command=select_end_folder_data_fix_files_egisso)
+    btn_choose_end_folder_data_fix_data_for_egisso.pack(padx=10, pady=10)
+
+    btn_processing_fix_data_for_egisso = Button(frame_data_fix_data_for_egisso,
+                                                text='3) Обработать данные',
+                                                font=('Arial Bold', 14),
+                                                command=processing_fix_files_egisso)
+    btn_processing_fix_data_for_egisso.pack(padx=10, pady=10)
+
 
     """
     Создаем вкладку для проверки истекающих документов
