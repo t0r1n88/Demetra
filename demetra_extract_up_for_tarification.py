@@ -36,6 +36,12 @@ class NotFile(Exception):
     """
     pass
 
+class OverLenPathDir(Exception):
+    """
+    Обработка случая когда слишком длинный путь к папке
+    """
+    pass
+
 
 def save_convert_to_int(value):
     if isinstance(value,str):
@@ -213,6 +219,17 @@ def processing_data_up_for_tarification(data_folder:str,result_folder:str,name_s
             if not os.path.exists(finish_path):
                 os.makedirs(finish_path)
 
+            # проверяем длину пути к сохраняемому файлу
+            if len(finish_path) > 250:
+                raise OverLenPathDir
+
+            if len(f'{finish_path}/{short_name}.xlsx') > 254:
+                available_filename_length = 254 - len(finish_path)+1 # максимально доступная длина имени файла
+                # если название файла больше доступного то обрезаем
+                if len(f'{short_name}.xlsx') > available_filename_length-5: # убираем из подсчета расширение
+                    short_name = short_name[:available_filename_length-10]
+
+
             wb.save(f'{finish_path}/{short_name}.xlsx')
             used_name_file.add(short_name.lower())
             wb.close()
@@ -233,6 +250,10 @@ def processing_data_up_for_tarification(data_folder:str,result_folder:str,name_s
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Неправильные параметры! Количество строк заголовка, порядковый номер колонки с извлекаемыми данными, количество колонок с данными которые нужно извлечь\n'
                              f'должны быть записаны ЦЕЛЫМИ числами например 5.')
+    except OverLenPathDir:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Указан слишком длинный путь к конечной папке {finish_path}\n'
+                             f'Выберите другую папку с более коротким путем к ней.')
     else:
         messagebox.showinfo('Деметра Отчеты социальный паспорт студента', 'Данные успешно обработаны')
 
@@ -250,7 +271,7 @@ def processing_data_up_for_tarification(data_folder:str,result_folder:str,name_s
 
 if __name__ == '__main__':
     main_data_folder = 'data/Учебные планы'
-    main_result_folder = 'data/Результат'
+    main_result_folder = 'c:/Users/1/PycharmProjects/Demetra/data/Результат'
     main_name_sheet = 'Учебный план'
     main_quantity_header = '6' # количество строк заголовка
     main_number_main_column = '2' # порядковый номер колонки с наименованиями
