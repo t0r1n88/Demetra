@@ -739,7 +739,7 @@ def open_libraries():
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты  ver 2.13')
+    window.title('Деметра Отчеты  ver 2.2')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -1537,7 +1537,7 @@ if __name__ == '__main__':
 
     lbl_about = Label(about_frame_description,
                       text="""Деметра - Программа для обработки отчетности ПОО
-                           Версия 2.1
+                           Версия 2.2
                            Язык программирования - Python 3\n
                            Используемая лицензия BSD-2-Clause\n
                            Copyright (c) <2024> <Будаев Олег Тимурович>

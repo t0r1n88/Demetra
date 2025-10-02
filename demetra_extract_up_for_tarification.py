@@ -152,17 +152,6 @@ def processing_data_up_for_tarification(data_folder:str,result_folder:str,name_s
         t = time.localtime()  # получаем текущее время
         current_time = time.strftime('%H_%M_%S', t)
 
-        # Сохраняем ошибки
-        wb = openpyxl.Workbook()
-        for r in dataframe_to_rows(error_df, index=False, header=True):
-            wb['Sheet'].append(r)
-
-        wb['Sheet'].column_dimensions['A'].width = 30
-        wb['Sheet'].column_dimensions['B'].width = 40
-        wb['Sheet'].column_dimensions['C'].width = 50
-
-        wb.save(f'{result_folder}/ОШИБКИ от {current_time}.xlsx')
-
         name_finish_column = finish_df.columns[number_main_column+1]
         finish_df[name_finish_column] = finish_df[name_finish_column].astype(str)
         finish_df.sort_values(by=name_finish_column,inplace=True)
@@ -229,10 +218,34 @@ def processing_data_up_for_tarification(data_folder:str,result_folder:str,name_s
                 if len(f'{short_name}.xlsx') > available_filename_length-5: # убираем из подсчета расширение
                     short_name = short_name[:available_filename_length-10]
 
+                # Даже если после обрезки слишком длинное название то записываем в ошибки
+                if len(f'{finish_path}/{short_name}.xlsx') > 254:
+                    temp_error_df = pd.DataFrame(
+                        data=[[f'{file}',
+                               f'Не удалось сохранить файл с названием: {value}. Слишком длинное название, попробуйте уменьшить длину значения или обработайте это значение вручную'
+                               ]],
+                        columns=['Название файла',
+                                 'Описание ошибки'])
+                    error_df = pd.concat([error_df, temp_error_df], axis=0,
+                                         ignore_index=True)
+                    continue
+
+
 
             wb.save(f'{finish_path}/{short_name}.xlsx')
             used_name_file.add(short_name.lower())
             wb.close()
+
+        # Сохраняем ошибки
+        wb = openpyxl.Workbook()
+        for r in dataframe_to_rows(error_df, index=False, header=True):
+            wb['Sheet'].append(r)
+
+        wb['Sheet'].column_dimensions['A'].width = 30
+        wb['Sheet'].column_dimensions['B'].width = 40
+        wb['Sheet'].column_dimensions['C'].width = 50
+
+        wb.save(f'{result_folder}/ОШИБКИ от {current_time}.xlsx')
 
         if error_df.shape[0] != 0:
             messagebox.showwarning('Деметра Отчеты социальный паспорт студента',
