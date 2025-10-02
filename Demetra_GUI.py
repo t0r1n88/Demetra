@@ -8,7 +8,7 @@ from create_social_passport import create_social_report  # создание от
 from demetra_create_union_table import merge_table  # соединение таблиц
 from demetra_checking_egisso import fix_files_egisso # Исправление файлов ЕГИССО
 from expired_doc import check_expired_docs # поиск истекающих документов
-from demetra_structuring_data import processing_data_up_for_tarification # Структурирование данных
+from demetra_structuring_data import processing_structuring_data # Структурирование данных
 from demetra_preparation_list import prepare_list  # подготовка персональных данных
 from demetra_split_table import split_table  # разделение таблицы
 from demetra_generate_docs import generate_docs_from_template # создание документов
@@ -508,7 +508,7 @@ def processing_extract_data_up():
         number_main_column = var_extract_number_main_column.get()
         quantity_cols = var_extract_quantity_cols.get()
 
-        processing_data_up_for_tarification(path_to_data_extract_data_up,path_to_end_extract_data_up,name_sheet,quantity_header,number_main_column,quantity_cols)
+        processing_structuring_data(path_to_data_extract_data_up, path_to_end_extract_data_up, name_sheet, quantity_header, number_main_column, quantity_cols)
 
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',

@@ -71,7 +71,7 @@ def convert_params(quantity_header,number_main_column,quantity_cols):
         raise NotCorrectParams
 
 
-def processing_data_up_for_tarification(data_folder:str,result_folder:str,name_sheet:str, quantity_header:str,number_main_column:str,quantity_cols:str):
+def processing_structuring_data(data_folder:str, result_folder:str, name_sheet:str, quantity_header:str, number_main_column:str, quantity_cols:str):
     """
     Функция для извлечения данных для тарификации из учебных планов
     :param data_folder:папка с данными
@@ -289,5 +289,5 @@ if __name__ == '__main__':
     main_quantity_header = '6' # количество строк заголовка
     main_number_main_column = '2' # порядковый номер колонки с наименованиями
     main_quantity_cols = '21' # количество колонок с данными которые нужно собрать
-    processing_data_up_for_tarification(main_data_folder,main_result_folder,main_name_sheet,main_quantity_header,main_number_main_column,main_quantity_cols)
+    processing_structuring_data(main_data_folder, main_result_folder, main_name_sheet, main_quantity_header, main_number_main_column, main_quantity_cols)
     print('Lindy Booth')
