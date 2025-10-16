@@ -13,6 +13,7 @@ from demetra_preparation_list import prepare_list  # подготовка пер
 from demetra_split_table import split_table  # разделение таблицы
 from demetra_generate_docs import generate_docs_from_template # создание документов
 from demetra_diff_tables import find_diffrence # нахождение разницы двух таблиц
+from demetra_processing_birthday import proccessing_date # Функция для обработки дат рождения
 import pandas as pd
 from pandas._libs.tslibs.parsing import DateParseError
 import os
@@ -27,6 +28,7 @@ warnings.simplefilter(action='ignore', category=DeprecationWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 pd.options.mode.chained_assignment = None
 import sys
+import locale
 import logging
 
 logging.basicConfig(
@@ -50,6 +52,13 @@ class SameFolder(Exception):
 Системные функции
 """
 
+def set_rus_locale():
+    """
+    Функция чтобы можно было извлечь русские названия месяцев
+    """
+    locale.setlocale(
+        locale.LC_ALL,
+        'rus_rus' if sys.platform == 'win32' else 'ru_RU.UTF-8')
 
 
 def resource_path(relative_path):
@@ -673,6 +682,52 @@ def processing_fix_files_egisso():
                              'Выберите разные папки в качестве исходной и конечной')
 
 
+"""
+Функции для получения параметров обработки даты рождения
+"""
+
+
+def select_file_data_date():
+    """
+    Функция для выбора файла с данными для которого нужно разбить по категориям
+    :return: Путь к файлу с данными
+    """
+    global name_file_data_date
+    # Получаем путь к файлу
+    name_file_data_date = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
+def select_end_folder_date():
+    """
+    Функция для выбора папки куда будет генерироваться итоговый файл
+    :return:
+    """
+    global path_to_end_folder_date
+    path_to_end_folder_date = filedialog.askdirectory()
+
+
+def calculate_date():
+    """
+    Функция для разбиения по категориям, подсчета текущего возраста и выделения месяца,года
+    :return:
+    """
+    try:
+        raw_selected_date = entry_date.get()
+        name_column = entry_name_column.get()
+        # Устанавливаем русскую локаль
+        set_rus_locale()
+        proccessing_date(raw_selected_date, name_column, name_file_data_date, path_to_end_folder_date)
+    except NameError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Выберите файл с данными и папку куда будет генерироваться файл')
+
+
+
+
+
+
+
+
 
 """
 Создание нового окна
@@ -740,7 +795,7 @@ def open_libraries():
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты  ver 2.2')
+    window.title('Деметра Отчеты ver 2.3')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -1076,6 +1131,73 @@ if __name__ == '__main__':
     btn_choose_processing_prep = Button(tab_expired_docs, text='3) Выполнить обработку', font=('Arial Bold', 20),
                                         command=processing_check_expired_docs)
     btn_choose_processing_prep.pack(padx=10, pady=10)
+
+    """
+         Создаем вкладку для обработки дат рождения
+         """
+
+    tab_calculate_date = Frame(tab_control)
+    tab_control.add(tab_calculate_date, text='Обработка\nдат рождения')
+
+    calculate_date_frame_description = LabelFrame(tab_calculate_date)
+    calculate_date_frame_description.pack()
+
+    lbl_hello_calculate_date = Label(calculate_date_frame_description,
+                                     text='Подсчет по категориям,выделение месяца,года\nподсчет текущего возраста,\nподсчет совершеннолетний/несовершеннолетний\n'
+                                          'ПРИМЕЧАНИЯ\n'
+                                          'Данные обрабатываются С ПЕРВОГО ЛИСТА В ФАЙЛЕ !!!\n'
+                                          'Заголовок таблицы должен занимать только первую строку!\n'
+                                          'Для корректной работы программы уберите из таблицы\nобъединенные ячейки',
+                                     width=60)
+    lbl_hello_calculate_date.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+    # #
+    # #
+    # Картинка
+    path_to_img_calculate_date = resource_path('logo.png')
+    img_calculate_date = PhotoImage(file=path_to_img_calculate_date)
+    Label(calculate_date_frame_description,
+          image=img_calculate_date, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем фрейм для действий
+    calculate_date_frame_action = LabelFrame(tab_calculate_date, text='Подготовка')
+    calculate_date_frame_action.pack()
+
+    # Определяем текстовую переменную которая будет хранить дату
+    entry_date = StringVar()
+    # Описание поля
+    label_name_date_field = Label(calculate_date_frame_action,
+                                  text='Введите  дату в формате XX.XX.XXXX\n относительно, которой нужно подсчитать текущий возраст\n'
+                                       'Например 25.12.2024')
+    label_name_date_field.pack(padx=10, pady=10)
+    # поле ввода
+    date_field = Entry(calculate_date_frame_action, textvariable=entry_date, width=30)
+    date_field.pack(ipady=5)
+
+    # Создаем кнопку Выбрать файл с данными
+    btn_data_date = Button(calculate_date_frame_action, text='1) Выберите файл с данными', font=('Arial Bold', 14),
+                           command=select_file_data_date)
+    btn_data_date.pack(padx=10, pady=10)
+
+    btn_choose_end_folder_date = Button(calculate_date_frame_action, text='2) Выберите конечную папку',
+                                        font=('Arial Bold', 14),
+                                        command=select_end_folder_date
+                                        )
+    btn_choose_end_folder_date.pack(padx=10, pady=10)
+
+    # Определяем текстовую переменную
+    entry_name_column = StringVar()
+    # Описание поля
+    label_name_column = Label(calculate_date_frame_action,
+                              text='3) Введите название колонки с датами рождения,\nкоторые нужно обработать ')
+    label_name_column.pack(padx=10, pady=10)
+    # поле ввода
+    column_entry = Entry(calculate_date_frame_action, textvariable=entry_name_column, width=30)
+    column_entry.pack(ipady=5, pady=10)
+
+    btn_calculate_date = Button(tab_calculate_date, text='4) Обработать', font=('Arial Bold', 20),
+                                command=calculate_date)
+    btn_calculate_date.pack(padx=10, pady=10)
 
     """
     Извлечение данных из учебных планов для тарификации
@@ -1553,7 +1675,7 @@ if __name__ == '__main__':
 
     lbl_about = Label(about_frame_description,
                       text="""Деметра - Программа для обработки отчетности ПОО
-                           Версия 2.2
+                           Версия 2.3
                            Язык программирования - Python 3\n
                            Используемая лицензия BSD-2-Clause\n
                            Copyright (c) <2024> <Будаев Олег Тимурович>
