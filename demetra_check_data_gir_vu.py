@@ -6,6 +6,7 @@ from demetra_support_functions import (write_df_to_excel_cheking_egisso, del_she
 import pandas as pd
 import numpy as np
 import openpyxl
+from openpyxl.utils.dataframe import dataframe_to_rows
 import time
 import os
 import re
@@ -324,12 +325,13 @@ def fixfiles_girvu(data_folder:str, end_folder:str):
                       'Код профессии, специальности, по которой проводится обучения (для программ СПО': 'Код',
                       'Форма обучения': 'Форма обучения',
                       'Номер курса': 'Номер курса',
-                      'Полное наименование образовательной организации': 'Наименование',
+                      'Полное наименование образовательной организации': 'Организация',
                       'Адрес образовательной организации': 'Адрес',
                       'Дата поступления в образовательную организацию (ДД.ММ.ГГГГ)': 'Дата поступления',
                       'Дата завершения обучения или отчисления из образовательной организации (ДД.ММ.ГГГГ.)': 'Дата завершения',
                       'ФИО':'ФИО',
                       'Паспорт':'Паспорт',
+                      'Название файла':'Название файла',
                       }
 
 
@@ -561,6 +563,10 @@ def fixfiles_girvu(data_folder:str, end_folder:str):
             # Делаем общую колонку серия и номер паспорта
             main_df.insert(2,'Паспорт',main_df['Серия паспорта гражданина РФ'] + ' ' + main_df['Номер паспорта гражданина РФ'])
 
+
+
+
+
             dct_dupl_df = dict()  # создаем словарь для хранения названия и датафрейма
             lst_name_columns = list(main_df.columns)  # получаем список колонок
             used_name_sheet = []  # список для хранения значений которые уже были использованы
@@ -596,6 +602,42 @@ def fixfiles_girvu(data_folder:str, end_folder:str):
 
             # закрываем
             wb.close()
+
+            """
+            Делаем файл для статистики
+            """
+            # Добавляем столбец для облегчения подсчета по категориям
+            # Создаем файл excel
+            wb_stat = openpyxl.Workbook()
+            main_df['Для подсчета'] = 1
+            # Создаем листы
+            for idx, name_column in enumerate(main_df.columns):
+                # Делаем короткое название не более 30 символов
+                if name_column == 'Для подсчета':
+                    continue
+                wb_stat.create_sheet(title=dct_name_sheet[name_column], index=idx)
+
+            for idx, name_column in enumerate(main_df.columns):
+                group_df = main_df.groupby([name_column]).agg({'Для подсчета': 'sum'})
+                group_df.columns = ['Количество']
+
+                # Сортируем по убыванию
+                group_df.sort_values(by=['Количество'], inplace=True, ascending=False)
+                group_df.loc['Итого'] = group_df['Количество'].sum()
+                if name_column == 'Для подсчета':
+                    continue
+
+                for r in dataframe_to_rows(group_df, index=True, header=True):
+                    if len(r) != 1:
+                        wb_stat[dct_name_sheet[name_column]].append(r)
+                wb_stat[dct_name_sheet[name_column]].column_dimensions['A'].width = 50
+
+            # Удаляем листы
+            del_sheet(wb_stat,['Sheet','Для подсчета'])
+            wb_stat.save(f'{end_folder}/Количество {current_time}.xlsx')
+
+
+
 
 
             """
