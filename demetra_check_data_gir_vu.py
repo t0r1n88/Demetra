@@ -2,8 +2,9 @@
 Скрипт для массовой проверки и исправления файлов с данными ГИР ВУ
 """
 from demetra_support_functions import (write_df_to_excel_cheking_egisso, del_sheet,write_df_error_egisso_to_excel,
-                                       convert_to_date_gir_vu_cheking,create_doc_convert_date_egisso_cheking)
+                                       convert_to_date_gir_vu_cheking,create_doc_convert_date_egisso_cheking,convert_to_date_egisso_cheking,convert_to_date_future_cheking)
 import pandas as pd
+import openpyxl
 import time
 import os
 import re
@@ -112,6 +113,156 @@ def processing_gender(value:str):
         return 0
     else:
         return f'Ошибка: {value} неправильное значение'
+
+
+def processing_passport_series(value):
+    """
+    Функция для обработки серии документа
+    :param row: значение doctype_recip и doc_series
+    """
+    if 'Ошибка' in value:
+        return value
+
+    if pd.isna(value):
+        return f'Ошибка: не заполнена серия паспорта гражданина РФ'
+    else:
+        series_doc = value.replace(' ','') # очищаем от пробелов
+        # если свидетельство о рождении
+        result = re.findall(r'\d',series_doc)
+        if result:
+            if len(result) == 4:
+                out_str = ''.join(result)
+                return out_str
+            else:
+                return f'Ошибка: {series_doc} серия паспорта должна состоять из 4 цифр'
+        else:
+            return f'Ошибка: {series_doc} серия паспорта должна состоять из 4 цифр'
+
+
+def processing_passport_number(value):
+    """
+    Функция для обработки номера паспорта
+
+    """
+    if 'Ошибка' in value:
+        return value
+
+    if pd.isna(value):
+        return f'Ошибка: не заполнен номер паспорта гражданина РФ'
+    else:
+        number_doc = value.replace(' ','') # очищаем от пробелов
+        # если свидетельство о рождении
+        result = re.findall(r'\d',number_doc)
+        if result:
+            if len(result) == 6:
+                out_str = ''.join(result)
+                return out_str
+            else:
+                return f'Ошибка: {number_doc} номер паспорта должен состоять из 6 цифр'
+        else:
+            return f'Ошибка: {number_doc} номер паспорта должен состоять из 6 цифр'
+
+
+def processing_snils(snils):
+    """
+    Функция для приведения значений снилс в вид ХХХ-ХХХ-ХХХ ХХ
+    """
+    if pd.isna(snils):
+        return f'Ошибка: не заполнен СНИЛС гражданина РФ'
+    snils = str(snils)
+    result = re.findall(r'\d', snils) # ищем цифры
+    if len(result) == 11:
+        first_group = ''.join(result[:3])
+        second_group = ''.join(result[3:6])
+        third_group = ''.join(result[6:9])
+        four_group = ''.join(result[9:11])
+
+        out_snils = f'{first_group}-{second_group}-{third_group} {four_group}'
+        return out_snils
+    else:
+        return f'Ошибка: В СНИЛС должно быть 11 цифр - {snils} -{len(result)} цифр'
+
+
+def processing_name_prof(value):
+    """
+    Функция для приведения наименований профессии специальности без кода и лишних пробелов
+    """
+    if 'Ошибка' in value:
+        return value
+
+    value = re.sub(r'\d','',value) # очищаем от цифр
+    value = re.sub(r'\.','',value) # очищаем от точек
+    value = value.strip() # очищаем от пробельных символов в начале и конце
+    value = re.sub(r'\s+', ' ', value)  # заменяем пробельные символы на один пробел
+    return value
+
+
+def processing_code_prof(value):
+    """
+    Функция для приведения наименований профессии специальности без кода и лишних пробелов
+    """
+    if 'Ошибка' in value:
+        return value
+
+    result = re.findall(r'\d', value) # ищем цифры
+    if len(result) == 6:
+        first_group = ''.join(result[:2])
+        second_group = ''.join(result[2:4])
+        third_group = ''.join(result[4:6])
+
+        out_value = f'{first_group}.{second_group}.{third_group}'
+        return out_value
+    else:
+        return f'Ошибка: Код профессии, специальности должен состоять из 6 цифр разделенных точкой(например 23.07.02) - {value} -{len(result)} цифр'
+
+
+
+def processing_form(value:str):
+    """
+    Функция для обработки колонки с формой обучения
+    :param value:
+    """
+    if 'Ошибка' in value:
+        return value
+
+    if value[0].upper() == 'О':
+        return 'Очная'
+    elif value[0].upper() == 'З':
+        return 'Заочная'
+    else:
+        return f'Ошибка: {value} неправильное значение. Допустимые значения: Очная, Заочная'
+
+
+def processing_number_course(value:str):
+    """
+    Функция для обработки колонки с номером курса
+    :param value:
+    """
+    if 'Ошибка' in value:
+        return value
+
+    if value in ('1','2','3','4','5'):
+        return int(value)
+
+    else:
+        return f'Ошибка: {value} неправильное значение. Допустимые значения: 1,2,3,4,5'
+
+
+
+def processing_many_text(value):
+    """
+    Функция для приведения большого текста от пробельных символов в начале и конце, от лишних пробелов
+    """
+    if 'Ошибка' in value:
+        return value
+
+    value = value.strip() # очищаем от пробельных символов в начале и конце
+    value = re.sub(r'\s+', ' ', value)  # заменяем пробельные символы на один пробел
+    return value
+
+
+
+
 
 
 
@@ -232,13 +383,44 @@ def fixfiles_girvu(data_folder:str, end_folder:str):
                     # Дата рождения
 
                     current_date = datetime.now().date()  # Получаем текущую дату
-                    # BirthDate_recip
+                    # Дата рождения
                     df['Дата рождения (ДД.ММ.ГГГГ.)'] = df['Дата рождения (ДД.ММ.ГГГГ.)'].apply(
                         lambda x: convert_to_date_gir_vu_cheking(x, current_date))
                     df['Дата рождения (ДД.ММ.ГГГГ.)'] = df['Дата рождения (ДД.ММ.ГГГГ.)'].apply(create_doc_convert_date_egisso_cheking)
 
+                    # Серия паспорта
+                    df['Серия паспорта гражданина РФ'] = df['Серия паспорта гражданина РФ'].apply(processing_passport_series)
+                    df['Номер паспорта гражданина РФ'] = df['Номер паспорта гражданина РФ'].apply(processing_passport_number)
+                    # Дата выдачи паспорта
+                    df['Дата выдачи паспорта гражданина РФ'] = df['Дата выдачи паспорта гражданина РФ'].apply(
+                        lambda x: convert_to_date_egisso_cheking(x, current_date))
+                    df['Дата выдачи паспорта гражданина РФ'] = df['Дата выдачи паспорта гражданина РФ'].apply(create_doc_convert_date_egisso_cheking)
 
+                    # СНИЛС
+                    df['СНИЛС гражданина (при наличии)'] = df['СНИЛС гражданина (при наличии)'].apply(processing_snils)
+                    # Наименование
+                    df['Наименование профессии, специальности, по которой проводится обучение (для программ СПО)'] = df['Наименование профессии, специальности, по которой проводится обучение (для программ СПО)'].apply(processing_name_prof)
+                    # Код профессии
+                    df['Код профессии, специальности, по которой проводится обучения (для программ СПО'] = df['Код профессии, специальности, по которой проводится обучения (для программ СПО'].apply(processing_code_prof)
+                    # Форма обучения
+                    df['Форма обучения'] = df['Форма обучения'].apply(processing_form)
+                    # Курс
+                    df['Номер курса'] = df['Номер курса'].apply(processing_number_course)
+                    # Полное наименование
+                    df['Полное наименование образовательной организации'] = df['Полное наименование образовательной организации'].apply(processing_many_text)
+                    # Адрес образовательной организации
+                    df['Адрес образовательной организации'] = df['Адрес образовательной организации'].apply(processing_many_text)
 
+                    # Дата поступления
+                    df['Дата поступления в образовательную организацию (ДД.ММ.ГГГГ)'] = df['Дата поступления в образовательную организацию (ДД.ММ.ГГГГ)'].apply(
+                        lambda x: convert_to_date_egisso_cheking(x, current_date))
+                    df['Дата поступления в образовательную организацию (ДД.ММ.ГГГГ)'] = df['Дата поступления в образовательную организацию (ДД.ММ.ГГГГ)'].apply(create_doc_convert_date_egisso_cheking)
+
+                    # Дата завершения
+                    df['Дата завершения обучения или отчисления из образовательной организации (ДД.ММ.ГГГГ.)'] = df[['Дата завершения обучения или отчисления из образовательной организации (ДД.ММ.ГГГГ.)'
+                                                                                                                     ,'Дата поступления в образовательную организацию (ДД.ММ.ГГГГ)']].apply(convert_to_date_future_cheking,axis=1)
+
+                    df['Дата завершения обучения или отчисления из образовательной организации (ДД.ММ.ГГГГ.)'] = df['Дата завершения обучения или отчисления из образовательной организации (ДД.ММ.ГГГГ.)'].apply(create_doc_convert_date_egisso_cheking)
 
 
 
@@ -247,6 +429,25 @@ def fixfiles_girvu(data_folder:str, end_folder:str):
 
                     lst_name_columns = [name_cols for name_cols in df.columns if
                                         'Unnamed' not in name_cols]  # получаем список колонок
+
+                    dct_name_sheet = {'Фамилия':'Фамилия',
+                                    'Имя':'Имя',
+                                    'Отчество':'Отчество',
+                                    'Пол (0-не определено, 1-мужской, 2-женский)':'Пол',
+                                    'Дата рождения (ДД.ММ.ГГГГ.)':'Дата рождения',
+                                    'Серия паспорта гражданина РФ':'Серия паспорта',
+                                    'Номер паспорта гражданина РФ':'Номер паспорта',
+                                    'Дата выдачи паспорта гражданина РФ':'Дата выдачи',
+                                    'СНИЛС гражданина (при наличии)':'СНИЛС',
+                                    'Наименование профессии, специальности, по которой проводится обучение (для программ СПО)':'Наименование',
+                                    'Код профессии, специальности, по которой проводится обучения (для программ СПО':'Код',
+                                    'Форма обучения':'Форма обучения',
+                                    'Номер курса':'Номер курса',
+                                    'Полное наименование образовательной организации':'Наименование',
+                                    'Адрес образовательной организации':'Адрес',
+                                    'Дата поступления в образовательную организацию (ДД.ММ.ГГГГ)':'Дата поступления',
+                                    'Дата завершения обучения или отчисления из образовательной организации (ДД.ММ.ГГГГ.)':'Дата завершения',
+                                    }
 
                     for idx, value in enumerate(lst_name_columns):
                         # получаем ошибки
@@ -258,11 +459,39 @@ def fixfiles_girvu(data_folder:str, end_folder:str):
 
                         temp_df.insert(0, '№ строки с ошибкой в исходном файле',
                                        list(map(lambda x: x + 2, list(temp_df.index))))
-                        dct_sheet_error_df[value] = temp_df
+                        dct_sheet_error_df[dct_name_sheet[value]] = temp_df
 
                     # создаем пути для проверки длины файла
                     error_path_file = f'{end_folder}/{name_file}/Базовые ошибки {name_file}.xlsx'
                     fix_path_file = f'{end_folder}/{name_file}/Обработанный {name_file}.xlsx'
+
+                    if len(error_path_file) < 260 or len(fix_path_file) < 260:
+                        if not os.path.exists(f'{end_folder}/{name_file}'):
+                            os.makedirs(f'{end_folder}/{name_file}')
+                            # Сохраняем по папкам
+                        if len(dct_sheet_error_df) != 0:
+                            file_error_wb = write_df_to_excel_cheking_egisso(dct_sheet_error_df, write_index=False)
+                            file_error_wb = del_sheet(file_error_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+                            file_error_wb.save(f'{end_folder}/{name_file}/Базовые ошибки {name_file}.xlsx')
+                        else:
+                            file_error_wb = openpyxl.Workbook()
+                            file_error_wb.save(f'{end_folder}/{name_file}/Ошибок НЕТ {name_file}.xlsx')
+
+                        file_wb = write_df_error_egisso_to_excel({'Данные': df}, write_index=False)
+                        file_wb = del_sheet(file_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+                        file_wb.save(f'{end_folder}/{name_file}/Обработанный {name_file}.xlsx')
+                    else:
+                        if len(dct_sheet_error_df) != 0:
+                            file_error_wb = write_df_to_excel_cheking_egisso(dct_sheet_error_df, write_index=False)
+                            file_error_wb = del_sheet(file_error_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+                            file_error_wb.save(f'{end_folder}/Базовые ошибки {name_file}.xlsx')
+                        else:
+                            file_error_wb = openpyxl.Workbook()
+                            file_error_wb.save(f'{end_folder}/Ошибок нет {name_file}.xlsx')
+
+                        file_wb = write_df_error_egisso_to_excel({'Данные': df}, write_index=False)
+                        file_wb = del_sheet(file_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+                        file_wb.save(f'{end_folder}/Обработанный {name_file}.xlsx')
 
                     # Сохраняем объединенные файлы
                     df.insert(0, 'Название файла', name_file)

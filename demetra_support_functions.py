@@ -1665,8 +1665,9 @@ def convert_to_date_gir_vu_cheking(value,current_date):
                 age -= 1
             if date_value.date() > current_date or age < 16:
                 string_date = datetime.datetime.strftime(date_value, '%d.%m.%Y')
-
                 return f'Ошибка: {string_date}, превышает текущую дату или не входит в допустимый диапазон от 16 лет. Проверьте значение или системное время на компьютере'
+
+            return date_value
     except ValueError:
         result = re.search(r'^\d{2}\.\d{2}\.\d{4}$', value)
         if result:
@@ -1710,3 +1711,69 @@ def convert_to_date_gir_vu_cheking(value,current_date):
         return f'Ошибка: {value}, проверьте  правильность даты'
 
 
+def convert_to_date_future_cheking(row):
+    """
+    Функция для конвертации строки в текст
+    :param row: Дата поступления и Дата завершения
+    :return:
+    """
+    value, current_date = row
+
+    try:
+        if 'Ошибка' in value:
+            return value
+        else:
+            date_value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            # проверяем на превышение даты
+            if 'Ошибка' not in current_date:
+                current_date = datetime.datetime.strptime(current_date, '%d.%m.%Y')
+                if date_value.date() < current_date.date():
+                    string_date = datetime.datetime.strftime(date_value, '%d.%m.%Y')
+                    return f'Ошибка: Дата завершения обучения {string_date}, раньше чем дата поступления.'
+                else:
+                    return date_value
+            else:
+                return date_value
+    except ValueError:
+        result = re.search(r'^\d{2}\.\d{2}\.\d{4}$', value)
+        if result:
+            try:
+                temp_date = datetime.datetime.strptime(result.group(0), '%d.%m.%Y')
+                # проверяем на превышение даты
+                if 'Ошибка' not in current_date:
+                    current_date = datetime.datetime.strptime(current_date, '%d.%m.%Y')
+                    if temp_date.date() < current_date.date():
+                        string_date = datetime.datetime.strftime(temp_date, '%d.%m.%Y')
+                        return f'Ошибка: Дата завершения обучения {string_date}, раньше чем дата поступления.'
+                    else:
+                        return temp_date
+                else:
+                    return temp_date
+            except ValueError:
+                # для случаев вида 45.09.2007
+                return f'Ошибка: {value}, проверьте  правильность даты'
+        else:
+            # Пытаемся обработать варианты с пробелом между блоками
+            value = str(value)
+            lst_dig = re.findall(r'\d',value)
+            if len(lst_dig) != 8:
+                return f'Ошибка: {value}, проверьте  правильность даты'
+            # делаем строку
+            temp_date = f'{lst_dig[0]}{lst_dig[1]}.{lst_dig[2]}{lst_dig[3]}.{lst_dig[4]}{lst_dig[5]}{lst_dig[6]}{lst_dig[7]}'
+            try:
+                temp_date = datetime.datetime.strptime(temp_date, '%d.%m.%Y')
+                if 'Ошибка' not in current_date:
+                    current_date = datetime.datetime.strptime(current_date, '%d.%m.%Y')
+                    if temp_date.date() < current_date.date():
+                        string_date = datetime.datetime.strftime(temp_date, '%d.%m.%Y')
+                        return f'Ошибка: Дата завершения обучения {string_date}, раньше чем дата поступления.'
+                    else:
+                        return temp_date
+                else:
+                    return temp_date
+            except ValueError:
+                # для случаев вида 45.09.2007
+                return f'Ошибка: {value}, проверьте  правильность даты'
+
+    except:
+        return f'Ошибка: {value}, проверьте  правильность даты'
