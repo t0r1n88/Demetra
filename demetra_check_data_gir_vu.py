@@ -4,11 +4,13 @@
 from demetra_support_functions import (write_df_to_excel_cheking_egisso, del_sheet,write_df_error_egisso_to_excel,
                                        convert_to_date_gir_vu_cheking,create_doc_convert_date_egisso_cheking,convert_to_date_egisso_cheking,convert_to_date_future_cheking)
 import pandas as pd
+import numpy as np
 import openpyxl
 import time
 import os
 import re
 from datetime import datetime
+import xlsxwriter
 
 class NotFile(Exception):
     """
@@ -261,7 +263,43 @@ def processing_many_text(value):
     return value
 
 
+def check_mixing(value:str):
+    """
+    Функция для проверки слова на смешение алфавитов
+    """
+    # ищем буквы русского и английского алфавита
+    russian_letters = re.findall(r'[а-яА-ЯёЁ]',value)
+    english_letters = re.findall(r'[a-zA-Z]',value)
+    # если найдены и те и те
+    if russian_letters and english_letters:
+        # если русских букв больше то указываем что в русском слове встречаются английские буквы
+        if len(russian_letters) > len(english_letters):
+            return (f'Ошибка: в слове {value} найдены английские буквы: {",".join(english_letters)}')
+        elif len(russian_letters) < len(english_letters):
+            # если английских букв больше то указываем что в английском слове встречаются русские буквы
+            return (f'Ошибка: в слове {value} найдены русские буквы: {",".join(russian_letters)}')
+        else:
+            # если букв поровну то просто выводим их список
+            return (f'Ошибка: в слове {value} найдены русские буквы: {",".join(russian_letters)} и английские буквы: {";".join(english_letters)}')
+    else:
+        # если слово состоит из букв одного алфавита
+        return False
 
+
+def find_mixing_alphabets(cell):
+    """
+    Функция для нахождения случаев смешения когда английские буквы используются в русском слове и наоборот
+    """
+    if isinstance(cell,str):
+        lst_word = re.split(r'\W',cell) # делим по не буквенным символам
+        lst_result = list(map(check_mixing,lst_word)) # ищем смешения
+        lst_result = [value for value in lst_result if value] # отбираем найденые смешения если они есть
+        if lst_result:
+            return f'Ошибка: в тексте {cell} найдено смешение русского и английского: {"; ".join(lst_result)}'
+        else:
+            return cell
+    else:
+        return cell
 
 
 
@@ -272,6 +310,29 @@ def fixfiles_girvu(data_folder:str, end_folder:str):
     :param data_folder: папка с файлами которые нужно проверить
     :param end_folder: конечная папка
     """
+    # Словарь для замен названий листов
+    dct_name_sheet = {'Фамилия': 'Фамилия',
+                      'Имя': 'Имя',
+                      'Отчество': 'Отчество',
+                      'Пол (0-не определено, 1-мужской, 2-женский)': 'Пол',
+                      'Дата рождения (ДД.ММ.ГГГГ.)': 'Дата рождения',
+                      'Серия паспорта гражданина РФ': 'Серия паспорта',
+                      'Номер паспорта гражданина РФ': 'Номер паспорта',
+                      'Дата выдачи паспорта гражданина РФ': 'Дата выдачи',
+                      'СНИЛС гражданина (при наличии)': 'СНИЛС',
+                      'Наименование профессии, специальности, по которой проводится обучение (для программ СПО)': 'Наименование',
+                      'Код профессии, специальности, по которой проводится обучения (для программ СПО': 'Код',
+                      'Форма обучения': 'Форма обучения',
+                      'Номер курса': 'Номер курса',
+                      'Полное наименование образовательной организации': 'Наименование',
+                      'Адрес образовательной организации': 'Адрес',
+                      'Дата поступления в образовательную организацию (ДД.ММ.ГГГГ)': 'Дата поступления',
+                      'Дата завершения обучения или отчисления из образовательной организации (ДД.ММ.ГГГГ.)': 'Дата завершения',
+                      'ФИО':'ФИО',
+                      'Паспорт':'Паспорт',
+                      }
+
+
     count_errors = 0
     error_df = pd.DataFrame(
         columns=['Название файла', 'Описание ошибки'])  # датафрейм для ошибок
@@ -422,7 +483,8 @@ def fixfiles_girvu(data_folder:str, end_folder:str):
 
                     df['Дата завершения обучения или отчисления из образовательной организации (ДД.ММ.ГГГГ.)'] = df['Дата завершения обучения или отчисления из образовательной организации (ДД.ММ.ГГГГ.)'].apply(create_doc_convert_date_egisso_cheking)
 
-
+                    # Ищем смешение английских и русских букв
+                    df = df.applymap(find_mixing_alphabets)  # ищем смешения
 
                     # Сохраняем датафрейм с ошибками разделенными по листам в соответсвии с колонками
                     dct_sheet_error_df = dict()  # создаем словарь для хранения названия и датафрейма
@@ -430,24 +492,7 @@ def fixfiles_girvu(data_folder:str, end_folder:str):
                     lst_name_columns = [name_cols for name_cols in df.columns if
                                         'Unnamed' not in name_cols]  # получаем список колонок
 
-                    dct_name_sheet = {'Фамилия':'Фамилия',
-                                    'Имя':'Имя',
-                                    'Отчество':'Отчество',
-                                    'Пол (0-не определено, 1-мужской, 2-женский)':'Пол',
-                                    'Дата рождения (ДД.ММ.ГГГГ.)':'Дата рождения',
-                                    'Серия паспорта гражданина РФ':'Серия паспорта',
-                                    'Номер паспорта гражданина РФ':'Номер паспорта',
-                                    'Дата выдачи паспорта гражданина РФ':'Дата выдачи',
-                                    'СНИЛС гражданина (при наличии)':'СНИЛС',
-                                    'Наименование профессии, специальности, по которой проводится обучение (для программ СПО)':'Наименование',
-                                    'Код профессии, специальности, по которой проводится обучения (для программ СПО':'Код',
-                                    'Форма обучения':'Форма обучения',
-                                    'Номер курса':'Номер курса',
-                                    'Полное наименование образовательной организации':'Наименование',
-                                    'Адрес образовательной организации':'Адрес',
-                                    'Дата поступления в образовательную организацию (ДД.ММ.ГГГГ)':'Дата поступления',
-                                    'Дата завершения обучения или отчисления из образовательной организации (ДД.ММ.ГГГГ.)':'Дата завершения',
-                                    }
+
 
                     for idx, value in enumerate(lst_name_columns):
                         # получаем ошибки
@@ -506,6 +551,96 @@ def fixfiles_girvu(data_folder:str, end_folder:str):
             main_file_wb = write_df_error_egisso_to_excel({'Общий свод': main_df}, write_index=False)
             main_file_wb = del_sheet(main_file_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
             main_file_wb.save(f'{end_folder}/Общий свод {current_time}.xlsx')
+
+
+            """
+            Поиск дубликатов
+            """
+            # Делаем общую колонку ФИО
+            main_df.insert(1,'ФИО',main_df['Фамилия'] + ' ' + main_df['Имя'] + ' '+ main_df['Отчество'])
+            # Делаем общую колонку серия и номер паспорта
+            main_df.insert(2,'Паспорт',main_df['Серия паспорта гражданина РФ'] + ' ' + main_df['Номер паспорта гражданина РФ'])
+
+            dct_dupl_df = dict()  # создаем словарь для хранения названия и датафрейма
+            lst_name_columns = list(main_df.columns)  # получаем список колонок
+            used_name_sheet = []  # список для хранения значений которые уже были использованы
+            #
+            wb = xlsxwriter.Workbook(f'{end_folder}/Дубликаты в каждой колонке {current_time}.xlsx',
+                                     {'constant_memory': True, 'nan_inf_to_errors': True})  # создаем файл
+            for idx, value in enumerate(lst_name_columns):
+                temp_df = main_df[main_df[value].duplicated(keep=False)]  # получаем дубликаты
+                if temp_df.shape[0] == 0:
+                    continue
+
+                temp_df = temp_df.sort_values(by=value)
+                #     # Добавляем +2 к индексу чтобы отобразить точную строку
+                temp_df.insert(0, '№ строки дубликата ', list(map(lambda x: x + 2, list(temp_df.index))))
+                temp_df.replace(np.nan, None, inplace=True)  # для того чтобы в пустых ячейках ничего не отображалось
+                if value == 'Название файла':
+                    continue
+                dct_dupl_df[dct_name_sheet[value]] = temp_df
+
+            for name_sheet, dupl_df in dct_dupl_df.items():
+                data_lst = dupl_df.values.tolist()  # преобразуем в список
+                wb_name_sheet = wb.add_worksheet(name_sheet)  # создаем лист
+                used_name_sheet.append(name_sheet)  # добавляем в список использованных названий
+                # Запись заголовков
+                headers = list(dupl_df.columns)
+                for col, header in enumerate(headers):
+                    wb_name_sheet.write(0, col, header)
+
+                # Запись данных
+                for row, data_row in enumerate(data_lst):
+                    for col, cell_value in enumerate(data_row):
+                        wb_name_sheet.write(row + 1, col, cell_value)
+
+            # закрываем
+            wb.close()
+
+
+            """
+            Смешение русских и английских букв
+            """
+            dct_mix_df = dict()
+            check_word = 'найдено смешение русского и английского:' # фраза по которой будет производится отбор
+            lst_name_columns = list(main_df.columns)  # получаем список колонок
+            used_name_sheet = []  # список для хранения значений которые уже были использованы
+            #
+            wb_mix = xlsxwriter.Workbook(f'{end_folder}/Смешения русских и английских букв в словах {current_time}.xlsx',{'constant_memory': True,'nan_inf_to_errors': True})  # создаем файл
+
+            for idx, value in enumerate(lst_name_columns):
+                temp_df = main_df[main_df[value].astype(str).str.contains(check_word)]  # получаем строки где есть сочетание
+                if temp_df.shape[0] == 0:
+                    continue
+
+                short_value = value[:20]  # получаем обрезанное значение
+                short_value = re.sub(r'[\r\b\n\t\[\]\'+()<> :"?*|\\/]', '_', short_value)
+
+                if short_value in used_name_sheet:
+                    short_value = f'{short_value}_{idx}'  # добавляем окончание
+
+                temp_df = temp_df.sort_values(by=value)
+                #     # Добавляем +2 к индексу чтобы отобразить точную строку
+                temp_df.insert(0, '№ строки смешения ', list(map(lambda x: x + 2, list(temp_df.index))))
+                temp_df.replace(np.nan, None,inplace=True) # для того чтобы в пустых ячейках ничего не отображалось
+                dct_mix_df[short_value] = temp_df
+
+            for name_sheet, mix_df in dct_mix_df.items():
+                data_lst = mix_df.values.tolist() # преобразуем в список
+                wb_name_sheet = wb_mix.add_worksheet(name_sheet) # создаем лист
+                used_name_sheet.append(name_sheet) # добавляем в список использованных названий
+                # Запись заголовков
+                headers = list(mix_df.columns)
+                for col, header in enumerate(headers):
+                    wb_name_sheet.write(0, col, header)
+
+                # Запись данных
+                for row, data_row in enumerate(data_lst):
+                    for col, cell_value in enumerate(data_row):
+                        wb_name_sheet.write(row + 1, col, cell_value)
+
+            wb_mix.close()
+
 
 
 
