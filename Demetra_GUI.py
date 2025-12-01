@@ -7,6 +7,7 @@ from create_local_report import create_local_report  # создание отче
 from create_social_passport import create_social_report  # создание отчета по социальному состоянию
 from demetra_create_union_table import merge_table  # соединение таблиц
 from demetra_checking_egisso import fix_files_egisso # Исправление файлов ЕГИССО
+from demetra_check_data_gir_vu import fix_files_girvu
 from expired_doc import check_expired_docs # поиск истекающих документов
 from demetra_structuring_data import processing_structuring_data # Структурирование данных
 from demetra_preparation_list import prepare_list  # подготовка персональных данных
@@ -683,6 +684,51 @@ def processing_fix_files_egisso():
 
 
 """
+Функции для исправления файлов ГИР ВУ
+"""
+def select_folder_data_fix_files_girvu():
+    """
+    Функция для выбора папки с данными
+    :return:
+    """
+    global path_folder_fix_files_girvu
+    path_folder_fix_files_girvu = filedialog.askdirectory()
+
+
+def select_end_folder_data_fix_files_girvu():
+    """
+    Функция для выбора папки с данными
+    :return:
+    """
+    global path_end_folder_fix_files_girvu
+    path_end_folder_fix_files_girvu = filedialog.askdirectory()
+
+
+def processing_fix_files_girvu():
+    """
+    Функция для подсчета
+    :return:
+    """
+    try:
+        if path_folder_fix_files_girvu == path_end_folder_fix_files_girvu:
+            raise SameFolder
+        # подсчитываем
+        fix_files_girvu(path_folder_fix_files_girvu,path_end_folder_fix_files_girvu)
+    except NameError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Выберите папку с файлами и папку куда будет генерироваться результат')
+    except SameFolder:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             'Выберите разные папки в качестве исходной и конечной')
+
+
+
+
+
+
+
+
+"""
 Функции для получения параметров обработки даты рождения
 """
 
@@ -795,7 +841,7 @@ def open_libraries():
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты ver 2.3')
+    window.title('Деметра Отчеты ver 2.31')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -1085,6 +1131,54 @@ if __name__ == '__main__':
                                                 font=('Arial Bold', 14),
                                                 command=processing_fix_files_egisso)
     btn_processing_fix_data_for_egisso.pack(padx=10, pady=10)
+
+    """
+    Исправление данных для ГИР ВУ
+    """
+    tab_create_fix_data_for_girvu = ttk.Frame(tab_control)
+    tab_control.add(tab_create_fix_data_for_girvu, text='Подготовка данных\nдля ГИР ВУ')
+
+    create_fix_data_for_girvu_frame_description = LabelFrame(tab_create_fix_data_for_girvu)
+    create_fix_data_for_girvu_frame_description.pack()
+
+    lbl_hello_create_fix_data_for_girvu = Label(create_fix_data_for_girvu_frame_description,
+                                                text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
+                                                     'Поиск и исправление БАЗОВЫХ ошибок в файлах xlsx для ГИР ВУ.\n'
+                                                     'Программа удаляет лишние пробелы, лишние символы и т.п.\n'
+                                                     'Программа НЕ исправляет неправильные персональные данные\n'
+                                                , width=60)
+    lbl_hello_create_fix_data_for_girvu.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+
+    # Картинка
+    path_to_img_create_fix_data_for_girvu = resource_path('logo.png')
+    img_create_fix_data_for_girvu = PhotoImage(file=path_to_img_create_fix_data_for_girvu)
+    Label(create_fix_data_for_girvu_frame_description,
+          image=img_create_fix_data_for_girvu, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_fix_data_for_girvu = LabelFrame(tab_create_fix_data_for_girvu, text='Подготовка')
+    frame_data_fix_data_for_girvu.pack(padx=10, pady=10)
+
+    btn_choose_folder_data_fix_data_for_girvu = Button(frame_data_fix_data_for_girvu,
+                                                       text='1) Выберите папку с файлами',
+                                                       font=('Arial Bold', 14),
+                                                       command=select_folder_data_fix_files_girvu)
+    btn_choose_folder_data_fix_data_for_girvu.pack(padx=10, pady=10)
+
+    btn_choose_end_folder_data_fix_data_for_girvu = Button(frame_data_fix_data_for_girvu,
+                                                           text='2) Выберите конечную папку',
+                                                           font=('Arial Bold', 14),
+                                                           command=select_end_folder_data_fix_files_girvu)
+    btn_choose_end_folder_data_fix_data_for_girvu.pack(padx=10, pady=10)
+
+    btn_processing_fix_data_for_girvu = Button(frame_data_fix_data_for_girvu,
+                                               text='3) Обработать данные',
+                                               font=('Arial Bold', 14),
+                                               command=processing_fix_files_girvu)
+    btn_processing_fix_data_for_girvu.pack(padx=10, pady=10)
+
+
 
 
     """
@@ -1675,7 +1769,7 @@ if __name__ == '__main__':
 
     lbl_about = Label(about_frame_description,
                       text="""Деметра - Программа для обработки отчетности ПОО
-                           Версия 2.3
+                           Версия 2.31
                            Язык программирования - Python 3\n
                            Используемая лицензия BSD-2-Clause\n
                            Copyright (c) <2024> <Будаев Олег Тимурович>
