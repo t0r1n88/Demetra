@@ -15,6 +15,7 @@ from demetra_split_table import split_table  # разделение таблиц
 from demetra_generate_docs import generate_docs_from_template # создание документов
 from demetra_diff_tables import find_diffrence # нахождение разницы двух таблиц
 from demetra_processing_birthday import proccessing_date # Функция для обработки дат рождения
+from demetra_comparsion_two_tables import merging_two_tables # Функция для соединения 2 таблиц
 import pandas as pd
 from pandas._libs.tslibs.parsing import DateParseError
 import os
@@ -769,6 +770,66 @@ def calculate_date():
 
 
 
+# Функциия для слияния 2 таблиц
+def select_file_params_comparsion():
+    """
+    Функция для выбора файла с параметрами колонок т.е. кокие колонки нужно обрабатывать
+    :return:
+    """
+    global file_params
+    file_params = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
+def select_first_comparison():
+    """
+    Функция для выбора  первого файла с данными которые нужно сравнить
+    :return: Путь к файлу с данными
+    """
+    global name_first_file_comparison
+    # Получаем путь к файлу
+    name_first_file_comparison = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
+def select_second_comparison():
+    """
+    Функция для выбора  второго файла с данными которые нужно сравнить
+    :return: Путь к файлу с данными
+    """
+    global name_second_file_comparison
+    # Получаем путь к файлу
+    name_second_file_comparison = filedialog.askopenfilename(
+        filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
+def select_end_folder_comparison():
+    """
+    Функция для выбора папки куда будет генерироваться итоговый файл
+    :return:
+    """
+    global path_to_end_folder_comparison
+    path_to_end_folder_comparison = filedialog.askdirectory()
+
+
+def processing_comparison():
+    """
+    Функция для сравнения,слияния 2 таблиц
+    :return:
+    """
+    # получаем названия листов
+    try:
+        first_sheet = entry_first_sheet_name.get()
+        second_sheet = entry_second_sheet_name.get()
+
+        merging_two_tables(file_params, first_sheet, second_sheet, name_first_file_comparison,
+                           name_second_file_comparison, path_to_end_folder_comparison)
+    except NameError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Выберите файлы с данными и папку куда будет генерироваться файл')
+        logging.exception('AN ERROR HAS OCCURRED')
+
+
+
+
 
 
 
@@ -1177,6 +1238,88 @@ if __name__ == '__main__':
                                                font=('Arial Bold', 14),
                                                command=processing_fix_files_girvu)
     btn_processing_fix_data_for_girvu.pack(padx=10, pady=10)
+
+    """
+        Создаем вкладку для сравнения 2 столбцов
+        """
+    tab_comparison = Frame(tab_control)
+    tab_control.add(tab_comparison, text='Соединение\n2 таблиц')
+
+    comparison_frame_description = LabelFrame(tab_comparison)
+    comparison_frame_description.pack()
+
+    lbl_hello_comparison = Label(comparison_frame_description,
+                                 text='Соединение 2 таблиц по совпадающим значениям.\nПоиск значений которые есть в обоих таблицах или только в одной.\n'
+                                      'ПРИМЕЧАНИЕ\n'
+                                      'Заголовок таблиц должен занимать только первую строку!\n'
+                                      'Для корректной работы программы уберите из таблицы\nобъединенные ячейки',
+                                 width=60)
+    lbl_hello_comparison.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+    # Картинка
+    path_to_img_comparison = resource_path('logo.png')
+    img_comparison = PhotoImage(file=path_to_img_comparison)
+    Label(comparison_frame_description,
+          image=img_comparison, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_for_comparison = LabelFrame(tab_comparison, text='Подготовка')
+    frame_data_for_comparison.pack(padx=10, pady=10)
+
+    # Создаем кнопку выбрать файл с параметрами
+    btn_columns_params = Button(frame_data_for_comparison, text='1) Выберите файл с параметрами слияния',
+                                font=('Arial Bold', 14),
+                                command=select_file_params_comparsion)
+    btn_columns_params.pack(padx=10, pady=10)
+
+    # Создаем кнопку Выбрать  первый файл с данными
+    btn_data_first_comparison = Button(frame_data_for_comparison, text='2) Выберите первый файл с данными',
+                                       font=('Arial Bold', 14),
+                                       command=select_first_comparison
+                                       )
+    btn_data_first_comparison.pack(padx=10, pady=10)
+
+    # Определяем текстовую переменную
+    entry_first_sheet_name = StringVar()
+    # Описание поля
+    label_first_sheet_name = Label(frame_data_for_comparison,
+                                   text='3) Введите название листа в первом файле')
+    label_first_sheet_name.pack(padx=10, pady=10)
+    # поле ввода имени листа
+    first_sheet_name_entry = Entry(frame_data_for_comparison, textvariable=entry_first_sheet_name, width=30)
+    first_sheet_name_entry.pack(ipady=5)
+
+    # Создаем кнопку Выбрать  второй файл с данными
+    btn_data_second_comparison = Button(frame_data_for_comparison, text='4) Выберите второй файл с данными',
+                                        font=('Arial Bold', 14),
+                                        command=select_second_comparison
+                                        )
+    btn_data_second_comparison.pack(padx=10, pady=10)
+
+    # Определяем текстовую переменную
+    entry_second_sheet_name = StringVar()
+    # Описание поля
+    label_second_sheet_name = Label(frame_data_for_comparison,
+                                    text='5) Введите название листа во втором файле')
+    label_second_sheet_name.pack(padx=10, pady=10)
+    # поле ввода
+    second__sheet_name_entry = Entry(frame_data_for_comparison, textvariable=entry_second_sheet_name, width=30)
+    second__sheet_name_entry.pack(ipady=5)
+
+    # Создаем кнопку выбора папки куда будет генерироваьться файл
+    btn_select_end_comparison = Button(frame_data_for_comparison, text='6) Выберите конечную папку',
+                                       font=('Arial Bold', 14),
+                                       command=select_end_folder_comparison
+                                       )
+    btn_select_end_comparison.pack(padx=10, pady=10)
+
+    # Создаем кнопку Обработать данные
+    btn_data_do_comparison = Button(tab_comparison, text='7) Произвести слияние\nтаблиц', font=('Arial Bold', 20),
+                                    command=processing_comparison
+                                    )
+    btn_data_do_comparison.pack(padx=10, pady=10)
+
+
 
 
 

@@ -1853,3 +1853,59 @@ def convert_to_date_egisso_diff(row):
 
     except:
         return f'Ошибка: {value}, проверьте  правильность даты'
+
+
+
+
+def convert_to_date_comparsion(value):
+    """
+    Функция для конвертации строки в текст
+    :param value: значение для конвертации
+    :return:
+    """
+    try:
+        date_value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+        return date_value
+    except ValueError:
+        result = re.search(r'^\d{2}\.\d{2}\.\d{4}$', value)
+        if result:
+            try:
+                temp_date = datetime.datetime.strptime(result.group(0), '%d.%m.%Y')
+                return temp_date
+            except ValueError:
+                # для случаев вида 45.09.2007
+                return f''
+        else:
+            # Пытаемся обработать варианты с пробелом или лишними точками между блоками
+            value = str(value)
+            lst_dig = re.findall(r'\d',value)
+            if len(lst_dig) != 8:
+                return f''
+            # делаем строку
+            temp_date = f'{lst_dig[0]}{lst_dig[1]}.{lst_dig[2]}{lst_dig[3]}.{lst_dig[4]}{lst_dig[5]}{lst_dig[6]}{lst_dig[7]}'
+            try:
+                temp_date = datetime.datetime.strptime(temp_date, '%d.%m.%Y')
+                return temp_date
+            except ValueError:
+                # для случаев вида 45.09.2007
+                return f''
+
+    except:
+        return f''
+
+
+
+
+
+
+def create_doc_convert_date_comparsion(cell):
+    """
+    Функция для конвертации даты при создании документов
+    :param cell:
+    :return:
+    """
+    try:
+        string_date = datetime.datetime.strftime(cell, '%d.%m.%Y')
+        return string_date
+    except:
+        return ''
