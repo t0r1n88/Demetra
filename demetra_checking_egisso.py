@@ -905,8 +905,8 @@ def fix_files_egisso(data_folder:str, end_folder:str):
 
 
 if __name__ == '__main__':
-    main_data_folder = 'c:/Users/1/PycharmProjects/Elpida/data/ЕГИССО'
-    main_end_folder = 'c:/Users/1/PycharmProjects/Elpida/data/СБОР результат'
+    main_data_folder = 'c:/Users/1/PycharmProjects/Demetra/data/ЕГИССО'
+    main_end_folder = 'c:/Users/1/PycharmProjects/Demetra/data/СБОР результат'
 
     start_time = time.time()
     fix_files_egisso(main_data_folder, main_end_folder)
