@@ -1777,3 +1777,79 @@ def convert_to_date_future_cheking(row):
 
     except:
         return f'Ошибка: {value}, проверьте  правильность даты'
+
+
+def convert_to_date_egisso_diff(row):
+    """
+    Функция для конвертации даты в текст. Проверка разницы между датой выдачи паспорта и датой рождения
+    :param row: Дата выдачи паспорта и Дата рождения
+    :return:
+    """
+    value, birthday = row
+    try:
+        if 'Ошибка' in value:
+            return value
+        else:
+            date_value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            if 'Ошибка' not in birthday:
+                # Проверяем диапазон
+                birthday = datetime.datetime.strptime(birthday, '%d.%m.%Y')
+                age = date_value.year - birthday.year - ((date_value.month, date_value.day) < (birthday.month, birthday.day))
+                if date_value.date() < birthday.date() or age < 14:
+                    string_date = datetime.datetime.strftime(date_value, '%d.%m.%Y')
+                    return f'Ошибка: {string_date}, превышает текущую дату или не входит в допустимый диапазон от 14 лет. Проверьте значение или системное время на компьютере'
+                else:
+                    return date_value
+            else:
+                return date_value
+    except ValueError:
+        result = re.search(r'^\d{2}\.\d{2}\.\d{4}$', value)
+        if result:
+            try:
+                temp_date = datetime.datetime.strptime(result.group(0), '%d.%m.%Y')
+                # Проверяем диапазон
+                if 'Ошибка' not in birthday:
+                    # Проверяем диапазон
+                    birthday = datetime.datetime.strptime(birthday, '%d.%m.%Y')
+                    age = temp_date.year - birthday.year - ((temp_date.month, temp_date.day) < (birthday.month, birthday.day))
+
+                    if temp_date.date() < birthday.date() or age < 14:
+                        string_date = datetime.datetime.strftime(temp_date, '%d.%m.%Y')
+                        return f'Ошибка: {string_date}, превышает текущую дату или не входит в допустимый диапазон от 14 лет. Проверьте значение или системное время на компьютере'
+                    else:
+                        return temp_date
+                else:
+                    return temp_date
+            except ValueError:
+                # для случаев вида 45.09.2007
+                return f'Ошибка: {value}, проверьте  правильность даты'
+        else:
+            # Пытаемся обработать варианты с пробелом между блоками
+            value = str(value)
+            lst_dig = re.findall(r'\d', value)
+            if len(lst_dig) != 8:
+                return f'Ошибка: {value}, проверьте  правильность даты'
+            # делаем строку
+            temp_date = f'{lst_dig[0]}{lst_dig[1]}.{lst_dig[2]}{lst_dig[3]}.{lst_dig[4]}{lst_dig[5]}{lst_dig[6]}{lst_dig[7]}'
+            try:
+                temp_date = datetime.datetime.strptime(temp_date, '%d.%m.%Y')
+                # Проверяем диапазон
+                if 'Ошибка' not in birthday:
+                    # Проверяем диапазон
+                    birthday = datetime.datetime.strptime(birthday, '%d.%m.%Y')
+                    age = temp_date.year - birthday.year - ((temp_date.month, temp_date.day) < (birthday.month, birthday.day))
+
+
+                    if temp_date.date() < birthday.date() or age < 14:
+                        string_date = datetime.datetime.strftime(temp_date, '%d.%m.%Y')
+                        return f'Ошибка: {string_date}, превышает текущую дату или не входит в допустимый диапазон от 14 лет. Проверьте значение или системное время на компьютере'
+                    else:
+                        return temp_date
+                else:
+                    return temp_date
+            except ValueError:
+                # для случаев вида 45.09.2007
+                return f'Ошибка: {value}, проверьте  правильность даты'
+
+    except:
+        return f'Ошибка: {value}, проверьте  правильность даты'

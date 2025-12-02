@@ -2,7 +2,7 @@
 Скрипт для массовой проверки и исправления файлов с данными ГИР ВУ
 """
 from demetra_support_functions import (write_df_to_excel_cheking_egisso, del_sheet,write_df_error_egisso_to_excel,
-                                       convert_to_date_gir_vu_cheking,create_doc_convert_date_egisso_cheking,convert_to_date_egisso_cheking,convert_to_date_future_cheking)
+                                       convert_to_date_gir_vu_cheking,create_doc_convert_date_egisso_cheking,convert_to_date_egisso_cheking,convert_to_date_future_cheking,convert_to_date_egisso_diff)
 import pandas as pd
 import numpy as np
 import openpyxl
@@ -457,8 +457,8 @@ def fix_files_girvu(data_folder:str, end_folder:str):
                         df['Серия паспорта гражданина РФ'] = df['Серия паспорта гражданина РФ'].apply(processing_passport_series)
                         df['Номер паспорта гражданина РФ'] = df['Номер паспорта гражданина РФ'].apply(processing_passport_number)
                         # Дата выдачи паспорта
-                        df['Дата выдачи паспорта гражданина РФ'] = df['Дата выдачи паспорта гражданина РФ'].apply(
-                            lambda x: convert_to_date_egisso_cheking(x, current_date))
+                        df['Дата выдачи паспорта гражданина РФ'] = df[['Дата выдачи паспорта гражданина РФ','Дата рождения (ДД.ММ.ГГГГ.)']].apply(
+                          convert_to_date_egisso_diff,axis=1)
                         df['Дата выдачи паспорта гражданина РФ'] = df['Дата выдачи паспорта гражданина РФ'].apply(create_doc_convert_date_egisso_cheking)
 
                         # СНИЛС
