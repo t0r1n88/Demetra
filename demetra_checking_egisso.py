@@ -571,10 +571,66 @@ def preparing_lsmz(data_lsmz:str):
         dct_lmsz[lmsz]['Список идентификаторов категорий получателей'] = lmsz_df['Идентификатор категории получателей'].tolist()
         dct_lmsz[lmsz]['Список кодов категорий получателей'] = lmsz_df['Код категории получателей'].tolist()
         dct_lmsz[lmsz]['Список наименований категорий получателей'] = lmsz_df['Наименование категории получателей'].tolist()
+        dct_lmsz[lmsz]['Словарь категорий'] = dict(zip(lmsz_df['Идентификатор категории получателей'],lmsz_df['Наименование категории получателей']))
 
-    print(dct_lmsz['91b5edd3-cdb3-4fd7-9d00-b8082c1f2c0d'])
+
+    dct_lst_lmsz = dict() # словарь для списков
+
+    dct_lst_lmsz['Список ЛМСЗ'] = list(df['Идентификатор ЛМСЗ'].unique())
+    dct_lst_lmsz['Список кодов ЛМСЗ'] = list(df['код ЛМСЗ'].unique())
+    dct_lst_lmsz['Список наименований ЛМСЗ'] = list(df['Наименование ЛМСЗ'].unique())
+    dct_lst_lmsz['Список КБК'] = list(df['КБК'].unique())
+    dct_lst_lmsz['Список идентификаторов категорий получателей'] = list(df['Идентификатор категории получателей'].unique())
+    dct_lst_lmsz['Список кодов категорий получателей'] = list(df['Код категории получателей'].unique())
+    dct_lst_lmsz['Список наименований категорий получателей'] = list(df['Наименование категории получателей'].unique())
+    dct_lst_lmsz['Список дат'] = list(df['Дата'].unique())
+
+    dct_lmsz.update(dct_lst_lmsz)
+
+    return dct_lmsz
 
 
+def check_exists_lmsz(value,dct_lsmz:dict):
+    """
+    Функция для проверки существования идентификатора ЛМСЗ
+    :param value: проверяемое значение
+    :param dct_lsmz: словарь с данными ЛМСЗ
+    """
+    if 'Ошибка' in value:
+        return value
+    if value in dct_lsmz['Список ЛМСЗ']:
+        return value
+    else:
+        return f'Ошибка: указанный идентификатор ЛМСЗ(LMSZID) -{value} отсутствует в файле с реестром ЛМСЗ '
+
+def check_exists_cat_lmsz(value,dct_lsmz:dict):
+    """
+    Функция для проверки существования идентификатора категорий получателей
+    :param value: проверяемое значение
+    :param dct_lsmz: словарь с данными ЛМСЗ
+    """
+    if 'Ошибка' in value:
+        return value
+    if value in dct_lsmz['Список идентификаторов категорий получателей']:
+        return value
+    else:
+        return f'Ошибка: указанный идентификатор категории получателей(categoryID) -{value} отсутствует в файле с реестром ЛМСЗ'
+
+
+
+def check_correct_cat_lmsz(row:pd.Series,dct_lsmz:dict):
+    """
+    Функция для проверки соответствия идентификатора категории идентификатору ЛМСЗ
+    :param value: проверяемое значение
+    :param dct_lsmz: словарь с данными ЛМСЗ
+    """
+    lmsz, cat_lmsz = row
+    if 'Ошибка' in lmsz or 'Ошибка' in cat_lmsz:
+        return f'Ошибка: не удается проверить соответствие идентификатора категории пользователя идентификатору ЛМСЗ. Из за наличия ошибки в LMSZID или categoryID'
+    if cat_lmsz in dct_lsmz[lmsz]['Список идентификаторов категорий получателей']:
+        return cat_lmsz
+    else:
+        return f'Ошибка: указанный идентификатор категории получателей(categoryID) -{cat_lmsz} не относится к идентификатору ЛМСЗ(LMSZID) -{lmsz}.'
 
 
 
@@ -608,7 +664,6 @@ def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
 
         # Функция для проверки и создания словаря по мерам ЛСМЗ
         dct_lsmz = preparing_lsmz(data_lsmz)
-        raise ZeroDivisionError
 
         lst_files = []  # список для файлов
         for dirpath, dirnames, filenames in os.walk(data_folder):
@@ -753,10 +808,15 @@ def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
                         # LMSZID
                         df['LMSZID'] = df['LMSZID'].apply(drop_space_symbols) # убираем все пробельные символы
                         df['LMSZID'] = df['LMSZID'].apply(check_symbols_uuid) # проверяем на допустимые символы и длину
+                        df['LMSZID'] = df['LMSZID'].apply(lambda x:check_exists_lmsz(x,dct_lsmz))  # проверяем на вхождение в актуальные ЛМСЗ
+
 
                         #categoryID
                         df['categoryID'] = df['categoryID'].apply(drop_space_symbols) # убираем все пробельные символы
                         df['categoryID'] = df['categoryID'].apply(check_symbols_uuid) # проверяем на допустимые символы и длину
+                        df['categoryID'] = df['categoryID'].apply(lambda x:check_exists_cat_lmsz(x,dct_lsmz)) # проверяем на вхождение в актуальный список ЛМСЗ
+
+                        df['categoryID'] = df[['LMSZID','categoryID']].apply(lambda x:check_correct_cat_lmsz(x,dct_lsmz),axis=1) # проверяем на соответствие ЛМСЗ
 
                         #ONMSZCode
                         df['ONMSZCode'] = df['ONMSZCode'].apply(drop_space_symbols) # убираем все пробельные символы
