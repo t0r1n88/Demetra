@@ -1,6 +1,8 @@
 """
 Скрипт для обработки и нахождения ошибок в файлах ЕГИССО
 """
+import struct
+
 import numpy as np
 
 from demetra_support_functions import write_df_to_excel_cheking_egisso,del_sheet,convert_to_date_egisso_cheking,create_doc_convert_date_egisso_cheking,convert_to_date_start_finish_egisso_cheking,write_df_error_egisso_to_excel # вспомогательные функции
@@ -41,6 +43,12 @@ class BadOrderCols(Exception):
     """
     pass
 
+
+class NotRecColsLMSZ(Exception):
+    """
+    Обработка случаев когда нет обязательных колонок в файле с мерами ЛСМЗ
+    """
+    pass
 
 
 def strip_if_string(value):
@@ -526,6 +534,45 @@ def processing_kinship_type_code(row:pd.Series):
 
 
 
+def preparing_lsmz(data_lsmz:str):
+    """
+    Функция для создания словаря мер ЛСМЗ формата
+    {Идентификатор ЛМСЗ:{Код:Значение, Наименование ЛМСЗ:Значение, КБК:Значение,Список категорий:[]
+    Категория:{Идентификатор категории:{Код категории получателей:Значение, Наименование категории получателей:Значение, Дата категории:Значение}},
+    Список ЛМСЗ:[],
+    Список кодов ЛМСЗ:[],
+    Список КБК:[],
+    Список категорий получателей:[],
+    Список кодов категорий: [],
+    Список наименований:[],
+    Список Дат:[]}
+    :param data_lsmz:файл с данными
+    :return: словарь
+    """
+    df = pd.read_excel(data_lsmz,dtype=str)
+    lst_check_cols = ['Идентификатор ЛМСЗ','код ЛМСЗ','Наименование ЛМСЗ','КБК',
+                      'Идентификатор категории получателей','Код категории получателей','Наименование категории получателей','Дата']
+
+    df.columns = list(map(str.strip,df.columns))
+    # Проверяем на обязательные колонки
+    always_cols = set(lst_check_cols).difference(set(df.columns))
+    if len(always_cols) != 0:
+        raise NotRecColsLMSZ
+
+    lst_lmzs = df['Идентификатор ЛМСЗ'].unique()
+    dct_lmsz = {lmsz:{} for lmsz in lst_lmzs} # начинаем с мер, а потом добавим списки
+    # Заполняем меры
+    for lmsz in dct_lmsz.keys():
+        lmsz_df = df[df['Идентификатор ЛМСЗ'] == lmsz]
+        dct_lmsz[lmsz]['Код ЛМСЗ'] = lmsz_df['код ЛМСЗ'].tolist()[0]
+        dct_lmsz[lmsz]['Наименование ЛМСЗ'] = lmsz_df['Наименование ЛМСЗ'].tolist()[0]
+        dct_lmsz[lmsz]['КБК'] = lmsz_df['КБК'].tolist()[0]
+        dct_lmsz[lmsz]['Дата ЛМСЗ'] = lmsz_df['Дата'].tolist()[0]
+        dct_lmsz[lmsz]['Список идентификаторов категорий получателей'] = lmsz_df['Идентификатор категории получателей'].tolist()
+        dct_lmsz[lmsz]['Список кодов категорий получателей'] = lmsz_df['Код категории получателей'].tolist()
+        dct_lmsz[lmsz]['Список наименований категорий получателей'] = lmsz_df['Наименование категории получателей'].tolist()
+
+    print(dct_lmsz['91b5edd3-cdb3-4fd7-9d00-b8082c1f2c0d'])
 
 
 
@@ -537,17 +584,31 @@ def processing_kinship_type_code(row:pd.Series):
 
 
 
-def fix_files_egisso(data_folder:str, end_folder:str):
+
+
+
+
+
+
+
+
+
+def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
     """
     Функция для проверки и исправления файлов ЕГИССО
     :param data_folder: папка с файлами которые нужно проверить
     :param end_folder: конечная папка
+    :param data_lsmz: файл с перечислением мер соц поддержки
     """
     try:
         count = 0
         count_errors = 0
         error_df = pd.DataFrame(
             columns=['Название файла', 'Описание ошибки'])  # датафрейм для ошибок
+
+        # Функция для проверки и создания словаря по мерам ЛСМЗ
+        dct_lsmz = preparing_lsmz(data_lsmz)
+        raise ZeroDivisionError
 
         lst_files = []  # список для файлов
         for dirpath, dirnames, filenames in os.walk(data_folder):
@@ -907,9 +968,10 @@ def fix_files_egisso(data_folder:str, end_folder:str):
 if __name__ == '__main__':
     main_data_folder = 'c:/Users/1/PycharmProjects/Demetra/data/ЕГИССО'
     main_end_folder = 'c:/Users/1/PycharmProjects/Demetra/data/СБОР результат'
+    main_lsmz = 'c:/Users/1/PycharmProjects/Demetra/data/Реестр ЛМСЗ Бюджетные ПОО.xlsx'
 
     start_time = time.time()
-    fix_files_egisso(main_data_folder, main_end_folder)
+    fix_files_egisso(main_data_folder, main_end_folder,main_lsmz)
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(f"Время выполнения: {elapsed_time:.6f} сек.")
