@@ -633,16 +633,27 @@ def check_correct_cat_lmsz(row:pd.Series,dct_lsmz:dict):
         return f'Ошибка: указанный идентификатор категории получателей(categoryID) -{cat_lmsz} не относится к идентификатору ЛМСЗ(LMSZID) -{lmsz}.'
 
 
+def create_name_lmsz(value,dct_lsmz:dict):
+    """
+    Функция для записи наименования идентификатора ЛМСЗ
+    :param value: проверяемое значение
+    :param dct_lsmz: словарь с данными ЛМСЗ
+    """
+    if 'Ошибка' in value:
+        return f'Ошибка: обнаружена ошибка в колонке LMSZID'
+    return dct_lsmz[value]['Наименование ЛМСЗ']
 
+def create_name_cat_lmsz(row:pd.Series,dct_lsmz:dict):
+    """
+    Функция для записи наименования идентификатора категории ЛМСЗ
+    :param row: строка из идентификатора ЛМСЗ и категории
+    :param dct_lsmz: словарь с данными ЛМСЗ
+    """
+    lmsz, cat_lmsz = row
+    if 'Ошибка' in lmsz or 'Ошибка' in cat_lmsz:
+        return f'Ошибка: не удается проверить соответствие идентификатора категории пользователя идентификатору ЛМСЗ. Из за наличия ошибки в LMSZID или categoryID'
 
-
-
-
-
-
-
-
-
+    return dct_lsmz[lmsz]['Словарь категорий'][cat_lmsz]
 
 
 
@@ -1003,9 +1014,27 @@ def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
             main_error_wb = del_sheet(main_error_wb,['Sheet', 'Sheet1', 'Для подсчета'])
             main_error_wb.save(f'{end_folder}/Критические ошибки {current_time}.xlsx')
 
+            # добавляем вспомогательные колонки
+            main_df.insert(1,'ЛМСЗ',main_df['LMSZID'].apply(lambda x:create_name_lmsz(x,dct_lsmz)))
+            main_df.insert(2,'Категория получателей',main_df[['LMSZID','categoryID']].apply(lambda x:create_name_cat_lmsz(x,dct_lsmz),axis=1))
+
             main_file_wb = write_df_error_egisso_to_excel({'Общий свод': main_df}, write_index=False)
             main_file_wb = del_sheet(main_file_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
             main_file_wb.save(f'{end_folder}/Общий свод {current_time}.xlsx')
+
+            # Считаем количество и дубликаты по основным колонкам.
+            count_df = pd.DataFrame() # создаем датафрейм чтобы не обрабатывать лишние колонки
+            count_df['ФИО получателя'] = main_df['FamilyName_recip'] + ' ' + main_df['Name_recip'] + ' ' + main_df['Patronymic_recip']
+            count_df['ФИО причины'] = main_df['FamilyName_reason'] + ' ' + main_df['Name_reason'] + ' ' + main_df['Patronymic_reason']
+            count_df['СНИЛС получателя'] = main_df['SNILS_recip']
+            count_df['СНИЛС причины'] = main_df['SNILS_reason']
+            count_df['Документ получателя'] = main_df['doc_Series_recip'] + ' ' + main_df['doc_Number_recip']
+            count_df['Документ причины'] = main_df['doc_Series_reason'] + ' ' + main_df['doc_Number_reason']
+
+
+
+
+
     except NotFile:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'В исходной папке отсутствуют файлы Excel (с расширением xlsx)')
