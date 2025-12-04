@@ -135,7 +135,7 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
 
                     for idx,name_sheet in enumerate(lst_wb_sheets,1):
                         print(name_sheet)
-                        df = pd.read_excel(f'{dirpath}/{file}',sheet_name=name_sheet, dtype=str)  # открываем файл
+                        df = pd.read_excel(f'{dirpath}/{file}',sheet_name=name_sheet,dtype=str)  # открываем файл
 
                         # Проверяем на обязательные колонки
                         always_cols = set(lst_check_cols).difference(set(df.columns))
@@ -148,6 +148,10 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                             error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
                             continue  # не обрабатываем лист, где найдены ошибки
 
+                        # убедившись что все колонки есть заново считываем файл с контролируемыми типами
+                        df = pd.read_excel(f'{dirpath}/{file}',sheet_name=name_sheet,
+                                           dtype={'СНИЛС':'str','СНИЛС лица основания':'str',
+                                                  'Сумма':'float64'})  # открываем файл
                         df = df[lst_check_cols]  # отбираем только обязательные колонки
 
                         if len(df) == 0:
@@ -189,7 +193,7 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                         for snils in lst_snils:
                             temp_df = df[df['СНИЛС'] == snils]
                             dupl_df = temp_df[temp_df[['Код ЛМСЗ','Период назначения С','Период назначения ПО','Сумма']].duplicated(keep=False)]
-                            dupl_df = dupl_df.sort_values(by='СНИЛС')
+                            dupl_df = dupl_df.sort_values(by='Период назначения С')
                             dupl_df.insert(0, '№ строки дубликата', list(map(lambda x: x + 2, list(dupl_df.index))))
                             if len(dupl_df) != 0:
                                 dupl_df.loc['Граница'] = ''
@@ -200,17 +204,15 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                                 hand_check_df = temp_df[
                                     temp_df[['Код ЛМСЗ', 'Период назначения С', 'Период назначения ПО']].duplicated(
                                         keep=False)]
-                                hand_check_df = hand_check_df.sort_values(by='СНИЛС')
+                                hand_check_df = hand_check_df.sort_values(by='Период назначения С')
                                 hand_check_df.insert(0, '№ строки ручная проверка',
                                                      list(map(lambda x: x + 2, list(hand_check_df.index))))
                                 if len(hand_check_df) != 0:
                                     hand_check_df.loc['Граница'] = ''
                                     main_hand_check_df = pd.concat([main_hand_check_df, hand_check_df])
 
-                        print(main_dupl_df['Сумма'])
 
-                        main_dupl_df['Сумма'] = main_dupl_df['Сумма'].replace('.',',')
-                        print(main_dupl_df['Сумма'].sum())
+
 
                         for r in dataframe_to_rows(main_dupl_df, index=False, header=True):
                             if len(r) != 1:
@@ -223,7 +225,6 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                         out_wb[name_sheet].column_dimensions['Q'].width = 37
                         out_wb[name_sheet].column_dimensions['R'].width = 15
 
-                        main_hand_check_df['Сумма'] = main_hand_check_df['Сумма'].replace('.',',')
 
                         for r in dataframe_to_rows(main_hand_check_df, index=False, header=True):
                             if len(r) != 1:
