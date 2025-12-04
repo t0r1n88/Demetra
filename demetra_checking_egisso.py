@@ -11,6 +11,7 @@ import pandas as pd
 from tkinter import messagebox
 import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
+import xlsxwriter
 import time
 from datetime import datetime
 import re
@@ -626,7 +627,7 @@ def check_correct_cat_lmsz(row:pd.Series,dct_lsmz:dict):
     """
     lmsz, cat_lmsz = row
     if 'Ошибка' in lmsz or 'Ошибка' in cat_lmsz:
-        return f'Ошибка: не удается проверить соответствие идентификатора категории пользователя идентификатору ЛМСЗ. Из за наличия ошибки в LMSZID или categoryID'
+        return f'Ошибка: не удается проверить соответствие идентификатора категории пользователя идентификатору ЛМСЗ. Из за наличия ошибки в LMSZID или указан идентификатор категории которого нет в реестре мер'
     if cat_lmsz in dct_lsmz[lmsz]['Список идентификаторов категорий получателей']:
         return cat_lmsz
     else:
@@ -656,7 +657,43 @@ def create_name_cat_lmsz(row:pd.Series,dct_lsmz:dict):
     return dct_lsmz[lmsz]['Словарь категорий'][cat_lmsz]
 
 
+def check_mixing(value:str):
+    """
+    Функция для проверки слова на смешение алфавитов
+    """
+    # ищем буквы русского и английского алфавита
+    russian_letters = re.findall(r'[а-яА-ЯёЁ]',value)
+    english_letters = re.findall(r'[a-zA-Z]',value)
+    # если найдены и те и те
+    if russian_letters and english_letters:
+        # если русских букв больше то указываем что в русском слове встречаются английские буквы
+        if len(russian_letters) > len(english_letters):
+            return (f'Ошибка: в слове {value} найдены английские буквы: {",".join(english_letters)}')
+        elif len(russian_letters) < len(english_letters):
+            # если английских букв больше то указываем что в английском слове встречаются русские буквы
+            return (f'Ошибка: в слове {value} найдены русские буквы: {",".join(russian_letters)}')
+        else:
+            # если букв поровну то просто выводим их список
+            return (f'Ошибка: в слове {value} найдены русские буквы: {",".join(russian_letters)} и английские буквы: {";".join(english_letters)}')
+    else:
+        # если слово состоит из букв одного алфавита
+        return False
 
+
+def find_mixing_alphabets(cell):
+    """
+    Функция для нахождения случаев смешения когда английские буквы используются в русском слове и наоборот
+    """
+    if isinstance(cell,str):
+        lst_word = re.split(r'\W',cell) # делим по не буквенным символам
+        lst_result = list(map(check_mixing,lst_word)) # ищем смешения
+        lst_result = [value for value in lst_result if value] # отбираем найденые смешения если они есть
+        if lst_result:
+            return f'Ошибка: в тексте {cell} найдено смешение русского и английского: {"; ".join(lst_result)}'
+        else:
+            return cell
+    else:
+        return cell
 
 
 
@@ -956,6 +993,9 @@ def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
                         # equivalentAmount
                         df['equivalentAmount'] = df[['FormCode','equivalentAmount']].apply(lambda x:processing_equivalent_amount(x),axis=1)
 
+                        # Ищем смешение английских и русских букв
+                        df = df.applymap(find_mixing_alphabets)  # ищем смешения
+
                         # Сохраняем датафрейм с ошибками разделенными по листам в соответсвии с колонками
                         dct_sheet_error_df = dict()  # создаем словарь для хранения названия и датафрейма
 
@@ -1030,6 +1070,167 @@ def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
             count_df['СНИЛС причины'] = main_df['SNILS_reason']
             count_df['Документ получателя'] = main_df['doc_Series_recip'] + ' ' + main_df['doc_Number_recip']
             count_df['Документ причины'] = main_df['doc_Series_reason'] + ' ' + main_df['doc_Number_reason']
+            count_df['Тип документа по'] = main_df['doctype_recip']
+            count_df['Тип документа пр'] = main_df['doctype_reason']
+
+
+            count_df['Название файла'] = main_df['Название файла']
+            count_df['ЛМСЗ'] = main_df['ЛМСЗ']
+            count_df['Категория получателей'] = main_df['Категория получателей']
+            count_df['Пол получателя'] = main_df['Gender_recip']
+            count_df['Пол причины'] = main_df['Gender_reason']
+
+            count_df['RecType'] = main_df['RecType']
+            count_df['LMSZID'] = main_df['LMSZID']
+            count_df['categoryID'] = main_df['categoryID']
+            count_df['ONMSZCode'] = main_df['ONMSZCode']
+            count_df['LMSZProviderCode'] = main_df['LMSZProviderCode']
+            count_df['providerCode'] = main_df['providerCode']
+            count_df['decision_date'] = main_df['decision_date']
+            count_df['dateStart'] = main_df['dateStart']
+            count_df['dateFinish'] = main_df['dateFinish']
+            count_df['criteria'] = main_df['criteria']
+            count_df['criteriaCode'] = main_df['criteriaCode']
+            count_df['FormCode'] = main_df['FormCode']
+            count_df['amount'] = main_df['amount']
+            count_df['measuryCode'] = main_df['measuryCode']
+            count_df['monetization'] = main_df['monetization']
+            count_df['content'] = main_df['content']
+            count_df['comment'] = main_df['comment']
+            count_df['equivalentAmount'] = main_df['equivalentAmount']
+
+            """
+                            Поиск дубликатов
+                            """
+            main_dupl_df = count_df[['ФИО получателя','ФИО причины','СНИЛС получателя','СНИЛС причины','Документ получателя',
+                             'Документ причины']]
+            main_dupl_df = main_dupl_df.reset_index()
+            main_dupl_df.drop(columns='index',inplace=True)
+            dct_dupl_df = dict()  # создаем словарь для хранения названия и датафрейма
+            lst_name_columns = list(main_dupl_df.columns)  # получаем список колонок
+            used_name_sheet = []  # список для хранения значений которые уже были использованы
+            #
+            wb = xlsxwriter.Workbook(f'{end_folder}/Дубликаты в каждой колонке {current_time}.xlsx',
+                                     {'constant_memory': True, 'nan_inf_to_errors': True})  # создаем файл
+            for idx, value in enumerate(lst_name_columns):
+                temp_df = main_dupl_df[main_dupl_df[value].duplicated(keep=False)]  # получаем дубликаты
+                if temp_df.shape[0] == 0:
+                    continue
+
+                temp_df = temp_df.sort_values(by=value)
+                #     # Добавляем +2 к индексу чтобы отобразить точную строку
+                temp_df.insert(0, '№ строки дубликата ', list(map(lambda x: x + 2, list(temp_df.index))))
+                temp_df.replace(np.nan, None, inplace=True)  # для того чтобы в пустых ячейках ничего не отображалось
+                if value == 'Название файла':
+                    continue
+                dct_dupl_df[value] = temp_df
+
+            for name_sheet, dupl_df in dct_dupl_df.items():
+                data_lst = dupl_df.values.tolist()  # преобразуем в список
+                wb_name_sheet = wb.add_worksheet(name_sheet)  # создаем лист
+                used_name_sheet.append(name_sheet)  # добавляем в список использованных названий
+                # Запись заголовков
+                headers = list(dupl_df.columns)
+                for col, header in enumerate(headers):
+                    wb_name_sheet.write(0, col, header)
+
+                # Запись данных
+                for row, data_row in enumerate(data_lst):
+                    for col, cell_value in enumerate(data_row):
+                        wb_name_sheet.write(row + 1, col, cell_value)
+
+            # закрываем
+            wb.close()
+
+            """
+            Делаем файл для статистики
+            """
+            # Добавляем столбец для облегчения подсчета по категориям
+            # Создаем файл excel
+            wb_stat = openpyxl.Workbook()
+            count_df['Для подсчета'] = 1
+            # Создаем листы
+            for idx, name_column in enumerate(count_df.columns):
+                # Делаем короткое название не более 30 символов
+                if name_column == 'Для подсчета':
+                    continue
+                wb_stat.create_sheet(title=name_column, index=idx)
+
+            for idx, name_column in enumerate(count_df.columns):
+                group_df = count_df.groupby([name_column]).agg({'Для подсчета': 'sum'})
+                group_df.columns = ['Количество']
+
+                # Сортируем по убыванию
+                group_df.sort_values(by=['Количество'], inplace=True, ascending=False)
+                group_df.loc['Итого'] = group_df['Количество'].sum()
+                if name_column == 'Для подсчета':
+                    continue
+
+                for r in dataframe_to_rows(group_df, index=True, header=True):
+                    if len(r) != 1:
+                        wb_stat[name_column].append(r)
+                wb_stat[name_column].column_dimensions['A'].width = 50
+
+            # Удаляем листы
+            del_sheet(wb_stat, ['Sheet', 'Для подсчета'])
+            wb_stat.save(f'{end_folder}/Количество {current_time}.xlsx')
+
+            """
+                            Смешение русских и английских букв
+                            """
+            dct_mix_df = dict()
+            check_word = 'найдено смешение русского и английского:'  # фраза по которой будет производится отбор
+            lst_name_columns = list(main_df.columns)  # получаем список колонок
+            used_name_sheet = []  # список для хранения значений которые уже были использованы
+            #
+            wb_mix = xlsxwriter.Workbook(
+                f'{end_folder}/Смешения русских и английских букв в словах {current_time}.xlsx',
+                {'constant_memory': True, 'nan_inf_to_errors': True})  # создаем файл
+
+            for idx, value in enumerate(lst_name_columns):
+                temp_df = main_df[
+                    main_df[value].astype(str).str.contains(check_word)]  # получаем строки где есть сочетание
+                if temp_df.shape[0] == 0:
+                    continue
+
+                short_value = value[:20]  # получаем обрезанное значение
+                short_value = re.sub(r'[\r\b\n\t\[\]\'+()<> :"?*|\\/]', '_', short_value)
+
+                if short_value in used_name_sheet:
+                    short_value = f'{short_value}_{idx}'  # добавляем окончание
+
+                temp_df = temp_df.sort_values(by=value)
+                #     # Добавляем +2 к индексу чтобы отобразить точную строку
+                temp_df.insert(0, '№ строки смешения ', list(map(lambda x: x + 2, list(temp_df.index))))
+                temp_df.replace(np.nan, None, inplace=True)  # для того чтобы в пустых ячейках ничего не отображалось
+                dct_mix_df[short_value] = temp_df
+
+            for name_sheet, mix_df in dct_mix_df.items():
+                data_lst = mix_df.values.tolist()  # преобразуем в список
+                wb_name_sheet = wb_mix.add_worksheet(name_sheet)  # создаем лист
+                used_name_sheet.append(name_sheet)  # добавляем в список использованных названий
+                # Запись заголовков
+                headers = list(mix_df.columns)
+                for col, header in enumerate(headers):
+                    wb_name_sheet.write(0, col, header)
+
+                # Запись данных
+                for row, data_row in enumerate(data_lst):
+                    for col, cell_value in enumerate(data_row):
+                        wb_name_sheet.write(row + 1, col, cell_value)
+
+            wb_mix.close()
+
+
+
+
+
+
+
+
+
+
+
 
 
 
