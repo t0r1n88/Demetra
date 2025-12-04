@@ -703,7 +703,6 @@ def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
     :param data_lsmz: файл с перечислением мер соц поддержки
     """
     try:
-        count = 0
         count_errors = 0
         error_df = pd.DataFrame(
             columns=['Название файла', 'Описание ошибки'])  # датафрейм для ошибок
@@ -715,7 +714,7 @@ def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
         for dirpath, dirnames, filenames in os.walk(data_folder):
             lst_files.extend(filenames)
         # отбираем файлы
-        lst_xlsx = [file for file in lst_files if not file.startswith('~$') and file.endswith('.xlsx')]
+        lst_xlsx = [file for file in lst_files if not file.startswith('~$') and (file.endswith('.xlsx') or file.endswith('.xlsm'))]
         quantity_files = len(lst_xlsx)  # считаем сколько xlsx файлов в папке
 
         # Обрабатываем в зависимости от количества файлов в папке
@@ -754,7 +753,7 @@ def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
                                         'Patronymic_reason','criteria','criteriaCode','measuryCode','equivalentAmount',
                                         'content','comment'
                                         ]
-
+            # Создаем общий файл
             main_df = pd.DataFrame(columns=lst_check_cols)
             main_df.insert(0,'Название файла','')
 
@@ -795,26 +794,6 @@ def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
                             continue  # не обрабатываем лист, где найдены ошибки
 
                         df = df[lst_check_cols] # отбираем только обязательные колонки
-                        # Проверяем порядок колонок
-                        order_main_columns = lst_check_cols  # порядок колонок и названий как должно быть
-                        order_temp_df_columns = list(df.columns)  # порядок колонок проверяемого файла
-                        error_order_lst = []  # список для несовпадающих пар
-                        # Сравниваем попарно колонки
-                        for main, temp in zip(order_main_columns, order_temp_df_columns):
-                            if main != temp:
-                                error_order_lst.append(f'На месте колонки {main} находится колонка {temp}')
-                        if len(error_order_lst) != 0:
-                            error_order_message = ';'.join(error_order_lst)
-                            temp_error_df = pd.DataFrame(
-                                data=[[f'{name_file}',
-                                       f'{error_order_message}'
-                                       ]],
-                                columns=['Название файла',
-                                         'Описание ошибки'])
-                            error_df = pd.concat([error_df, temp_error_df], axis=0,
-                                                 ignore_index=True)
-                            count_errors += 1
-                            continue
 
                         if len(df) == 0:
                             temp_error_df = pd.DataFrame(
