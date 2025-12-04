@@ -648,6 +648,18 @@ def processing_diffrence():
 """
 Функция для исправления файлов ЕГИССО
 """
+
+def select_file_reestr_fix_files_egisso():
+    """
+    Функция для выбора файла с данными на основе которых будет генерироваться локальные отчеты соцпедагога
+    :return: Путь к файлу с данными
+    """
+    global name_file_reestr_fix_files_egisso
+    # Получаем путь к файлу
+    name_file_reestr_fix_files_egisso = filedialog.askopenfilename(
+        filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+
+
 def select_folder_data_fix_files_egisso():
     """
     Функция для выбора папки с данными
@@ -675,7 +687,7 @@ def processing_fix_files_egisso():
         if path_folder_fix_files_egisso == path_end_folder_fix_files_egisso:
             raise SameFolder
         # подсчитываем
-        fix_files_egisso(path_folder_fix_files_egisso,path_end_folder_fix_files_egisso)
+        fix_files_egisso(path_folder_fix_files_egisso,path_end_folder_fix_files_egisso,name_file_reestr_fix_files_egisso)
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Выберите папку с файлами и папку куда будет генерироваться результат')
@@ -902,7 +914,7 @@ def open_libraries():
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты ver 2.31')
+    window.title('Деметра Отчеты ver 2.32')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -1175,20 +1187,27 @@ if __name__ == '__main__':
     frame_data_fix_data_for_egisso = LabelFrame(tab_create_fix_data_for_egisso, text='Подготовка')
     frame_data_fix_data_for_egisso.pack(padx=10, pady=10)
 
+
+    # Создаем кнопку выбора файла с данными
+    btn_choose_file_fix_data_for_egisso = Button(frame_data_fix_data_for_egisso, text='1) Выберите файл реестра мер ЛМСЗ',
+                                                 font=('Arial Bold', 14),
+                                                 command=select_file_reestr_fix_files_egisso)
+    btn_choose_file_fix_data_for_egisso.pack(padx=10, pady=10)
+
     btn_choose_folder_data_fix_data_for_egisso = Button(frame_data_fix_data_for_egisso,
-                                                        text='1) Выберите папку с файлами',
+                                                        text='2) Выберите папку с файлами',
                                                         font=('Arial Bold', 14),
                                                         command=select_folder_data_fix_files_egisso)
     btn_choose_folder_data_fix_data_for_egisso.pack(padx=10, pady=10)
 
     btn_choose_end_folder_data_fix_data_for_egisso = Button(frame_data_fix_data_for_egisso,
-                                                            text='2) Выберите конечную папку',
+                                                            text='3) Выберите конечную папку',
                                                             font=('Arial Bold', 14),
                                                             command=select_end_folder_data_fix_files_egisso)
     btn_choose_end_folder_data_fix_data_for_egisso.pack(padx=10, pady=10)
 
     btn_processing_fix_data_for_egisso = Button(frame_data_fix_data_for_egisso,
-                                                text='3) Обработать данные',
+                                                text='4) Обработать данные',
                                                 font=('Arial Bold', 14),
                                                 command=processing_fix_files_egisso)
     btn_processing_fix_data_for_egisso.pack(padx=10, pady=10)
