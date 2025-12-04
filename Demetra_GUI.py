@@ -7,7 +7,8 @@ from create_local_report import create_local_report  # создание отче
 from create_social_passport import create_social_report  # создание отчета по социальному состоянию
 from demetra_create_union_table import merge_table  # соединение таблиц
 from demetra_checking_egisso import fix_files_egisso # Исправление файлов ЕГИССО
-from demetra_check_data_gir_vu import fix_files_girvu
+from demetra_final_checking_egisso import final_checking_files_egisso # Выверка файлов ЕГИССО
+from demetra_check_data_gir_vu import fix_files_girvu # Исправление файлов для ГИР ВУ
 from expired_doc import check_expired_docs # поиск истекающих документов
 from demetra_structuring_data import processing_structuring_data # Структурирование данных
 from demetra_preparation_list import prepare_list  # подготовка персональных данных
@@ -695,6 +696,46 @@ def processing_fix_files_egisso():
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              'Выберите разные папки в качестве исходной и конечной')
 
+"""
+Функции для исправления файлов ГИР ВУ
+"""
+def select_folder_data_final_check_egisso():
+    """
+    Функция для выбора папки с данными
+    :return:
+    """
+    global path_folder_final_check_egisso
+    path_folder_final_check_egisso = filedialog.askdirectory()
+
+
+def select_end_folder_data_final_check_egisso():
+    """
+    Функция для выбора папки с данными
+    :return:
+    """
+    global path_end_folder_final_check_egisso
+    path_end_folder_final_check_egisso = filedialog.askdirectory()
+
+
+def processing_final_check_egisso():
+    """
+    Функция для подсчета
+    :return:
+    """
+    try:
+        if path_folder_final_check_egisso == path_end_folder_final_check_egisso:
+            raise SameFolder
+        # подсчитываем
+        final_checking_files_egisso(path_folder_final_check_egisso,path_end_folder_final_check_egisso)
+    except NameError:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             f'Выберите папку с файлами и папку куда будет генерироваться результат')
+    except SameFolder:
+        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
+                             'Выберите разные папки в качестве исходной и конечной')
+
+
+
 
 """
 Функции для исправления файлов ГИР ВУ
@@ -914,7 +955,7 @@ def open_libraries():
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты ver 2.32')
+    window.title('Деметра Отчеты ver 2.4')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -1211,6 +1252,58 @@ if __name__ == '__main__':
                                                 font=('Arial Bold', 14),
                                                 command=processing_fix_files_egisso)
     btn_processing_fix_data_for_egisso.pack(padx=10, pady=10)
+
+    """
+    Выверка данных ЕГИССО
+    """
+    tab_create_final_check_egisso = ttk.Frame(tab_control)
+    tab_control.add(tab_create_final_check_egisso, text='Выверка\nЕГИССО')
+
+    create_final_check_egisso_frame_description = LabelFrame(tab_create_final_check_egisso)
+    create_final_check_egisso_frame_description.pack()
+
+    lbl_hello_create_final_check_egisso = Label(create_final_check_egisso_frame_description,
+                                                text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
+                                                     'Поиск дублей и записей для ручной проверки\n'
+                                                     'Дубли ищутся по Код ЛМСЗ, период "с" и "по" и одинаковые суммы \n'
+                                                     'Для ручной проверки ищутся записи с одинаковыми\n'
+                                                     'Код ЛМСЗ, период "с" и "по"'
+                                                , width=60)
+    lbl_hello_create_final_check_egisso.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+
+    # Картинка
+    path_to_img_create_final_check_egisso = resource_path('logo.png')
+    img_create_final_check_egisso = PhotoImage(file=path_to_img_create_final_check_egisso)
+    Label(create_final_check_egisso_frame_description,
+          image=img_create_final_check_egisso, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_final_check_egisso = LabelFrame(tab_create_final_check_egisso, text='Подготовка')
+    frame_data_final_check_egisso.pack(padx=10, pady=10)
+
+    btn_choose_folder_data_final_check_egisso = Button(frame_data_final_check_egisso,
+                                                       text='1) Выберите папку с файлами',
+                                                       font=('Arial Bold', 14),
+                                                       command=select_folder_data_final_check_egisso)
+    btn_choose_folder_data_final_check_egisso.pack(padx=10, pady=10)
+
+    btn_choose_end_folder_data_final_check_egisso = Button(frame_data_final_check_egisso,
+                                                           text='2) Выберите конечную папку',
+                                                           font=('Arial Bold', 14),
+                                                           command=select_end_folder_data_final_check_egisso)
+    btn_choose_end_folder_data_final_check_egisso.pack(padx=10, pady=10)
+
+    btn_processing_final_check_egisso = Button(frame_data_final_check_egisso,
+                                               text='3) Обработать данные',
+                                               font=('Arial Bold', 14),
+                                               command=processing_final_check_egisso)
+    btn_processing_final_check_egisso.pack(padx=10, pady=10)
+
+
+
+
+
 
     """
     Исправление данных для ГИР ВУ
@@ -1931,7 +2024,7 @@ if __name__ == '__main__':
 
     lbl_about = Label(about_frame_description,
                       text="""Деметра - Программа для обработки отчетности ПОО
-                           Версия 2.31
+                           Версия 2.4
                            Язык программирования - Python 3\n
                            Используемая лицензия BSD-2-Clause\n
                            Copyright (c) <2024> <Будаев Олег Тимурович>

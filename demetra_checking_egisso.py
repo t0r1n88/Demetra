@@ -1218,10 +1218,7 @@ def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
 
     except NotFile:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
-                             f'В исходной папке отсутствуют файлы Excel (с расширением xlsx)')
-    except BadOrderCols:
-        messagebox.showerror('Деметра Отчеты социальный паспорт студента',
-                             f'Неправильный порядок колонок {error_order_message}')
+                             f'В исходной папке отсутствуют файлы Excel (с расширением xlsx, xlsm)')
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
                              f'Выберите папку с файлами и папку куда будет генерироваться результат')
