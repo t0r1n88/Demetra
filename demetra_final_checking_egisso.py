@@ -49,7 +49,21 @@ class NotRecColsLMSZ(Exception):
     pass
 
 
+def processing_snils(value):
+    """
+    Функция для обработки СНИЛС
+    :param value:
+    """
+    if 'Ошибка' in value:
+        return value
 
+    result = re.findall(r'\d', value)
+    if len(result) == 11:
+        out_str = ''.join(result)
+        return out_str
+
+    else:
+        return f'Ошибка: В СНИЛС должно быть 11 цифр а в ячейке {len(result)} цифр(ы). В ячейке указано - {value}'
 
 
 
@@ -143,7 +157,7 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                             if len(always_cols) != 0:
                                 temp_error_df = pd.DataFrame(
                                     data=[[f'{name_file}', f'{";".join(always_cols)}',
-                                           'В файле на листе с данными не найдены указанные обязательные колонки. ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
+                                           f'В файле на листе {name_sheet} не найдены указанные обязательные колонки. ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
                                     columns=['Название файла', 'Значение ошибки',
                                              'Описание ошибки'])
                                 error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
@@ -185,6 +199,9 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
 
                             # Находим пропущенные значения в обязательных к заполнению колонках
                             df[lst_required_filling] = df[lst_required_filling].fillna('Ошибка: Ячейка не заполнена')
+                            # Проверяем СНИЛС
+                            df['СНИЛС'] = df['СНИЛС'].apply(processing_snils)
+
                             # Начинаем обработку
                             lst_snils = list(df['СНИЛС'].unique()) # уникальные снилсы
 
