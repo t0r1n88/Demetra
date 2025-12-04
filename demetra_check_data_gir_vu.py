@@ -380,9 +380,12 @@ def fix_files_girvu(data_folder:str, end_folder:str):
 
             for dirpath, dirnames, filenames in os.walk(data_folder):
                 for file in filenames:
-                    if not file.startswith('~$') and file.endswith('.xlsx'):
+                    if not file.startswith('~$') and (file.endswith('.xlsx') or file.endswith('.xlsm')):
                         try:
-                            name_file = file.split('.xlsx')[0].strip()
+                            if file.endswith('.xlsx'):
+                                name_file = file.split('.xlsx')[0].strip()
+                            else:
+                                name_file = file.split('.xlsm')[0].strip()
                             print(name_file)  # обрабатываемый файл
                             df = pd.read_excel(f'{dirpath}/{file}', dtype=str)  # открываем файл
                         except:

@@ -1,8 +1,6 @@
 """
 Скрипт для обработки и нахождения ошибок в файлах ЕГИССО
 """
-import struct
-
 import numpy as np
 
 from demetra_support_functions import write_df_to_excel_cheking_egisso,del_sheet,convert_to_date_egisso_cheking,create_doc_convert_date_egisso_cheking,convert_to_date_start_finish_egisso_cheking,write_df_error_egisso_to_excel # вспомогательные функции
@@ -765,9 +763,12 @@ def fix_files_egisso(data_folder:str, end_folder:str,data_lsmz:str):
 
             for dirpath, dirnames, filenames in os.walk(data_folder):
                 for file in filenames:
-                    if not file.startswith('~$') and file.endswith('.xlsx'):
+                    if not file.startswith('~$') and (file.endswith('.xlsx') or file.endswith('.xlsm')):
                         try:
-                            name_file = file.split('.xlsx')[0].strip()
+                            if file.endswith('.xlsx'):
+                                name_file = file.split('.xlsx')[0].strip()
+                            else:
+                                name_file = file.split('.xlsm')[0].strip()
                             print(name_file)  # обрабатываемый файл
                             df = pd.read_excel(f'{dirpath}/{file}',dtype=str) # открываем файл
                         except:
