@@ -68,8 +68,35 @@ def processing_snils(value):
 
 
 
+def comparison_snils(row:pd.Series):
+    """
+    Функция для сравнения двух снилс
+    :param row: СНИЛС и СНИЛС лица основания
+    :return: Разные СНИЛС
+    """
+    recip_snils, reason_snils = row
+    if pd.isna(reason_snils):
+        return 'Не заполнен СНИЛС лица основания'
+    # Делаем строковыми
+    recip_snils = str(recip_snils)
+    reason_snils = str(reason_snils)
+    if reason_snils == '{NULL}':
+        return 'Не заполнен СНИЛС лица основания'
+    # Удаляем фигурные скобки
+    reason_snils = reason_snils.replace('{','')
+    reason_snils = reason_snils.replace('}','')
+
+    recip_snils = recip_snils.replace('{','')
+    recip_snils = recip_snils.replace('}','')
 
 
+
+
+
+    if recip_snils != reason_snils:
+        return 'Отличаются СНИЛС'
+    else:
+        return 'СНИЛС одинаковые'
 
 
 def final_checking_files_egisso(data_folder:str, end_folder:str):
@@ -147,6 +174,7 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                         out_wb = openpyxl.Workbook()
                         hand_check_wb = openpyxl.Workbook() # Файл для значений которые нужно проверить
 
+                        wb_snils = openpyxl.Workbook() # файл для СНИЛС
 
                         for idx,name_sheet in enumerate(lst_wb_sheets,1):
                             print(name_sheet)
@@ -204,6 +232,24 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
 
                             # Начинаем обработку
                             lst_snils = list(df['СНИЛС'].unique()) # уникальные снилсы
+                            # Сохраняем датафрейм с ошибками разделенными по листам в соответсвии с колонками
+                            dct_sheet_error_df = dict()  # создаем словарь для хранения названия и датафрейма
+
+                            lst_name_columns = [name_cols for name_cols in df.columns if
+                                                'Unnamed' not in name_cols]  # получаем список колонок
+
+                            for idx, value in enumerate(lst_name_columns):
+                                # получаем ошибки
+                                temp_df = df[df[value].astype(str).str.contains('Ошибка')]  # фильтруем
+                                if temp_df.shape[0] == 0:
+                                    continue
+
+                                temp_df = temp_df[value].to_frame()  # оставляем только одну колонку
+
+                                temp_df.insert(0, '№ строки с ошибкой в исходном файле',
+                                               list(map(lambda x: x + 2, list(temp_df.index))))
+                                dct_sheet_error_df[value] = temp_df
+
 
                             """
                             Дубликаты
@@ -231,6 +277,14 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
 
 
 
+                            df['Разные СНИЛС'] = df[['СНИЛС','СНИЛС лица основания']].apply(comparison_snils,axis=1)
+                            df.insert(0, '№ строки в исходном файле',
+                                                         list(map(lambda x: x + 2, list(df.index))))
+
+                            wb_snils.create_sheet(name_sheet,idx) # создаем лист
+                            for r in dataframe_to_rows(df, index=False, header=True):
+                                if len(r) != 1:
+                                    wb_snils[name_sheet].append(r)
 
                             for r in dataframe_to_rows(main_dupl_df, index=False, header=True):
                                 if len(r) != 1:
@@ -256,16 +310,32 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                             hand_check_wb[name_sheet].column_dimensions['R'].width = 15
 
 
+
+
+
                         # Удаляем листы
                         del_sheet(out_wb, ['Sheet'])
                         del_sheet(hand_check_wb,['Sheet'])
 
-                        out_wb.save(f'{end_folder}/Дубли {name_file} {current_time}.xlsx')
-                        hand_check_wb.save(f'{end_folder}/Ручная проверка {name_file} {current_time}.xlsx')
+                        # создаем пути для проверки длины файла
+                        dupl_path_file = f'{end_folder}/Дубли {name_file} {current_time}.xlsx'
+                        hand_check_path_file = f'{end_folder}/Ручная проверка {name_file} {current_time}.xlsx'
 
-        main_error_wb = write_df_to_excel_cheking_egisso({'Критические ошибки': error_df}, write_index=False)
+                        out_wb.save(dupl_path_file)
+                        hand_check_wb.save(hand_check_path_file)
+
+                        wb_snils = del_sheet(wb_snils, ['Sheet', 'Sheet1', 'Для подсчета'])
+                        wb_snils.save(f'{end_folder}/СНИЛС {name_file} {current_time}.xlsx')
+
+
+        err_dct = {'Критические ошибки': error_df}
+        err_dct.update(dct_sheet_error_df)
+
+        main_error_wb = write_df_to_excel_cheking_egisso(err_dct, write_index=False)
         main_error_wb = del_sheet(main_error_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         main_error_wb.save(f'{end_folder}/Критические ошибки {current_time}.xlsx')
+
+
 
 
     except NotFile:
