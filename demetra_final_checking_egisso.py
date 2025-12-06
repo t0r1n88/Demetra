@@ -61,9 +61,28 @@ def processing_snils(value):
     if len(result) == 11:
         out_str = ''.join(result)
         return out_str
+    elif len(result) == 10:
+        out_str = ''.join(result)
+        return f'0{out_str}'
 
     else:
         return f'Ошибка: В СНИЛС должно быть 11 цифр а в ячейке {len(result)} цифр(ы). В ячейке указано - {value}'
+
+
+def drop_space_symbols(value):
+    """
+    Функция для замены пробельных символов в строке
+    :param value:
+    """
+    value = str(value)
+    if 'Ошибка' in value:
+        return value
+
+    result = re.sub(r'\s','',value)
+    if len(result) == 0:
+        return 'Ошибка: ячейка заполнена только пробельными символами'
+    else:
+        return result
 
 
 
@@ -110,6 +129,7 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
         error_df = pd.DataFrame(
             columns=['Название файла', 'Описание ошибки'])  # датафрейм для ошибок
 
+
         lst_files = []  # список для файлов
         for dirpath, dirnames, filenames in os.walk(data_folder):
             lst_files.extend(filenames)
@@ -139,8 +159,16 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                               'Внешний UUID','СНИЛС',
                               ]
             # Создаем общий файл
-            main_df = pd.DataFrame(columns=lst_check_cols)
-            main_df.insert(0, 'Название файла', '')
+
+            # Датафрейм для хранения ошибок в колонке Период назначения ПО
+            date_po_df = pd.DataFrame(columns=['Название файла','Название листа','№ строки с ошибкой','Период назначения ПО'])
+
+            # Датафрейм для хранения ошибок в колонке СНИЛС
+            snils_df = pd.DataFrame(columns=['Название файла','Название листа','№ строки с ошибкой','СНИЛС'])
+
+
+
+
 
             t = time.localtime()
             current_time = time.strftime('%H_%M_%S', t)
@@ -175,6 +203,11 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                         hand_check_wb = openpyxl.Workbook() # Файл для значений которые нужно проверить
 
                         wb_snils = openpyxl.Workbook() # файл для СНИЛС
+
+                        dct_svod = dict() # словарь для хранения сводов по колонке Период ПО
+
+                        dct_snils = dict() # словарь для хранения сводов по колонке СНИЛС
+
 
                         for idx,name_sheet in enumerate(lst_wb_sheets,1):
                             print(name_sheet)
@@ -227,18 +260,18 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
 
                             # Находим пропущенные значения в обязательных к заполнению колонках
                             df[lst_required_filling] = df[lst_required_filling].fillna('Ошибка: Ячейка не заполнена')
+                            df['Период назначения ПО'] = df['Период назначения ПО'].apply(drop_space_symbols)
                             # Проверяем СНИЛС
                             df['СНИЛС'] = df['СНИЛС'].apply(processing_snils)
 
                             # Начинаем обработку
                             lst_snils = list(df['СНИЛС'].unique()) # уникальные снилсы
                             # Сохраняем датафрейм с ошибками разделенными по листам в соответсвии с колонками
-                            dct_sheet_error_df = dict()  # создаем словарь для хранения названия и датафрейма
 
-                            lst_name_columns = [name_cols for name_cols in df.columns if
-                                                'Unnamed' not in name_cols]  # получаем список колонок
 
-                            for idx, value in enumerate(lst_name_columns):
+
+
+                            for idx, value in enumerate(['Период назначения ПО','СНИЛС']):
                                 # получаем ошибки
                                 temp_df = df[df[value].astype(str).str.contains('Ошибка')]  # фильтруем
                                 if temp_df.shape[0] == 0:
@@ -246,9 +279,15 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
 
                                 temp_df = temp_df[value].to_frame()  # оставляем только одну колонку
 
-                                temp_df.insert(0, '№ строки с ошибкой в исходном файле',
+                                temp_df.insert(0, 'Название файла', name_file)
+                                temp_df.insert(1, 'Название листа', name_sheet)
+                                temp_df.insert(2, '№ строки с ошибкой',
                                                list(map(lambda x: x + 2, list(temp_df.index))))
-                                dct_sheet_error_df[value] = temp_df
+
+                                if value == 'Период назначения ПО':
+                                    date_po_df = pd.concat([date_po_df,temp_df])
+                                else:
+                                    snils_df = pd.concat([snils_df,temp_df])
 
 
                             """
@@ -281,10 +320,35 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                             df.insert(0, '№ строки в исходном файле',
                                                          list(map(lambda x: x + 2, list(df.index))))
 
+
+                            svod_df = pd.pivot_table(df,values='Сумма',
+                                                     index=['Наименование ЛМСЗ','Период назначения С'],
+                                                     aggfunc='sum',
+                                                     fill_value=0,
+                                                     margins=True,
+                                                     margins_name='Итого')
+                            svod_df = svod_df.reset_index()
+                            dct_svod[name_sheet] = svod_df # добавляем в словарь
+
+                            svod_snils_df = pd.pivot_table(df,values='Сумма',
+                                                     index=['СНИЛС','Период назначения С','Наименование ЛМСЗ'],
+                                                     aggfunc='sum',
+                                                     fill_value=0,
+                                                     margins=True,
+                                                     margins_name='Итого')
+                            svod_snils_df = svod_snils_df.reset_index()
+                            dct_snils[name_sheet] = svod_snils_df # добавляем в словарь
+
+
+                            # Создаем листы для датафрейма СНИЛС
                             wb_snils.create_sheet(name_sheet,idx) # создаем лист
                             for r in dataframe_to_rows(df, index=False, header=True):
                                 if len(r) != 1:
                                     wb_snils[name_sheet].append(r)
+
+
+
+
 
                             for r in dataframe_to_rows(main_dupl_df, index=False, header=True):
                                 if len(r) != 1:
@@ -309,10 +373,6 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                             hand_check_wb[name_sheet].column_dimensions['Q'].width = 37
                             hand_check_wb[name_sheet].column_dimensions['R'].width = 15
 
-
-
-
-
                         # Удаляем листы
                         del_sheet(out_wb, ['Sheet'])
                         del_sheet(hand_check_wb,['Sheet'])
@@ -327,13 +387,28 @@ def final_checking_files_egisso(data_folder:str, end_folder:str):
                         wb_snils = del_sheet(wb_snils, ['Sheet', 'Sheet1', 'Для подсчета'])
                         wb_snils.save(f'{end_folder}/СНИЛС {name_file} {current_time}.xlsx')
 
+                        # Сохраняем файл со сводами периоду ПО
+                        with pd.ExcelWriter(f'{end_folder}/Свод Период С {name_file}_{current_time}.xlsx',engine='xlsxwriter') as writer:
+                            for name_sheet, out_df in dct_svod.items():
+                                out_df.to_excel(writer, sheet_name=str(name_sheet), index=False)
 
-        err_dct = {'Критические ошибки': error_df}
-        err_dct.update(dct_sheet_error_df)
+                        # Сохраняем файл со сводами по СНИЛС
+                        with pd.ExcelWriter(f'{end_folder}/Свод СНИЛС {name_file}_{current_time}.xlsx',engine='xlsxwriter') as writer:
+                            for name_sheet, out_df in dct_snils.items():
+                                out_df.to_excel(writer, sheet_name=str(name_sheet), index=False)
 
+
+
+
+
+        err_dct = {'Ошибки в структуре': error_df,'Период ПО':date_po_df,'СНИЛС':snils_df}
+
+
+        #
         main_error_wb = write_df_to_excel_cheking_egisso(err_dct, write_index=False)
         main_error_wb = del_sheet(main_error_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
         main_error_wb.save(f'{end_folder}/Критические ошибки {current_time}.xlsx')
+
 
 
 
