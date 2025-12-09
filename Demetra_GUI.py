@@ -122,17 +122,17 @@ def set_window_size(window):
 
     # Устанавливаем размер окна в 80% от ширины и высоты экрана
     if screen_width >= 3840:
-        width = int(screen_width * 0.2)
+        width = int(screen_width * 0.5)
     elif screen_width >= 2560:
-        width = int(screen_width * 0.31)
+        width = int(screen_width * 0.7)
     elif screen_width >= 1920:
-        width = int(screen_width * 0.61)
+        width = int(screen_width * 0.8)
     elif screen_width >= 1600:
-        width = int(screen_width * 0.6)
+        width = int(screen_width * 0.9)
     elif screen_width >= 1280:
-        width = int(screen_width * 0.62)
+        width = int(screen_width * 0.9)
     elif screen_width >= 1024:
-        width = int(screen_width * 0.77)
+        width = int(screen_width * 0.9)
     else:
         width = int(screen_width * 1)
 
