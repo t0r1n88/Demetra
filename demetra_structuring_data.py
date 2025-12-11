@@ -106,8 +106,11 @@ def processing_structuring_data(data_folder:str, result_folder:str, name_sheet:s
                     error_df = pd.concat([error_df, temp_error_df], axis=0,
                                          ignore_index=True)
                     continue
-                if not file.startswith('~$') and file.endswith('.xlsx'):
-                    name_file = file.split('.xlsx')[0]
+                if not file.startswith('~$') and (file.endswith('.xlsx') or file.endswith('.xlsm')):
+                    if file.endswith('.xlsx'):
+                        name_file = file.split('.xlsx')[0].strip()
+                    else:
+                        name_file = file.split('.xlsm')[0].strip()
                     print(name_file)  # обрабатываемый файл
                     try:
                         temp_df = pd.read_excel(f'{dirpath}/{file}',sheet_name=name_sheet,skiprows=quantity_header,header=None)  # открываем файл

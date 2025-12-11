@@ -377,7 +377,7 @@ def select_file_split():
     """
     global file_data_split
     # Получаем путь к файлу
-    file_data_split = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    file_data_split = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('Excel files', '*.xlsm'),('all files', '*.*')))
 
 
 def select_end_folder_split():
@@ -796,7 +796,7 @@ def select_file_data_date():
     """
     global name_file_data_date
     # Получаем путь к файлу
-    name_file_data_date = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    name_file_data_date = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'),('Excel files', '*.xlsm'), ('all files', '*.*')))
 
 
 def select_end_folder_date():
@@ -832,7 +832,7 @@ def select_file_params_comparsion():
     :return:
     """
     global file_params
-    file_params = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    file_params = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'),('Excel files', '*.xlsm'), ('all files', '*.*')))
 
 
 def select_first_comparison():
@@ -842,7 +842,7 @@ def select_first_comparison():
     """
     global name_first_file_comparison
     # Получаем путь к файлу
-    name_first_file_comparison = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    name_first_file_comparison = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'),('Excel files', '*.xlsm'), ('all files', '*.*')))
 
 
 def select_second_comparison():
@@ -853,7 +853,7 @@ def select_second_comparison():
     global name_second_file_comparison
     # Получаем путь к файлу
     name_second_file_comparison = filedialog.askopenfilename(
-        filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+        filetypes=(('Excel files', '*.xlsx'),('Excel files', '*.xlsm'), ('all files', '*.*')))
 
 
 def select_end_folder_comparison():
@@ -1203,6 +1203,51 @@ if __name__ == '__main__':
     btn_generate_merge_report.pack(padx=10, pady=10)
 
     """
+    Создаем вкладку для проверки истекающих документов
+    """
+    tab_expired_docs = ttk.Frame(tab_control)
+    tab_control.add(tab_expired_docs, text='Заканчивающиеся\n документы')
+
+    expired_docs_frame_description = LabelFrame(tab_expired_docs)
+    expired_docs_frame_description.pack()
+
+    lbl_hello_expired_docs = Label(expired_docs_frame_description,
+                                   text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
+                                        'Поиск истекающих документов подтверждающих социальные льготы\n'
+                                        'Красным выделяются строки если осталось 7 и меньше дней;\n'
+                                        'Оранжевым выделяются строки если осталось 14 и меньше дней;\n'
+                                        'Желтым выделяются строки если осталось 31 и меньше дней;',
+                                   width=60)
+    lbl_hello_expired_docs.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
+
+    # Картинка
+    path_to_img_expired_docs = resource_path('logo.png')
+    img_expired_docs = PhotoImage(file=path_to_img_expired_docs)
+    Label(expired_docs_frame_description,
+          image=img_expired_docs, padx=10, pady=10
+          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
+
+    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_expired_docs = LabelFrame(tab_expired_docs, text='Подготовка')
+    frame_data_expired_docs.pack(padx=10, pady=10)
+
+    # Создаем кнопку выбора файла с данными
+    btn_choose_prep_file = Button(frame_data_expired_docs, text='1) Выберите файл', font=('Arial Bold', 14),
+                                  command=select_file_data_expired)
+    btn_choose_prep_file.pack(padx=10, pady=10)
+
+    # Создаем кнопку выбора конечной папки
+    btn_choose_end_folder_prep = Button(frame_data_expired_docs, text='2) Выберите конечную папку',
+                                        font=('Arial Bold', 14),
+                                        command=select_data_folder_expired)
+    btn_choose_end_folder_prep.pack(padx=10, pady=10)
+
+    # Создаем кнопку очистки
+    btn_choose_processing_prep = Button(tab_expired_docs, text='3) Выполнить обработку', font=('Arial Bold', 20),
+                                        command=processing_check_expired_docs)
+    btn_choose_processing_prep.pack(padx=10, pady=10)
+
+    """
     Исправление данных для ЕГИССО
     """
     tab_create_fix_data_for_egisso = ttk.Frame(tab_control)
@@ -1442,50 +1487,7 @@ if __name__ == '__main__':
 
 
 
-    """
-    Создаем вкладку для проверки истекающих документов
-    """
-    tab_expired_docs = ttk.Frame(tab_control)
-    tab_control.add(tab_expired_docs, text='Заканчивающиеся\n документы')
 
-    expired_docs_frame_description = LabelFrame(tab_expired_docs)
-    expired_docs_frame_description.pack()
-
-    lbl_hello_expired_docs = Label(expired_docs_frame_description,
-                                   text='Центр опережающей профессиональной подготовки Республики Бурятия\n'
-                                        'Поиск истекающих документов подтверждающих социальные льготы\n'
-                                        'Красным выделяются строки если осталось 7 и меньше дней;\n'
-                                        'Оранжевым выделяются строки если осталось 14 и меньше дней;\n'
-                                        'Желтым выделяются строки если осталось 31 и меньше дней;',
-                                   width=60)
-    lbl_hello_expired_docs.pack(side=LEFT, anchor=N, ipadx=25, ipady=10)
-
-    # Картинка
-    path_to_img_expired_docs = resource_path('logo.png')
-    img_expired_docs = PhotoImage(file=path_to_img_expired_docs)
-    Label(expired_docs_frame_description,
-          image=img_expired_docs, padx=10, pady=10
-          ).pack(side=LEFT, anchor=E, ipadx=5, ipady=5)
-
-    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
-    frame_data_expired_docs = LabelFrame(tab_expired_docs, text='Подготовка')
-    frame_data_expired_docs.pack(padx=10, pady=10)
-
-    # Создаем кнопку выбора файла с данными
-    btn_choose_prep_file = Button(frame_data_expired_docs, text='1) Выберите файл', font=('Arial Bold', 14),
-                                  command=select_file_data_expired)
-    btn_choose_prep_file.pack(padx=10, pady=10)
-
-    # Создаем кнопку выбора конечной папки
-    btn_choose_end_folder_prep = Button(frame_data_expired_docs, text='2) Выберите конечную папку',
-                                        font=('Arial Bold', 14),
-                                        command=select_data_folder_expired)
-    btn_choose_end_folder_prep.pack(padx=10, pady=10)
-
-    # Создаем кнопку очистки
-    btn_choose_processing_prep = Button(tab_expired_docs, text='3) Выполнить обработку', font=('Arial Bold', 20),
-                                        command=processing_check_expired_docs)
-    btn_choose_processing_prep.pack(padx=10, pady=10)
 
     """
          Создаем вкладку для обработки дат рождения
