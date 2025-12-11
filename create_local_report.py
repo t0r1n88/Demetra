@@ -489,16 +489,19 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
 
         for idx, file in enumerate(os.listdir(data_folder)):
-            if not file.startswith('~$') and not file.endswith('.xlsx'):
+            if file.endswith('.xls') or file.endswith('.ods'):
                 name_file = file.split('.xls')[0]
                 temp_error_df = pd.DataFrame(data=[[f'{name_file}', '', '',
-                                                    'Расширение файла НЕ XLSX! Программа обрабатывает только XLSX ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!! ']],
+                                                    'Программа обрабатывает только XLSX и XLSM файлы ДАННЫЕ ФАЙЛА НЕ ОБРАБОТАНЫ !!!']],
                                              columns=['Название файла', 'Строка или колонка с ошибкой',
                                                       'Описание ошибки'])
                 error_df = pd.concat([error_df, temp_error_df], axis=0, ignore_index=True)
                 continue
-            if not file.startswith('~$') and file.endswith('.xlsx'):
-                name_file = file.split('.xlsx')[0]
+            if not file.startswith('~$') and (file.endswith('.xlsx') or file.endswith('.xlsm')):
+                if file.endswith('.xlsx'):
+                    name_file = file.split('.xlsx')[0].strip()
+                else:
+                    name_file = file.split('.xlsm')[0].strip()
                 print(f'Файл: {name_file}')
                 try:
                     temp_wb = openpyxl.load_workbook(f'{data_folder}/{file}')  # открываем
@@ -1032,10 +1035,10 @@ def create_local_report(etalon_file: str, data_folder: str, path_end_folder: str
 
 
 if __name__ == '__main__':
-    main_etalon_file = 'data/Эталон.xlsx'
+    main_etalon_file = 'data/Приложение 2. Эталон для заполнения.xlsx'
     main_data_folder = 'data/Данные'
     main_result_folder = 'data/Результат'
-    main_params_file = 'data/Параметры отчета.xlsx'
+    main_params_file = 'data/Пример Параметры отчета.xlsx'
     main_egisso_params = 'data/Параметры ЕГИССО.xlsx'
     main_checkbox_expelled = 0
     main_raw_data = '05.09.2024'
