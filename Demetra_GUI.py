@@ -426,7 +426,7 @@ def select_prep_file():
     """
     global glob_prep_file
     # Получаем путь к файлу
-    glob_prep_file = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    glob_prep_file = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'),('Excel files', '*.xlsm'), ('all files', '*.*')))
 
 
 def select_end_folder_prep():
@@ -446,7 +446,9 @@ def processing_preparation_file():
         # name_sheet = var_name_sheet_prep.get() # получаем название листа
         checkbox_dupl = mode_dupl_value.get()
         checkbox_alf = mode_mix_alphabets.get()
-        prepare_list(glob_prep_file, glob_path_to_end_folder_prep, checkbox_dupl,checkbox_alf)
+        checkbox_many_dupl = mode_many_dupl_value.get()
+        numbers_columns_many_dupl = entry_many_dupl_value.get()
+        prepare_list(glob_prep_file, glob_path_to_end_folder_prep, checkbox_dupl,checkbox_alf,checkbox_many_dupl,numbers_columns_many_dupl)
 
     except NameError:
         messagebox.showerror('Деметра Отчеты социальный паспорт студента',
@@ -554,7 +556,7 @@ def select_file_data_doc():
     """
     global name_file_data_doc
     # Получаем путь к файлу
-    name_file_data_doc = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    name_file_data_doc = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('Excel files', '*.xlsm'),('all files', '*.*')))
 
 
 def select_end_folder_doc():
@@ -608,7 +610,7 @@ def select_first_diffrence():
     """
     global data_first_diffrence
     # Получаем путь к файлу
-    data_first_diffrence = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    data_first_diffrence = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'),('Excel files', '*.xlsm'), ('all files', '*.*')))
 
 
 def select_second_diffrence():
@@ -618,7 +620,7 @@ def select_second_diffrence():
     """
     global data_second_diffrence
     # Получаем путь к файлу
-    data_second_diffrence = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'), ('all files', '*.*')))
+    data_second_diffrence = filedialog.askopenfilename(filetypes=(('Excel files', '*.xlsx'),('Excel files', '*.xlsm'), ('all files', '*.*')))
 
 
 def select_end_folder_diffrence():
@@ -955,7 +957,7 @@ def open_libraries():
 
 if __name__ == '__main__':
     window = Tk()
-    window.title('Деметра Отчеты ver 2.4')
+    window.title('Деметра Отчеты ver 2.5')
     # Устанавливаем размер и положение окна
     set_window_size(window)
     # window.geometry('774x760')
@@ -1882,7 +1884,8 @@ if __name__ == '__main__':
                                   text='Очистка от лишних пробелов и символов; поиск пропущенных значений\n в колонках с персональными данными,'
                                        '(ФИО,паспортные данные,\nтелефон,e-mail,дата рождения,ИНН)\n преобразование СНИЛС в формат ХХХ-ХХХ-ХХХ ХХ.\n'
                                        'Создание списка дубликатов по каждой колонке.\n'
-                                       'Поиск со смешаным написанием русских и английских букв.\n'
+                                       'Создание списка дубликатов по нескольким колонкам.\n'
+                                       'Поиск со смешанным написанием русских и английских букв.\n'
                                        'ПРИМЕЧАНИЯ\n'
                                        'Данные обрабатываются С ПЕРВОГО ЛИСТА В ФАЙЛЕ !!!\n'
                                        'Заголовок таблицы должен занимать только первую строку!\n'
@@ -1938,6 +1941,31 @@ if __name__ == '__main__':
                                            offvalue='No',
                                            onvalue='Yes')
     chbox_mode_mix_alphabets.pack(padx=10, pady=10)
+
+    # Создаем переменную для хранения переключателя поиска дублей по нескольким колонкам
+    mode_many_dupl_value = StringVar()
+    mode_many_dupl_value.set('No')  # по умолчанию поиска поиск дубликатов по множеству колонок не будет
+    chbox_many_dupl_value = Checkbutton(frame_data_prep,
+                                        text='Поставьте галочку, если вам нужно искать дубликаты по нескольким колонкам',
+                                        variable=mode_many_dupl_value,
+                                        offvalue='No',
+                                        onvalue='Yes')
+    chbox_many_dupl_value.pack()
+
+    # Создаем поле для ввода
+    # Определяем текстовую переменную
+    entry_many_dupl_value = StringVar()
+    # Описание поля
+    label_many_dupl_value = Label(frame_data_prep,
+                                  text='Введите через запятую порядковые номера колонок по которым нужно искать дубликаты.\n'
+                                       'Например: 4,15,8. Порядковые номера начинаются с 1. Введенные числа не должны превышать количество колонок в таблице.\n'
+                                       'Сортировка дубликатов производится по колонке чей порядковый номер указан первым.')
+    label_many_dupl_value.pack()
+    # поле ввода
+    entry_value_many_dupl = Entry(frame_data_prep, textvariable=entry_many_dupl_value, width=30)
+    entry_value_many_dupl.pack(ipady=5)
+
+
 
     # Создаем кнопку очистки
     btn_choose_processing_prep = Button(tab_preparation, text='3) Выполнить обработку', font=('Arial Bold', 20),
@@ -2028,7 +2056,7 @@ if __name__ == '__main__':
 
     lbl_about = Label(about_frame_description,
                       text="""Деметра - Программа для обработки отчетности ПОО
-                           Версия 2.4
+                           Версия 2.5
                            Язык программирования - Python 3\n
                            Используемая лицензия BSD-2-Clause\n
                            Copyright (c) <2024> <Будаев Олег Тимурович>
