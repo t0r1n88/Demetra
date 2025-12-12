@@ -730,9 +730,13 @@ def prepare_list(file_data:str,path_end_folder:str,checkbox_dupl:str,checkbox_mi
                         dct_many_dupl_df[f'{len(lst_number_dupl_cols[:-i])}'] = main_dupl_df
 
 
-            file_error_wb = write_df_to_excel_error_prep_list(dct_many_dupl_df, write_index=False)
-            file_error_wb = del_sheet(file_error_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
-            file_error_wb.save(f'{path_end_folder}/Дубли по нескольким колонкам {current_time}.xlsx')
+            if len(dct_many_dupl_df) != 0:
+                file_error_wb = write_df_to_excel_error_prep_list(dct_many_dupl_df, write_index=False)
+                file_error_wb = del_sheet(file_error_wb, ['Sheet', 'Sheet1', 'Для подсчета'])
+                file_error_wb.save(f'{path_end_folder}/Дубли по нескольким колонкам {current_time}.xlsx')
+            else:
+                file_error_wb = openpyxl.Workbook()
+                file_error_wb.save(f'{path_end_folder}/Дублей не обнаружено.xlsx')
 
 
 
