@@ -345,7 +345,7 @@ def fix_files_girvu(data_folder:str, end_folder:str):
         for dirpath, dirnames, filenames in os.walk(data_folder):
             lst_files.extend(filenames)
         # отбираем файлы
-        lst_xlsx = [file for file in lst_files if not file.startswith('~$') and file.endswith('.xlsx')]
+        lst_xlsx = [file for file in lst_files if not file.startswith('~$') and (file.endswith('.xlsx') or file.endswith('.xlsm'))]
         quantity_files = len(lst_xlsx)  # считаем сколько xlsx файлов в папке
 
         # Обрабатываем в зависимости от количества файлов в папке
